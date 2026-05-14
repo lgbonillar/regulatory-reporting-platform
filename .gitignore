@@ -1,0 +1,49 @@
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# IDE / Editors
+# =========================
+.idea/
+*.iml
+
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# =========================
+# Environment files
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+
+# =========================
+# Docker / local volumes
+# =========================
+docker-data/
+volumes/
+tmp/
+
+# =========================
+# Generated files
+# =========================
+*.tmp
+*.bak
+*.swp
+
+# =========================
+# Reports / exports generated locally
+# =========================
+exports/
+generated-reports/
+uploaded-files/
