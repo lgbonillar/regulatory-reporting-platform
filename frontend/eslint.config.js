@@ -16,6 +16,7 @@ module.exports = defineConfig([
     ],
     processor: angular.processInlineTemplates,
     plugins: {
+      '@typescript-eslint': tseslint.plugin,
       'simple-import-sort': simpleImportSort
     },
     rules: {
@@ -86,7 +87,9 @@ module.exports = defineConfig([
     }
   },
   {
+    files: ['**/*.js', '**/*.ts'],
     plugins: {
+      '@typescript-eslint': tseslint.plugin,
       'simple-import-sort': simpleImportSort
     },
     rules: {
