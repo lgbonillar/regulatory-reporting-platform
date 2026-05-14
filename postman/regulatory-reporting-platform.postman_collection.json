@@ -1,0 +1,142 @@
+{
+	"info": {
+		"_postman_id": "520eb9a8-e925-4998-8c72-0844e8a37ead",
+		"name": "regulatory-reporting-platform",
+		"description": "### Welcome to Postman! This is your first collection. \n\nCollections are your starting point for building and testing APIs. You can use this one to:\n\n• Group related requests\n• Test your API in real-world scenarios\n• Document and share your requests\n\nUpdate the name and overview whenever you’re ready to make it yours.\n\n[Learn more about Postman Collections.](https://learning.postman.com/docs/collections/collections-overview/)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "54846479",
+		"_collection_link": "https://lgbonillar-9fdab236-1700580.postman.co/workspace/Luis-Bonilla's-Workspace~65d7240c-6d4c-4e12-829b-e7dcd3adc1c1/collection/54846479-520eb9a8-e925-4998-8c72-0844e8a37ead?action=share&source=collection_link&creator=54846479"
+	},
+	"item": [
+		{
+			"name": "Report Files",
+			"item": [
+				{
+					"name": "Upload report file",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const response = pm.response.json();",
+									"",
+									"pm.collectionVariables.set('fileId', response.fileId);",
+									"pm.collectionVariables.set('jobId', response.jobId);",
+									"",
+									"pm.test('returns 200 OK', function () {",
+									"  pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('creates file and processing job', function () {",
+									"  pm.expect(response.fileId).to.exist;",
+									"  pm.expect(response.jobId).to.exist;",
+									"  pm.expect(response.status).to.eql('PENDING');",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/C:/Users/BiiR4_fex7h2t/Downloads/Lista-de-clientes-con-nombre-y-direccion.xlsx"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/report-files",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"report-files"
+							]
+						},
+						"description": "This is a POST request, submitting data to an API via the request body. This request submits JSON data, and the data is reflected in the response.\n\nA successful POST request typically returns a `200 OK` or `201 Created` response code."
+					},
+					"response": []
+				},
+				{
+					"name": "Download report file",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('returns 200 OK', function () {",
+									"  pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('returns excel content type', function () {",
+									"  pm.expect(pm.response.headers.get('Content-Type')).to.include(",
+									"    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'",
+									"  );",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/report-files/{{fileId}}/download",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"report-files",
+								"{{fileId}}",
+								"download"
+							]
+						},
+						"description": "This is a GET request and it is used to \"get\" data from an endpoint. There is no request body for a GET request, but you can use query parameters to help specify the resource you want data on (e.g., in this request, we have `id=1`).\n\nA successful GET response will have a `200 OK` status, and should include some kind of response body - for example, HTML web content or JSON data."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Health",
+			"item": []
+		},
+		{
+			"name": "Processing Jobs",
+			"item": []
+		},
+		{
+			"name": "Validation Auth",
+			"item": []
+		},
+		{
+			"name": "Users",
+			"item": []
+		}
+	],
+	"variable": [
+		{
+			"key": "fileId",
+			"value": ""
+		},
+		{
+			"key": "jobId",
+			"value": ""
+		}
+	]
+}

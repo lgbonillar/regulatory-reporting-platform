@@ -47,3 +47,4 @@ tmp/
 exports/
 generated-reports/
 uploaded-files/
+backend/storage/

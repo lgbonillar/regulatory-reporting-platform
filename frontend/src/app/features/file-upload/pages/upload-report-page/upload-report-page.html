@@ -1,0 +1,93 @@
+<section class="grid max-w-5xl gap-5">
+  <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div>
+      <p class="m-0 text-xs font-bold uppercase text-slate-600">Report files</p>
+      <h2 class="m-0 mt-1 text-xl font-bold leading-tight text-slate-900">
+        Upload Excel report
+      </h2>
+    </div>
+
+    <p class="m-0 text-sm text-slate-600">Accepted format: .xlsx</p>
+  </div>
+
+  <div class="grid gap-5 rounded-lg border border-slate-300 bg-white p-5 md:p-6">
+    <label
+      for="report-file"
+      class="grid cursor-pointer gap-2 rounded-lg border border-dashed border-slate-400 p-5 focus-within:border-emerald-700 focus-within:ring-4 focus-within:ring-emerald-700/20 md:p-6"
+    >
+      <span class="font-bold text-slate-900">Select regulatory Excel file</span>
+
+      <span class="wrap-break-words text-sm text-slate-600">
+        {{ selectedFileSummary() ?? 'No file selected' }}
+      </span>
+
+      <input
+        id="report-file"
+        type="file"
+        accept=".xlsx"
+        class="w-full max-w-full text-sm text-slate-700 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-bold file:text-slate-800 hover:file:bg-slate-200"
+        (change)="onFileSelected($event)"
+      >
+    </label>
+
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <button
+        class="min-h-11 rounded-lg border border-emerald-700 bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:border-emerald-300 disabled:bg-emerald-300 sm:w-fit"
+        type="button"
+        [disabled]="isUploading()"
+        (click)="uploadSelectedFile()"
+      >
+        {{ isUploading() ? 'Uploading...' : 'Upload file' }}
+      </button>
+    </div>
+
+    @if (errorMessage()) {
+      <p class="m-0 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+        {{ errorMessage() }}
+      </p>
+    }
+
+    @if (uploadResult(); as result) {
+      <div class="grid gap-5 border-t border-slate-300 pt-5">
+        <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div class="min-w-0">
+            <p class="m-0 text-xs font-bold uppercase text-slate-600">Processing job</p>
+            <h3 class="m-0 mt-1 wrap-break-words text-base font-bold leading-snug text-slate-900">
+              {{ result.originalFilename }}
+            </h3>
+          </div>
+
+          <span class="w-fit rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800">
+            {{ result.status }}
+          </span>
+        </div>
+
+        <dl class="grid gap-3">
+          <div class="grid gap-1">
+            <dt class="text-xs font-bold uppercase text-slate-600">File ID</dt>
+            <dd class="m-0 break-all text-sm text-slate-900">{{ result.fileId }}</dd>
+          </div>
+
+          <div class="grid gap-1">
+            <dt class="text-xs font-bold uppercase text-slate-600">Job ID</dt>
+            <dd class="m-0 break-all text-sm text-slate-900">{{ result.jobId }}</dd>
+          </div>
+
+          <div class="grid gap-1">
+            <dt class="text-xs font-bold uppercase text-slate-600">Message</dt>
+            <dd class="m-0 wrap-break-words text-sm text-slate-900">{{ result.message }}</dd>
+          </div>
+        </dl>
+
+        @if (downloadUrl(); as url) {
+          <a
+            class="inline-flex min-h-11 w-fit items-center justify-center rounded-lg border border-emerald-700 px-4 py-2 text-sm font-bold text-emerald-800 no-underline hover:bg-emerald-50"
+            [href]="url"
+          >
+            Download uploaded file
+          </a>
+        }
+      </div>
+    }
+  </div>
+</section>

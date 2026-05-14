@@ -11,5 +11,21 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+#  backend:
+#    build:
+#      context: ./backend
+#    environment:
+#      APP_STORAGE_UPLOAD_DIR: /app/storage/uploads
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/regulatory_reporting
+#      SPRING_DATASOURCE_USERNAME: regreporting
+#      SPRING_DATASOURCE_PASSWORD: regreporting
+#    ports:
+#      - "8080:8080"
+#    depends_on:
+#      - postgres
+#    volumes:
+#      - uploaded_files:/app/storage/uploads
+
 volumes:
   postgres_data:
+#  uploaded_files:
