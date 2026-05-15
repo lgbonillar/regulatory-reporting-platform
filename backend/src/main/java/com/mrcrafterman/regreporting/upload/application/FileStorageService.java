@@ -1,5 +1,6 @@
 package com.mrcrafterman.regreporting.upload.application;
 
+import com.mrcrafterman.regreporting.shared.ResourceNotFoundException;
 import com.mrcrafterman.regreporting.upload.dto.StoredFile;
 
 import org.springframework.core.io.FileSystemResource;
@@ -63,6 +64,22 @@ public class FileStorageService {
         }
     }
 
+    public void delete(String relativeStoragePath) {
+        Path filePath = uploadRoot
+                .resolve(relativeStoragePath)
+                .normalize();
+
+        if (!filePath.startsWith(uploadRoot)) {
+            throw new IllegalArgumentException("Invalid storage path");
+        }
+
+        try {
+            Files.deleteIfExists(filePath);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Could not delete uploaded file", exception);
+        }
+    }
+
     private void validate(MultipartFile file) {
         if (file == null) {
             throw new IllegalArgumentException("File is required");
@@ -112,11 +129,11 @@ public class FileStorageService {
                 .normalize();
 
         if (!filePath.startsWith(uploadRoot)) {
-            throw new IllegalArgumentException("Invalid storage path");
+            throw new ResourceNotFoundException("Invalid storage path");
         }
 
         if (!Files.exists(filePath) || !Files.isRegularFile(filePath)) {
-            throw new IllegalArgumentException("Uploaded file not found on disk");
+            throw new ResourceNotFoundException("Uploaded file not found");
         }
 
         return new FileSystemResource(filePath);

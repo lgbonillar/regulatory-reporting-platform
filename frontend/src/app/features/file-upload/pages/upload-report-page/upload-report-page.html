@@ -1,93 +1,215 @@
-<section class="grid max-w-5xl gap-5">
-  <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+<section class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+  <header class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
     <div>
-      <p class="m-0 text-xs font-bold uppercase text-slate-600">Report files</p>
-      <h2 class="m-0 mt-1 text-xl font-bold leading-tight text-slate-900">
-        Upload Excel report
-      </h2>
+      <p class="text-sm font-medium text-slate-500">Report files</p>
+      <h1 class="text-2xl font-semibold text-slate-950 sm:text-3xl">Uploaded Excel files</h1>
     </div>
 
-    <p class="m-0 text-sm text-slate-600">Accepted format: .xlsx</p>
-  </div>
+    <p class="text-sm text-slate-500">
+      User:
+      <span class="font-medium text-slate-800">{{ username() }}</span>
+    </p>
+  </header>
 
-  <div class="grid gap-5 rounded-lg border border-slate-300 bg-white p-5 md:p-6">
-    <label
-      for="report-file"
-      class="grid cursor-pointer gap-2 rounded-lg border border-dashed border-slate-400 p-5 focus-within:border-emerald-700 focus-within:ring-4 focus-within:ring-emerald-700/20 md:p-6"
-    >
-      <span class="font-bold text-slate-900">Select regulatory Excel file</span>
+  <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div class="flex-1">
+        <label class="block text-sm font-medium text-slate-700" for="report-file">
+          Upload report file
+        </label>
 
-      <span class="wrap-break-words text-sm text-slate-600">
-        {{ selectedFileSummary() ?? 'No file selected' }}
-      </span>
+        <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <input
+            id="report-file"
+            class="block w-full rounded-md border border-slate-300 bg-white text-sm text-slate-700 file:mr-4 file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-slate-700"
+            type="file"
+            accept=".xlsx"
+            (change)="onFileSelected($event)"
+          />
 
-      <input
-        id="report-file"
-        type="file"
-        accept=".xlsx"
-        class="w-full max-w-full text-sm text-slate-700 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-bold file:text-slate-800 hover:file:bg-slate-200"
-        (change)="onFileSelected($event)"
-      >
-    </label>
-
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-      <button
-        class="min-h-11 rounded-lg border border-emerald-700 bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:border-emerald-300 disabled:bg-emerald-300 sm:w-fit"
-        type="button"
-        [disabled]="isUploading()"
-        (click)="uploadSelectedFile()"
-      >
-        {{ isUploading() ? 'Uploading...' : 'Upload file' }}
-      </button>
-    </div>
-
-    @if (errorMessage()) {
-      <p class="m-0 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
-        {{ errorMessage() }}
-      </p>
-    }
-
-    @if (uploadResult(); as result) {
-      <div class="grid gap-5 border-t border-slate-300 pt-5">
-        <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div class="min-w-0">
-            <p class="m-0 text-xs font-bold uppercase text-slate-600">Processing job</p>
-            <h3 class="m-0 mt-1 wrap-break-words text-base font-bold leading-snug text-slate-900">
-              {{ result.originalFilename }}
-            </h3>
-          </div>
-
-          <span class="w-fit rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800">
-            {{ result.status }}
-          </span>
+          <button
+            class="inline-flex items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+            type="button"
+            [disabled]="isUploading()"
+            (click)="uploadSelectedFile()"
+          >
+            @if (isUploading()) {
+              Uploading...
+            } @else {
+              Upload
+            }
+          </button>
         </div>
 
-        <dl class="grid gap-3">
-          <div class="grid gap-1">
-            <dt class="text-xs font-bold uppercase text-slate-600">File ID</dt>
-            <dd class="m-0 break-all text-sm text-slate-900">{{ result.fileId }}</dd>
-          </div>
-
-          <div class="grid gap-1">
-            <dt class="text-xs font-bold uppercase text-slate-600">Job ID</dt>
-            <dd class="m-0 break-all text-sm text-slate-900">{{ result.jobId }}</dd>
-          </div>
-
-          <div class="grid gap-1">
-            <dt class="text-xs font-bold uppercase text-slate-600">Message</dt>
-            <dd class="m-0 wrap-break-words text-sm text-slate-900">{{ result.message }}</dd>
-          </div>
-        </dl>
-
-        @if (downloadUrl(); as url) {
-          <a
-            class="inline-flex min-h-11 w-fit items-center justify-center rounded-lg border border-emerald-700 px-4 py-2 text-sm font-bold text-emerald-800 no-underline hover:bg-emerald-50"
-            [href]="url"
-          >
-            Download uploaded file
-          </a>
+        @if (selectedFileSummary()) {
+          <p class="mt-2 text-sm text-slate-500">{{ selectedFileSummary() }}</p>
         }
       </div>
+    </div>
+  </section>
+
+  @if (errorMessage()) {
+    <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+      {{ successMessage() }}
+    </div>
+  }
+
+  <section class="rounded-lg border border-slate-200 bg-white shadow-sm">
+    <div class="flex flex-col gap-2 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div>
+        <h2 class="text-base font-semibold text-slate-950">Files</h2>
+        <p class="text-sm text-slate-500">Stored reports for {{ username() }}</p>
+      </div>
+
+      @if (isLoadingFiles()) {
+        <p class="text-sm text-slate-500">Loading...</p>
+      }
+    </div>
+
+    @if (hasFiles()) {
+      <div class="hidden overflow-x-auto md:block">
+        <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+          <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+            <tr>
+              <th class="px-6 py-3">File</th>
+              <th class="px-6 py-3">Status</th>
+              <th class="px-6 py-3">Uploaded</th>
+              <th class="px-6 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody class="divide-y divide-slate-200">
+            @for (file of files(); track file.fileId) {
+              <tr class="align-middle">
+                <td class="px-6 py-4">
+                  <div class="max-w-md">
+                    <p class="wrap-break-words font-medium text-slate-950">
+                      {{ file.originalFilename }}
+                    </p>
+                    <p class="mt-1 break-all text-xs text-slate-500">
+                      {{ file.fileId }}
+                    </p>
+                  </div>
+                </td>
+
+                <td class="px-6 py-4">
+                  <span class="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
+                    {{ file.status }}
+                  </span>
+                </td>
+
+                <td class="px-6 py-4 text-slate-600">
+                  {{ file.uploadedAt | date: 'medium' }}
+                </td>
+
+                <td class="px-6 py-4">
+                  <div class="flex items-center justify-end gap-2">
+                    <a
+                      class="inline-flex items-center justify-center rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                      [href]="getDownloadUrl(file.fileId)"
+                    >
+                      Download
+                    </a>
+
+                    <label
+                      class="inline-flex cursor-pointer items-center justify-center rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                      [class.pointer-events-none]="isFileActionRunning(file.fileId)"
+                      [class.opacity-50]="isFileActionRunning(file.fileId)"
+                    >
+                      Update
+                      <input
+                        class="sr-only"
+                        type="file"
+                        accept=".xlsx"
+                        [disabled]="isFileActionRunning(file.fileId)"
+                        (change)="onReplacementFileSelected($event, file.fileId)"
+                      />
+                    </label>
+
+                    <button
+                      class="inline-flex items-center justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-red-300"
+                      type="button"
+                      [disabled]="isFileActionRunning(file.fileId)"
+                      (click)="deleteReportFile(file.fileId)"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="divide-y divide-slate-200 md:hidden">
+        @for (file of files(); track file.fileId) {
+          <article class="flex flex-col gap-4 px-4 py-4">
+            <div>
+              <p class="wrap-break-words font-medium text-slate-950">
+                {{ file.originalFilename }}
+              </p>
+              <p class="mt-1 break-all text-xs text-slate-500">
+                {{ file.fileId }}
+              </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 text-sm">
+              <span class="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
+                {{ file.status }}
+              </span>
+
+              <span class="text-slate-500">
+                {{ file.uploadedAt | date: 'mediumDate' }}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <a
+                class="inline-flex items-center justify-center rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                [href]="getDownloadUrl(file.fileId)"
+              >
+                Download
+              </a>
+
+              <label
+                class="inline-flex cursor-pointer items-center justify-center rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                [class.pointer-events-none]="isFileActionRunning(file.fileId)"
+                [class.opacity-50]="isFileActionRunning(file.fileId)"
+              >
+                Update
+                <input
+                  class="sr-only"
+                  type="file"
+                  accept=".xlsx"
+                  [disabled]="isFileActionRunning(file.fileId)"
+                  (change)="onReplacementFileSelected($event, file.fileId)"
+                />
+              </label>
+
+              <button
+                class="inline-flex items-center justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-red-300"
+                type="button"
+                [disabled]="isFileActionRunning(file.fileId)"
+                (click)="deleteReportFile(file.fileId)"
+              >
+                Delete
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    } @else {
+      <div class="px-4 py-10 text-center sm:px-6">
+        <p class="text-sm font-medium text-slate-700">No files uploaded yet.</p>
+        <p class="mt-1 text-sm text-slate-500">Upload an Excel file to start.</p>
+      </div>
     }
-  </div>
+  </section>
 </section>

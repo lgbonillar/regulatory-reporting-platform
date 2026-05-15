@@ -86,4 +86,9 @@ public class UploadedFile {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public void markDeleted() {
+        this.status = UploadedFileStatus.DELETED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
 }

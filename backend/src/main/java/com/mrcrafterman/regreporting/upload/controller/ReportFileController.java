@@ -4,20 +4,17 @@ import com.mrcrafterman.regreporting.upload.application.FileStorageService;
 import com.mrcrafterman.regreporting.upload.application.ReportFileService;
 import com.mrcrafterman.regreporting.upload.domain.UploadedFile;
 import com.mrcrafterman.regreporting.upload.dto.ReportFileUploadResponse;
+import com.mrcrafterman.regreporting.upload.dto.UploadedFileResponse;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -35,6 +32,22 @@ public class ReportFileController {
         this.fileStorageService = fileStorageService;
     }
 
+    @GetMapping
+    public ResponseEntity<List<UploadedFileResponse>> listReportFiles(
+            @RequestParam String username
+    ) {
+        return ResponseEntity.ok(reportFileService.listUploadedFiles(username));
+    }
+
+    @PutMapping(path = "/{fileId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ReportFileUploadResponse> updateReportFile(
+            @PathVariable UUID fileId,
+            @RequestParam("file") MultipartFile file
+    ) {
+        return ResponseEntity.ok(reportFileService.updateReportFile(fileId, file));
+    }
+
+
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ReportFileUploadResponse> uploadReportFile(
             @RequestParam("file") MultipartFile file
@@ -46,7 +59,7 @@ public class ReportFileController {
 
     @GetMapping("/{fileId}/download")
     public ResponseEntity<Resource> downloadReportFile(@PathVariable UUID fileId) {
-        UploadedFile uploadedFile = reportFileService.getUploadedFile(fileId);
+        UploadedFile uploadedFile = reportFileService.getStoredUploadedFile(fileId);
 
         Resource resource = fileStorageService.loadAsResource(uploadedFile.getStoragePath());
 
@@ -65,6 +78,13 @@ public class ReportFileController {
                                 .toString()
                 )
                 .body(resource);
+    }
+
+    @DeleteMapping("/{fileId}")
+    public ResponseEntity<Void> deleteReportFile(@PathVariable UUID fileId) {
+        reportFileService.deleteUploadedFile(fileId);
+
+        return ResponseEntity.noContent().build();
     }
 
 }

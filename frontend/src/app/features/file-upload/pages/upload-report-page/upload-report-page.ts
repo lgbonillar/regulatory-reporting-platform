@@ -1,44 +1,52 @@
+import { DatePipe } from '@angular/common'
 import { HttpErrorResponse } from '@angular/common/http'
-import { Component, computed, inject, signal } from '@angular/core'
+import { Component, computed, inject, OnInit, signal } from '@angular/core'
 
-import { ReportFileUploadResponse } from '../../models/report-file-upload.model'
+import { ReportFileUploadResponse, UploadedFileResponse } from '../../models/report-file-upload.model'
 import { ReportFileUploadService } from '../../services/report-file-upload.service'
+
+const CURRENT_USERNAME = 'analyst01'
+const MINIMUM_FILES_SIZE = 0
+const FIRST_FILE_INDEX = 0
 
 @Component({
   selector: 'app-upload-report-page',
+  imports: [ DatePipe ],
   templateUrl: './upload-report-page.html'
 })
-export class UploadReportPage {
+export class UploadReportPage implements OnInit {
   private readonly reportFileUploadService = inject(ReportFileUploadService)
 
-  protected readonly errorMessage = signal<string | null>(null)
-  protected readonly isUploading = signal(false)
+  protected readonly username = signal(CURRENT_USERNAME)
+  protected readonly files = signal<UploadedFileResponse[]>([])
   protected readonly selectedFile = signal<File | null>(null)
   protected readonly uploadResult = signal<ReportFileUploadResponse | null>(null)
+  protected readonly errorMessage = signal<string | null>(null)
+  protected readonly successMessage = signal<string | null>(null)
+  protected readonly isLoadingFiles = signal(false)
+  protected readonly isUploading = signal(false)
+  protected readonly actionFileId = signal<string | null>(null)
+
   protected readonly selectedFileSummary = computed(() => {
     const file = this.selectedFile()
 
-    if (!file) {
-      return null
-    }
+    if (!file) return null
 
     return `${file.name} - ${file.size} bytes`
   })
-  protected readonly downloadUrl = computed(() => {
-    const result = this.uploadResult()
 
-    if (!result) {
-      return null
-    }
+  protected readonly hasFiles = computed(() => this.files().length > MINIMUM_FILES_SIZE)
 
-    return this.reportFileUploadService.getDownloadUrl(result.fileId)
-  })
+  ngOnInit (): void {
+    this.loadReportFiles()
+  }
 
   protected onFileSelected (event: Event): void {
     const input = event.target as HTMLInputElement
-    const file = input.files?.item(Number(false)) ?? null
+    const file = input.files?.item(FIRST_FILE_INDEX) ?? null
 
     this.errorMessage.set(null)
+    this.successMessage.set(null)
     this.uploadResult.set(null)
     this.selectedFile.set(file)
   }
@@ -47,32 +55,103 @@ export class UploadReportPage {
     const file = this.selectedFile()
 
     if (!file) {
-      this.errorMessage.set('Select an .xlsx file before uploading.')
+      this.errorMessage.set('Select an Excel file before uploading.')
       return
     }
 
     this.isUploading.set(true)
     this.errorMessage.set(null)
+    this.successMessage.set(null)
 
     this.reportFileUploadService.uploadReportFile(file).subscribe({
-      next: (response): void => {
+      next: (response) => {
         this.uploadResult.set(response)
+        this.selectedFile.set(null)
+        this.successMessage.set('File uploaded successfully.')
+        this.loadReportFiles()
       },
-      error: (error: unknown): void => {
+      error: (error: unknown) => {
         this.errorMessage.set(this.resolveErrorMessage(error))
-        this.isUploading.set(false)
       },
-      complete: (): void => {
+      complete: () => {
         this.isUploading.set(false)
       }
     })
   }
 
+  protected onReplacementFileSelected (event: Event, fileId: string): void {
+    const input = event.target as HTMLInputElement
+    const file = input.files?.item(FIRST_FILE_INDEX) ?? null
+
+    if (!file) return
+
+    this.actionFileId.set(fileId)
+    this.errorMessage.set(null)
+    this.successMessage.set(null)
+
+    this.reportFileUploadService.updateReportFile(fileId, file).subscribe({
+      next: () => {
+        this.successMessage.set('File updated successfully.')
+        this.loadReportFiles()
+      },
+      error: (error: unknown) => {
+        this.errorMessage.set(this.resolveErrorMessage(error))
+      },
+      complete: () => {
+        this.actionFileId.set(null)
+        input.value = ''
+      }
+    })
+  }
+
+  protected deleteReportFile (fileId: string): void {
+    this.actionFileId.set(fileId)
+    this.errorMessage.set(null)
+    this.successMessage.set(null)
+
+    this.reportFileUploadService.deleteReportFile(fileId).subscribe({
+      next: () => {
+        this.successMessage.set('File deleted successfully.')
+        this.loadReportFiles()
+      },
+      error: (error: unknown) => {
+        this.errorMessage.set(this.resolveErrorMessage(error))
+      },
+      complete: () => {
+        this.actionFileId.set(null)
+      }
+    })
+  }
+
+  protected getDownloadUrl (fileId: string): string {
+    return this.reportFileUploadService.getDownloadUrl(fileId)
+  }
+
+  protected isFileActionRunning (fileId: string): boolean {
+    return this.actionFileId() === fileId
+  }
+
+  private loadReportFiles (): void {
+    this.isLoadingFiles.set(true)
+
+    this.reportFileUploadService.listReportFiles(this.username()).subscribe({
+      next: (files) => {
+        this.files.set(files)
+      },
+      error: (error: unknown) => {
+        this.errorMessage.set(this.resolveErrorMessage(error))
+      },
+      complete: () => {
+        this.isLoadingFiles.set(false)
+      }
+    })
+  }
+
   private resolveErrorMessage (error: unknown): string {
-    if (error instanceof HttpErrorResponse && typeof error.error?.message === 'string') {
-      return error.error.message
+    if (error instanceof HttpErrorResponse) {
+      return error.error?.message ?? 'Request failed. Please try again.'
     }
 
-    return 'The report file could not be uploaded.'
+    return 'Unexpected error. Please try again.'
   }
 }
