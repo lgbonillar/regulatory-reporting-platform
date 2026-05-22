@@ -91,4 +91,14 @@ public class UploadedFile {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public void markMissing() {
+        this.status = UploadedFileStatus.MISSING;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void markFailed() {
+        this.status = UploadedFileStatus.FAILED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
 }

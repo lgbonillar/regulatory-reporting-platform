@@ -1,5 +1,6 @@
 package com.mrcrafterman.regreporting.upload.controller;
 
+import com.mrcrafterman.regreporting.shared.ResourceNotFoundException;
 import com.mrcrafterman.regreporting.upload.application.FileStorageService;
 import com.mrcrafterman.regreporting.upload.application.ReportFileService;
 import com.mrcrafterman.regreporting.upload.domain.UploadedFile;
@@ -61,7 +62,14 @@ public class ReportFileController {
     public ResponseEntity<Resource> downloadReportFile(@PathVariable UUID fileId) {
         UploadedFile uploadedFile = reportFileService.getStoredUploadedFile(fileId);
 
-        Resource resource = fileStorageService.loadAsResource(uploadedFile.getStoragePath());
+        Resource resource;
+
+        try {
+            resource = fileStorageService.loadAsResource(uploadedFile.getStoragePath());
+        } catch (ResourceNotFoundException exception) {
+            reportFileService.markUploadedFileAsMissing(fileId);
+            throw exception;
+        }
 
         MediaType contentType = uploadedFile.getContentType() == null
                 ? MediaType.APPLICATION_OCTET_STREAM

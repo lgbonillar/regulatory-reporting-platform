@@ -1,5 +1,5 @@
-<section class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-  <header class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+<section class="flex w-full flex-col gap-6">
+  <header class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
     <div>
       <p class="text-sm font-medium text-slate-500">Report files</p>
       <h1 class="text-2xl font-semibold text-slate-950 sm:text-3xl">Uploaded Excel files</h1>
@@ -89,9 +89,12 @@
               <tr class="align-middle">
                 <td class="px-6 py-4">
                   <div class="max-w-md">
-                    <p class="wrap-break-words font-medium text-slate-950">
-                      {{ file.originalFilename }}
-                    </p>
+                    <app-file-download-link
+                      [fileId]="file.fileId"
+                      [filename]="file.originalFilename"
+                      [fileStatus]="file.fileStatus"
+                    />
+
                     <p class="mt-1 break-all text-xs text-slate-500">
                       {{ file.fileId }}
                     </p>
@@ -99,8 +102,11 @@
                 </td>
 
                 <td class="px-6 py-4">
-                  <span class="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
-                    {{ file.status }}
+                  <span
+                    class="inline-flex rounded-full px-2 py-1 text-xs font-medium"
+                    [class]="getFileStatusClasses(file.fileStatus)"
+                  >
+                    {{ file.fileStatus }}
                   </span>
                 </td>
 
@@ -110,13 +116,6 @@
 
                 <td class="px-6 py-4">
                   <div class="flex items-center justify-end gap-2">
-                    <a
-                      class="inline-flex items-center justify-center rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                      [href]="getDownloadUrl(file.fileId)"
-                    >
-                      Download
-                    </a>
-
                     <label
                       class="inline-flex cursor-pointer items-center justify-center rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                       [class.pointer-events-none]="isFileActionRunning(file.fileId)"
@@ -152,17 +151,23 @@
         @for (file of files(); track file.fileId) {
           <article class="flex flex-col gap-4 px-4 py-4">
             <div>
-              <p class="wrap-break-words font-medium text-slate-950">
-                {{ file.originalFilename }}
-              </p>
+              <app-file-download-link
+                [fileId]="file.fileId"
+                [filename]="file.originalFilename"
+                [fileStatus]="file.fileStatus"
+              />
               <p class="mt-1 break-all text-xs text-slate-500">
                 {{ file.fileId }}
               </p>
             </div>
 
             <div class="flex flex-wrap items-center gap-2 text-sm">
-              <span class="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
-                {{ file.status }}
+
+              <span
+                class="inline-flex rounded-full px-2 py-1 text-xs font-medium"
+                [class]="getFileStatusClasses(file.fileStatus)"
+              >
+                {{ file.fileStatus }}
               </span>
 
               <span class="text-slate-500">
@@ -170,14 +175,7 @@
               </span>
             </div>
 
-            <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              <a
-                class="inline-flex items-center justify-center rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                [href]="getDownloadUrl(file.fileId)"
-              >
-                Download
-              </a>
-
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <label
                 class="inline-flex cursor-pointer items-center justify-center rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                 [class.pointer-events-none]="isFileActionRunning(file.fileId)"

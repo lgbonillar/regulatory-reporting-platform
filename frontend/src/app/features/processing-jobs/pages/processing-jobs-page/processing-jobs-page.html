@@ -1,0 +1,284 @@
+<section class="flex w-full flex-col gap-6">
+  <header class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <p class="text-sm font-medium text-slate-500">Processing jobs</p>
+      <h1 class="text-2xl font-semibold text-slate-950 sm:text-3xl">Job monitor</h1>
+    </div>
+
+    <div class="flex flex-col gap-2 sm:flex-row">
+      <input
+        class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-500 sm:w-64"
+        type="text"
+        placeholder="Filter by username"
+        [ngModel]="filterUsername()"
+        (ngModelChange)="filterUsername.set($event)"
+      />
+
+      <button
+        class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+        type="button"
+        (click)="applyUsernameFilter()"
+      >
+        Apply
+      </button>
+
+      <button
+        class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+        type="button"
+        (click)="loadMyJobs()"
+      >
+        Mine
+      </button>
+
+      <button
+        class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+        type="button"
+        (click)="clearFilter()"
+      >
+        All
+      </button>
+    </div>
+  </header>
+
+  <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <button
+      class="rounded-lg border bg-white p-4 text-left shadow-sm transition hover:border-slate-400"
+      type="button"
+      [class.border-slate-900]="isStatusFilterActive('ALL')"
+      [class.border-slate-200]="!isStatusFilterActive('ALL')"
+      (click)="applyStatusFilter('ALL')"
+    >
+      <p class="text-sm text-slate-500">Total</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-950">{{ jobSummary().total }}</p>
+    </button>
+
+    <button
+      class="rounded-lg border bg-white p-4 text-left shadow-sm transition hover:border-amber-400"
+      type="button"
+      [class.border-amber-500]="isStatusFilterActive('PENDING')"
+      [class.border-slate-200]="!isStatusFilterActive('PENDING')"
+      (click)="applyStatusFilter('PENDING')"
+    >
+      <p class="text-sm text-slate-500">Pending</p>
+      <p class="mt-2 text-2xl font-semibold text-amber-700">{{ jobSummary().pending }}</p>
+    </button>
+
+    <button
+      class="rounded-lg border bg-white p-4 text-left shadow-sm transition hover:border-sky-400"
+      type="button"
+      [class.border-sky-500]="isStatusFilterActive('PROCESSING')"
+      [class.border-slate-200]="!isStatusFilterActive('PROCESSING')"
+      (click)="applyStatusFilter('PROCESSING')"
+    >
+      <p class="text-sm text-slate-500">Processing</p>
+      <p class="mt-2 text-2xl font-semibold text-sky-700">{{ jobSummary().processing }}</p>
+    </button>
+
+    <button
+      class="rounded-lg border bg-white p-4 text-left shadow-sm transition hover:border-emerald-400"
+      type="button"
+      [class.border-emerald-500]="isStatusFilterActive('COMPLETED')"
+      [class.border-slate-200]="!isStatusFilterActive('COMPLETED')"
+      (click)="applyStatusFilter('COMPLETED')"
+    >
+      <p class="text-sm text-slate-500">Completed</p>
+      <p class="mt-2 text-2xl font-semibold text-emerald-700">{{ jobSummary().completed }}</p>
+    </button>
+
+    <button
+      class="rounded-lg border bg-white p-4 text-left shadow-sm transition hover:border-red-400"
+      type="button"
+      [class.border-red-500]="isStatusFilterActive('FAILED')"
+      [class.border-slate-200]="!isStatusFilterActive('FAILED')"
+      (click)="applyStatusFilter('FAILED')"
+    >
+      <p class="text-sm text-slate-500">Failed</p>
+      <p class="mt-2 text-2xl font-semibold text-red-700">{{ jobSummary().failed }}</p>
+    </button>
+  </section>
+
+  @if (errorMessage()) {
+    <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+    <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-4 sm:px-6">
+        <h2 class="text-base font-semibold text-slate-950">Jobs</h2>
+
+        @if (isLoading()) {
+          <p class="text-sm text-slate-500">Loading...</p>
+        }
+      </div>
+
+      @if (filteredJobs().length > 0) {
+        <div class="hidden overflow-x-auto lg:block">
+          <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+            <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+              <tr>
+                <th class="px-6 py-3">File</th>
+                <th class="px-6 py-3">User</th>
+                <th class="px-6 py-3">Status</th>
+                <th class="px-6 py-3">Created</th>
+                <th class="px-6 py-3 text-right">Action</th>
+              </tr>
+            </thead>
+
+            <tbody class="divide-y divide-slate-200">
+              @for (job of filteredJobs(); track job.jobId) {
+                <tr class="align-middle">
+                  <td class="px-6 py-4">
+                    <app-file-download-link
+                      [fileId]="job.fileId"
+                      [filename]="job.originalFilename"
+                      [fileStatus]="job.fileStatus"
+                    />
+                    <p class="mt-1 break-all text-xs text-slate-500">{{ job.jobId }}</p>
+                  </td>
+
+                  <td class="px-6 py-4 text-slate-600">{{ job.uploadedBy }}</td>
+
+                  <td class="px-6 py-4">
+                    <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium" [class]="getStatusClasses(job.jobStatus)">
+                      {{ job.jobStatus }}
+                    </span>
+                  </td>
+
+                  <td class="px-6 py-4 text-slate-600">
+                    {{ job.createdAt | date: 'medium' }}
+                  </td>
+
+                  <td class="px-6 py-4 text-right">
+                    <button
+                      class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                      type="button"
+                      (click)="selectJob(job)"
+                    >
+                      Details
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="divide-y divide-slate-200 lg:hidden">
+          @for (job of filteredJobs(); track job.jobId) {
+            <article class="flex flex-col gap-3 px-4 py-4">
+              <div>
+                <app-file-download-link
+                  [fileId]="job.fileId"
+                  [filename]="job.originalFilename"
+                  [fileStatus]="job.fileStatus"
+                />
+                <p class="mt-1 break-all text-xs text-slate-500">{{ job.jobId }}</p>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium" [class]="getStatusClasses(job.jobStatus)">
+                  {{ job.jobStatus }}
+                </span>
+
+                <span class="text-sm text-slate-500">{{ job.uploadedBy }}</span>
+              </div>
+
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-sm text-slate-500">{{ job.createdAt | date: 'mediumDate' }}</p>
+
+                <button
+                  class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  type="button"
+                  (click)="selectJob(job)"
+                >
+                  Details
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+      } @else {
+        <div class="px-4 py-10 text-center sm:px-6">
+          <p class="text-sm font-medium text-slate-700">No processing jobs found.</p>
+        </div>
+      }
+    </div>
+
+    <aside class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+      <h2 class="text-base font-semibold text-slate-950">Job details</h2>
+
+      @if (selectedJob(); as job) {
+        <dl class="mt-4 grid gap-4 text-sm">
+          <div>
+            <dt class="font-medium text-slate-500">Job ID</dt>
+            <dd class="mt-1 break-all text-slate-900">{{ job.jobId }}</dd>
+          </div>
+
+          <div>
+            <dt class="font-medium text-slate-500">File ID</dt>
+            <dd class="mt-1 break-all text-slate-900">{{ job.fileId }}</dd>
+          </div>
+
+          <div>
+            <dt class="font-medium text-slate-500">Filename</dt>
+            <dd class="mt-1 break-words text-slate-900">
+              <app-file-download-link
+                [fileId]="job.fileId"
+                [filename]="job.originalFilename"
+                [fileStatus]="job.fileStatus"
+              />
+            </dd>
+          </div>
+
+          <div>
+            <dt class="font-medium text-slate-500">Job Status</dt>
+            <dd class="mt-1">
+              <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium" [class]="getStatusClasses(job.jobStatus)">
+                {{ job.jobStatus }}
+              </span>
+            </dd>
+          </div>
+
+          <div>
+            <dt class="font-medium text-slate-500">File status</dt>
+            <dd class="mt-1">
+              <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium" [class]="getFileStatusClasses(job.fileStatus)">
+                {{ job.fileStatus }}
+              </span>
+            </dd>
+          </div>
+
+          <div>
+            <dt class="font-medium text-slate-500">Message</dt>
+            <dd class="mt-1 text-slate-900">{{ job.message ?? 'No message' }}</dd>
+          </div>
+
+          <div>
+            <dt class="font-medium text-slate-500">Uploaded by</dt>
+            <dd class="mt-1 text-slate-900">{{ job.uploadedBy }}</dd>
+          </div>
+
+          <div>
+            <dt class="font-medium text-slate-500">Created</dt>
+            <dd class="mt-1 text-slate-900">{{ job.createdAt | date: 'medium' }}</dd>
+          </div>
+
+          <div>
+            <dt class="font-medium text-slate-500">Updated</dt>
+            <dd class="mt-1 text-slate-900">
+              @if (job.updatedAt) {
+                {{ job.updatedAt | date: 'medium' }}
+              } @else {
+                Not updated yet
+              }
+            </dd>
+          </div>
+        </dl>
+      } @else {
+        <p class="mt-4 text-sm text-slate-500">Select a job to view details.</p>
+      }
+    </aside>
+  </section>
+</section>

@@ -86,6 +86,7 @@ public class ReportFileService {
                 savedFile.getId(),
                 savedJob.getId(),
                 savedFile.getOriginalFilename(),
+                savedFile.getStatus().name(),
                 savedJob.getStatus().name(),
                 savedJob.getMessage()
         );
@@ -108,7 +109,15 @@ public class ReportFileService {
         String username = "analyst01";
 
         UploadedFile uploadedFile = uploadedFileRepository
-                .findByIdAndUploadedByAndStatus(fileId, username, UploadedFileStatus.STORED)
+                .findByIdAndUploadedByAndStatusIn(
+                        fileId,
+                        username,
+                        List.of(
+                                UploadedFileStatus.STORED,
+                                UploadedFileStatus.MISSING,
+                                UploadedFileStatus.FAILED
+                        )
+                )
                 .orElseThrow(() -> new IllegalArgumentException("Uploaded file not found"));
 
         fileStorageService.delete(uploadedFile.getStoragePath());
@@ -141,6 +150,7 @@ public class ReportFileService {
                 uploadedFile.getId(),
                 savedJob.getId(),
                 uploadedFile.getOriginalFilename(),
+                uploadedFile.getStatus().name(),
                 savedJob.getStatus().name(),
                 savedJob.getMessage()
         );
@@ -151,7 +161,15 @@ public class ReportFileService {
         String username = "analyst01";
 
         UploadedFile uploadedFile = uploadedFileRepository
-                .findByIdAndUploadedByAndStatus(fileId, username, UploadedFileStatus.STORED)
+                .findByIdAndUploadedByAndStatusIn(
+                        fileId,
+                        username,
+                        List.of(
+                                UploadedFileStatus.STORED,
+                                UploadedFileStatus.MISSING,
+                                UploadedFileStatus.FAILED
+                        )
+                )
                 .orElseThrow(() -> new ResourceNotFoundException("Uploaded file not found"));
 
         fileStorageService.delete(uploadedFile.getStoragePath());
@@ -161,10 +179,25 @@ public class ReportFileService {
     @Transactional(readOnly = true)
     public List<UploadedFileResponse> listUploadedFiles(String username) {
         return uploadedFileRepository
-                .findByUploadedByAndStatusOrderByUploadedAtDesc(username, UploadedFileStatus.STORED)
+                .findByUploadedByAndStatusInOrderByUploadedAtDesc(
+                        username,
+                        List.of(
+                                UploadedFileStatus.STORED,
+                                UploadedFileStatus.MISSING,
+                                UploadedFileStatus.FAILED
+                        )
+                )
                 .stream()
                 .map(this::toUploadedFileResponse)
                 .toList();
+    }
+
+    @Transactional
+    public void markUploadedFileAsMissing(UUID fileId) {
+        UploadedFile uploadedFile = uploadedFileRepository.findById(fileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Uploaded file not found"));
+
+        uploadedFile.markMissing();
     }
 
     private UploadedFileResponse toUploadedFileResponse(UploadedFile uploadedFile) {

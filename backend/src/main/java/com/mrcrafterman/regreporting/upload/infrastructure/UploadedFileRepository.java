@@ -26,4 +26,15 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, UUID
             UploadedFileStatus status
     );
 
+    List<UploadedFile> findByUploadedByAndStatusInOrderByUploadedAtDesc(
+            String uploadedBy,
+            List<UploadedFileStatus> statuses
+    );
+
+    Optional<UploadedFile> findByIdAndUploadedByAndStatusIn(
+            UUID id,
+            String uploadedBy,
+            List<UploadedFileStatus> statuses
+    );
+
 }

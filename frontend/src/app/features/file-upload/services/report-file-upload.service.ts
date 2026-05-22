@@ -36,7 +36,4 @@ export class ReportFileUploadService {
     return this.httpClient.delete<void>(`${this.endpointUrl}/${fileId}`)
   }
 
-  getDownloadUrl (fileId: string): string {
-    return `${this.endpointUrl}/${fileId}/download`
-  }
 }

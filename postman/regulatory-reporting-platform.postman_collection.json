@@ -1,511 +1,765 @@
 {
-	"info": {
-		"_postman_id": "520eb9a8-e925-4998-8c72-0844e8a37ead",
-		"name": "regulatory-reporting-platform",
-		"description": "### Welcome to Postman! This is your first collection. \n\nCollections are your starting point for building and testing APIs. You can use this one to:\n\n• Group related requests\n• Test your API in real-world scenarios\n• Document and share your requests\n\nUpdate the name and overview whenever you’re ready to make it yours.\n\n[Learn more about Postman Collections.](https://learning.postman.com/docs/collections/collections-overview/)",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "54846479",
-		"_collection_link": "https://lgbonillar-9fdab236-1700580.postman.co/workspace/65d7240c-6d4c-4e12-829b-e7dcd3adc1c1/collection/54846479-520eb9a8-e925-4998-8c72-0844e8a37ead?action=share&source=collection_link&creator=54846479"
-	},
-	"item": [
-		{
-			"name": "Report Files",
-			"item": [
-				{
-					"name": "Upload report file",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const response = pm.response.json();",
-									"",
-									"pm.test('returns 200 OK', function () {",
-									"  pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test('returns upload response', function () {",
-									"  pm.expect(response.fileId).to.be.a('string');",
-									"  pm.expect(response.jobId).to.be.a('string');",
-									"  pm.expect(response.originalFilename).to.be.a('string');",
-									"  pm.expect(response.status).to.eql('PENDING');",
-									"  pm.expect(response.message).to.eql('File uploaded successfully');",
-									"});",
-									"",
-									"pm.collectionVariables.set('fileId', response.fileId);",
-									"pm.collectionVariables.set('jobId', response.jobId);",
-									""
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"protocolProfileBehavior": {
-						"disabledSystemHeaders": {}
-					},
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "file",
-									"type": "file",
-									"src": "Lista-de-clientes-con-nombre-y-direccion.xlsx"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/report-files",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"report-files"
-							]
-						},
-						"description": "This is a POST request, submitting data to an API via the request body. This request submits JSON data, and the data is reflected in the response.\n\nA successful POST request typically returns a `200 OK` or `201 Created` response code."
-					},
-					"response": []
-				},
-				{
-					"name": "List report files by username",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const response = pm.response.json();\r",
-									"const fileId = pm.collectionVariables.get('fileId');\r",
-									"const username = pm.environment.get('username');\r",
-									"\r",
-									"pm.test('returns 200 OK', function () {\r",
-									"  pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"pm.test('returns a list', function () {\r",
-									"  pm.expect(response).to.be.an('array');\r",
-									"});\r",
-									"\r",
-									"pm.test('includes uploaded file', function () {\r",
-									"  const uploadedFile = response.find((file) => file.fileId === fileId);\r",
-									"\r",
-									"  pm.expect(uploadedFile, `Expected list to include fileId ${fileId}`).to.exist;\r",
-									"  pm.expect(uploadedFile.status).to.eql('STORED');\r",
-									"  pm.expect(uploadedFile.uploadedBy).to.eql(username);\r",
-									"});\r",
-									""
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/report-files?username={{username}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"report-files"
-							],
-							"query": [
-								{
-									"key": "username",
-									"value": "{{username}}"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Download report file",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test('returns 200 OK', function () {",
-									"  pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test('returns excel content type', function () {",
-									"  const contentType = pm.response.headers.get('Content-Type');",
-									"",
-									"  pm.expect(contentType).to.include(",
-									"    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'",
-									"  );",
-									"});",
-									"",
-									"pm.test('returns attachment header', function () {",
-									"  const contentDisposition = pm.response.headers.get('Content-Disposition');",
-									"",
-									"  pm.expect(contentDisposition).to.include('attachment');",
-									"});",
-									""
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/report-files/{{fileId}}/download",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"report-files",
-								"{{fileId}}",
-								"download"
-							]
-						},
-						"description": "This is a GET request and it is used to \"get\" data from an endpoint. There is no request body for a GET request, but you can use query parameters to help specify the resource you want data on (e.g., in this request, we have `id=1`).\n\nA successful GET response will have a `200 OK` status, and should include some kind of response body - for example, HTML web content or JSON data."
-					},
-					"response": []
-				},
-				{
-					"name": "Update report file",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const response = pm.response.json();\r",
-									"const fileId = pm.collectionVariables.get('fileId');\r",
-									"\r",
-									"pm.test('returns 200 OK', function () {\r",
-									"  pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"pm.test('updates same file record', function () {\r",
-									"  pm.expect(response.fileId).to.eql(fileId);\r",
-									"  pm.expect(response.jobId).to.be.a('string');\r",
-									"  pm.expect(response.status).to.eql('PENDING');\r",
-									"  pm.expect(response.message).to.eql('File updated successfully');\r",
-									"});\r",
-									"\r",
-									"pm.collectionVariables.set('updatedFileId', response.fileId);\r",
-									"pm.collectionVariables.set('updatedJobId', response.jobId);"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "file",
-									"type": "file",
-									"src": "Listado-de-proveedores-y-contactos.xlsx"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/report-files/{{fileId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"report-files",
-								"{{fileId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "List report files after update",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const response = pm.response.json();\r",
-									"const fileId = pm.collectionVariables.get('updatedFileId');\r",
-									"\r",
-									"pm.test('returns 200 OK', function () {\r",
-									"  pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"pm.test('updated file is still listed as stored', function () {\r",
-									"  const uploadedFile = response.find((file) => file.fileId === fileId);\r",
-									"\r",
-									"  pm.expect(uploadedFile).to.exist;\r",
-									"  pm.expect(uploadedFile.status).to.eql('STORED');\r",
-									"  pm.expect(uploadedFile.updatedAt).to.exist;\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/report-files?username={{username}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"report-files"
-							],
-							"query": [
-								{
-									"key": "username",
-									"value": "{{username}}"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete report file",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test('returns 204 No Content', function () {\r",
-									"  pm.response.to.have.status(204);\r",
-									"});\r",
-									"\r",
-									"pm.test('response body is empty', function () {\r",
-									"  pm.expect(pm.response.text()).to.eql('');\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/report-files/{{updatedFileId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"report-files",
-								"{{updatedFileId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "List report files after delete",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const response = pm.response.json();\r",
-									"const fileId = pm.collectionVariables.get('updatedFileId');\r",
-									"\r",
-									"pm.test('returns 200 OK', function () {\r",
-									"  pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"pm.test('deleted file is not listed', function () {\r",
-									"  const deletedFile = response.find((file) => file.fileId === fileId);\r",
-									"\r",
-									"  pm.expect(deletedFile).to.not.exist;\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/report-files?username={{username}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"report-files"
-							],
-							"query": [
-								{
-									"key": "username",
-									"value": "{{username}}"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete after delete",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const response = pm.response.json();\r",
-									"\r",
-									"pm.test('returns 404 Not Found', function () {\r",
-									"    pm.response.to.have.status(404);\r",
-									"});\r",
-									"\r",
-									"pm.test('returns uploaded file not found message', function () {\r",
-									"    pm.expect(response.message).to.eql('Uploaded file not found');\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/report-files/{{fileId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"report-files",
-								"{{fileId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Download deleted report file",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test('does not download deleted file', function () {\r",
-									"  pm.expect(pm.response.code).to.be.oneOf([400, 404]);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/report-files/{{updatedFileId}}/download",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"report-files",
-								"{{updatedFileId}}",
-								"download"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Health",
-			"item": []
-		},
-		{
-			"name": "Processing Jobs",
-			"item": []
-		},
-		{
-			"name": "Validation Auth",
-			"item": []
-		},
-		{
-			"name": "Users",
-			"item": []
-		}
-	],
-	"event": [
-		{
-			"listen": "prerequest",
-			"script": {
-				"type": "text/javascript",
-				"packages": {},
-				"requests": {},
-				"exec": [
-					""
-				]
-			}
-		},
-		{
-			"listen": "test",
-			"script": {
-				"type": "text/javascript",
-				"packages": {},
-				"requests": {},
-				"exec": [
-					""
-				]
-			}
-		}
-	],
-	"variable": [
-		{
-			"key": "fileId",
-			"value": ""
-		},
-		{
-			"key": "jobId",
-			"value": ""
-		},
-		{
-			"key": "updatedFileId",
-			"value": ""
-		},
-		{
-			"key": "updatedJobId",
-			"value": ""
-		}
-	]
+  "info": {
+    "_postman_id": "520eb9a8-e925-4998-8c72-0844e8a37ead",
+    "name": "regulatory-reporting-platform",
+    "description": "### Welcome to Postman! This is your first collection. \n\nCollections are your starting point for building and testing APIs. You can use this one to:\n\n• Group related requests\n• Test your API in real-world scenarios\n• Document and share your requests\n\nUpdate the name and overview whenever you’re ready to make it yours.\n\n[Learn more about Postman Collections.](https://learning.postman.com/docs/collections/collections-overview/)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "54846479",
+    "_collection_link": "https://go.postman.co/collection/54846479-520eb9a8-e925-4998-8c72-0844e8a37ead?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Report Files",
+      "item": [
+        {
+          "name": "Upload report file",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "",
+                  "pm.test('returns 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('returns upload response', function () {",
+                  "  pm.expect(response.fileId).to.be.a('string');",
+                  "  pm.expect(response.jobId).to.be.a('string');",
+                  "  pm.expect(response.originalFilename).to.be.a('string');",
+                  "  pm.expect(response.jobStatus).to.eql('PENDING');",
+                  "  pm.expect(response.fileStatus).to.eql('STORED');",
+                  "  pm.expect(response.message).to.eql('File uploaded successfully');",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('fileId', response.fileId);",
+                  "pm.collectionVariables.set('jobId', response.jobId);",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disabledSystemHeaders": {}
+          },
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "Lista-de-clientes-con-nombre-y-direccion.xlsx"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/report-files",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "report-files"
+              ]
+            },
+            "description": "This is a POST request, submitting data to an API via the request body. This request submits JSON data, and the data is reflected in the response.\n\nA successful POST request typically returns a `200 OK` or `201 Created` response code."
+          },
+          "response": []
+        },
+        {
+          "name": "List report files by username",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();\r",
+                  "const fileId = pm.collectionVariables.get('fileId');\r",
+                  "const username = pm.environment.get('username');\r",
+                  "\r",
+                  "pm.test('returns 200 OK', function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('returns a list', function () {\r",
+                  "  pm.expect(response).to.be.an('array');\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('includes uploaded file', function () {\r",
+                  "  const uploadedFile = response.find((file) => file.fileId === fileId);\r",
+                  "\r",
+                  "  pm.expect(uploadedFile, `Expected list to include fileId ${fileId}`).to.exist;\r",
+                  "  pm.expect(uploadedFile.fileStatus).to.eql('STORED');\r",
+                  "  pm.expect(uploadedFile.uploadedBy).to.eql(username);\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/report-files?username={{username}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "report-files"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{username}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download report file",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('returns 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('returns excel content type', function () {",
+                  "  const contentType = pm.response.headers.get('Content-Type');",
+                  "",
+                  "  pm.expect(contentType).to.include(",
+                  "    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'",
+                  "  );",
+                  "});",
+                  "",
+                  "pm.test('returns attachment header', function () {",
+                  "  const contentDisposition = pm.response.headers.get('Content-Disposition');",
+                  "",
+                  "  pm.expect(contentDisposition).to.include('attachment');",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/report-files/{{fileId}}/download",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "report-files",
+                "{{fileId}}",
+                "download"
+              ]
+            },
+            "description": "This is a GET request and it is used to \"get\" data from an endpoint. There is no request body for a GET request, but you can use query parameters to help specify the resource you want data on (e.g., in this request, we have `id=1`).\n\nA successful GET response will have a `200 OK` status, and should include some kind of response body - for example, HTML web content or JSON data."
+          },
+          "response": []
+        },
+        {
+          "name": "Update report file",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();\r",
+                  "const fileId = pm.collectionVariables.get('fileId');\r",
+                  "\r",
+                  "pm.test('returns 200 OK', function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('updates same file record', function () {\r",
+                  "  pm.expect(response.fileId).to.eql(fileId);\r",
+                  "  pm.expect(response.jobId).to.be.a('string');\r",
+                  "  pm.expect(response.jobStatus).to.eql('PENDING');\r",
+                  "  pm.expect(response.fileStatus).to.eql('STORED');\r",
+                  "  pm.expect(response.message).to.eql('File updated successfully');\r",
+                  "});\r",
+                  "\r",
+                  "pm.collectionVariables.set('updatedFileId', response.fileId);\r",
+                  "pm.collectionVariables.set('updatedJobId', response.jobId);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "uuid": "15b6fce4-c050-4d48-9e4e-392ebd00c37d",
+                  "src": "Listado-de-proveedores-y-contactos.xlsx"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/report-files/{{fileId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "report-files",
+                "{{fileId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List report files after update",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();\r",
+                  "const fileId = pm.collectionVariables.get('updatedFileId');\r",
+                  "\r",
+                  "pm.test('returns 200 OK', function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('updated file is still listed as stored', function () {\r",
+                  "  const uploadedFile = response.find((file) => file.fileId === fileId);\r",
+                  "\r",
+                  "  pm.expect(uploadedFile).to.exist;\r",
+                  "  pm.expect(uploadedFile.fileStatus).to.eql('STORED');\r",
+                  "  pm.expect(uploadedFile.updatedAt).to.exist;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/report-files?username={{username}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "report-files"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{username}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete report file",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('returns 204 No Content', function () {\r",
+                  "  pm.response.to.have.status(204);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('response body is empty', function () {\r",
+                  "  pm.expect(pm.response.text()).to.eql('');\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/report-files/{{updatedFileId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "report-files",
+                "{{updatedFileId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List report files after delete",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();\r",
+                  "const fileId = pm.collectionVariables.get('updatedFileId');\r",
+                  "\r",
+                  "pm.test('returns 200 OK', function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('deleted file is not listed', function () {\r",
+                  "  const deletedFile = response.find((file) => file.fileId === fileId);\r",
+                  "\r",
+                  "  pm.expect(deletedFile).to.not.exist;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/report-files?username={{username}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "report-files"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{username}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete after delete",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();\r",
+                  "\r",
+                  "pm.test('returns 404 Not Found', function () {\r",
+                  "    pm.response.to.have.status(404);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('returns uploaded file not found message', function () {\r",
+                  "    pm.expect(response.message).to.eql('Uploaded file not found');\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/report-files/{{fileId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "report-files",
+                "{{fileId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download deleted report file",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('does not download deleted file', function () {\r",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 404]);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/report-files/{{updatedFileId}}/download",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "report-files",
+                "{{updatedFileId}}",
+                "download"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": []
+    },
+    {
+      "name": "Processing Jobs",
+      "item": [
+        {
+          "name": "List processing jobs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();\r",
+                  "\r",
+                  "pm.test('returns 200 OK', function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('returns a list', function () {\r",
+                  "  pm.expect(response).to.be.an('array');\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('each job has required fields', function () {\r",
+                  "  response.forEach((job) => {\r",
+                  "    pm.expect(job).to.have.property('jobId');\r",
+                  "    pm.expect(job).to.have.property('fileId');\r",
+                  "    pm.expect(job).to.have.property('originalFilename');\r",
+                  "    pm.expect(job).to.have.property('jobStatus');\r",
+                  "    pm.expect(job).to.have.property('message');\r",
+                  "    pm.expect(job).to.have.property('uploadedBy');\r",
+                  "    pm.expect(job).to.have.property('createdAt');\r",
+                  "  });\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('job statuses are valid', function () {\r",
+                  "  const validStatuses = ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'];\r",
+                  "\r",
+                  "  response.forEach((job) => {\r",
+                  "    pm.expect(validStatuses).to.include(job.jobStatus);\r",
+                  "  });\r",
+                  "});\r",
+                  "\r",
+                  "if (response.length > 0) {\r",
+                  "  pm.collectionVariables.set('jobId', response[0].jobId);\r",
+                  "  pm.collectionVariables.set('fileId', response[0].fileId);\r",
+                  "}\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/processing-jobs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "processing-jobs"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List processing jobs by username",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();\r",
+                  "const username = pm.environment.get('username');\r",
+                  "\r",
+                  "pm.test('returns 200 OK', function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('returns a list', function () {\r",
+                  "  pm.expect(response).to.be.an('array');\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('all jobs belong to requested username', function () {\r",
+                  "  response.forEach((job) => {\r",
+                  "    pm.expect(job.uploadedBy).to.eql(username);\r",
+                  "  });\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('each job has required fields', function () {\r",
+                  "  response.forEach((job) => {\r",
+                  "    pm.expect(job).to.have.property('jobId');\r",
+                  "    pm.expect(job).to.have.property('fileId');\r",
+                  "    pm.expect(job).to.have.property('originalFilename');\r",
+                  "    pm.expect(job).to.have.property('jobStatus');\r",
+                  "    pm.expect(job).to.have.property('message');\r",
+                  "    pm.expect(job).to.have.property('uploadedBy');\r",
+                  "    pm.expect(job).to.have.property('createdAt');\r",
+                  "  });\r",
+                  "});\r",
+                  "\r",
+                  "if (response.length > 0) {\r",
+                  "  pm.collectionVariables.set('jobId', response[0].jobId);\r",
+                  "  pm.collectionVariables.set('fileId', response[0].fileId);\r",
+                  "}\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/processing-jobs?username={{username}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "processing-jobs"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{username}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get processing job by id",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const jobId = pm.collectionVariables.get('jobId');\r",
+                  "\r",
+                  "if (!jobId) {\r",
+                  "  throw new Error('Missing collection variable: jobId. Run List processing jobs first.');\r",
+                  "}\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();\r",
+                  "const jobId = pm.collectionVariables.get('jobId');\r",
+                  "\r",
+                  "pm.test('returns 200 OK', function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('returns requested job', function () {\r",
+                  "  pm.expect(response.jobId).to.eql(jobId);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('has required fields', function () {\r",
+                  "  pm.expect(response).to.have.property('jobId');\r",
+                  "  pm.expect(response).to.have.property('fileId');\r",
+                  "  pm.expect(response).to.have.property('originalFilename');\r",
+                  "  pm.expect(response).to.have.property('jobStatus');\r",
+                  "  pm.expect(response).to.have.property('message');\r",
+                  "  pm.expect(response).to.have.property('uploadedBy');\r",
+                  "  pm.expect(response).to.have.property('createdAt');\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('job status is valid', function () {\r",
+                  "  const validStatuses = ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'];\r",
+                  "\r",
+                  "  pm.expect(validStatuses).to.include(response.jobStatus);\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/processing-jobs/{{jobId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "processing-jobs",
+                "{{jobId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get missing processing job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();\r",
+                  "\r",
+                  "pm.test('returns 404 Not Found', function () {\r",
+                  "  pm.response.to.have.status(404);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('returns expected error message', function () {\r",
+                  "  pm.expect(response.message).to.eql('Processing job not found');\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/processing-jobs/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "processing-jobs",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Validation Auth",
+      "item": []
+    },
+    {
+      "name": "Users",
+      "item": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "fileId",
+      "value": ""
+    },
+    {
+      "key": "jobId",
+      "value": ""
+    },
+    {
+      "key": "updatedFileId",
+      "value": ""
+    },
+    {
+      "key": "updatedJobId",
+      "value": ""
+    }
+  ]
 }

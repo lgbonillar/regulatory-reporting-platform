@@ -2,6 +2,8 @@ import { DatePipe } from '@angular/common'
 import { HttpErrorResponse } from '@angular/common/http'
 import { Component, computed, inject, OnInit, signal } from '@angular/core'
 
+import { FileStatus } from '../../../../core/regulatory.model'
+import { FileDownloadLink } from '../../../../shared/components/file-download-link/file-download-link'
 import { ReportFileUploadResponse, UploadedFileResponse } from '../../models/report-file-upload.model'
 import { ReportFileUploadService } from '../../services/report-file-upload.service'
 
@@ -11,7 +13,7 @@ const FIRST_FILE_INDEX = 0
 
 @Component({
   selector: 'app-upload-report-page',
-  imports: [ DatePipe ],
+  imports: [ DatePipe, FileDownloadLink ],
   templateUrl: './upload-report-page.html'
 })
 export class UploadReportPage implements OnInit {
@@ -123,8 +125,15 @@ export class UploadReportPage implements OnInit {
     })
   }
 
-  protected getDownloadUrl (fileId: string): string {
-    return this.reportFileUploadService.getDownloadUrl(fileId)
+  protected getFileStatusClasses (status: FileStatus): string {
+    const classesByStatus: Record<FileStatus, string> = {
+      STORED: 'bg-emerald-50 text-emerald-700',
+      MISSING: 'bg-amber-50 text-amber-700',
+      FAILED: 'bg-red-50 text-red-700',
+      DELETED: 'bg-slate-100 text-slate-600'
+    }
+
+    return classesByStatus[status]
   }
 
   protected isFileActionRunning (fileId: string): boolean {

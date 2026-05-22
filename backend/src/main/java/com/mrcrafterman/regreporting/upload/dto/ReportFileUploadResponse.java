@@ -6,7 +6,8 @@ public record ReportFileUploadResponse(
         UUID fileId,
         UUID jobId,
         String originalFilename,
-        String status,
+        String fileStatus,
+        String jobStatus,
         String message
 ) {
 }

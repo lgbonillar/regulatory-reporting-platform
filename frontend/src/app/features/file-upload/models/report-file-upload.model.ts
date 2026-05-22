@@ -1,8 +1,11 @@
+import { FileStatus, ProcessingJobStatus } from '../../../core/regulatory.model'
+
 export interface ReportFileUploadResponse {
   fileId: string
   jobId: string
   originalFilename: string
-  status: string
+  fileStatus: FileStatus
+  jobStatus: ProcessingJobStatus
   message: string
 }
 
@@ -13,7 +16,7 @@ export interface UploadedFileResponse {
   contentType: string | null
   fileSize: number
   checksum: string
-  status: string
+  fileStatus: FileStatus
   uploadedBy: string
   uploadedAt: string
   updatedAt: string | null

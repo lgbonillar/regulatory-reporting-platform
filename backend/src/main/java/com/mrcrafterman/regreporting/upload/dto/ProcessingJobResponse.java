@@ -3,16 +3,15 @@ package com.mrcrafterman.regreporting.upload.dto;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public record UploadedFileResponse(
+public record ProcessingJobResponse (
+        UUID jobId,
         UUID fileId,
         String originalFilename,
-        String storedFilename,
-        String contentType,
-        long fileSize,
-        String checksum,
         String fileStatus,
+        String jobStatus,
+        String message,
         String uploadedBy,
-        LocalDateTime uploadedAt,
+        LocalDateTime createdAt,
         LocalDateTime updatedAt
-) {
+){
 }

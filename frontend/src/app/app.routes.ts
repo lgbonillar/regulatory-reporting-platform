@@ -9,5 +9,9 @@ export const routes: Routes = [
   {
     path: 'report-files/upload',
     loadChildren: () => import('./features/file-upload/file-upload.routes').then((routes) => routes.FILE_UPLOAD_ROUTES)
+  },
+  {
+    path: 'processing-jobs',
+    loadChildren: () => import('./features/processing-jobs/processing-jobs.routes').then((routes) => routes.PROCESSING_JOBS_ROUTES)
   }
 ]
