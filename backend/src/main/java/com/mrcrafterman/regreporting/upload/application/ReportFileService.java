@@ -4,7 +4,6 @@ import com.mrcrafterman.regreporting.shared.BusinessConflictException;
 import com.mrcrafterman.regreporting.shared.ResourceNotFoundException;
 import com.mrcrafterman.regreporting.upload.domain.ProcessingJob;
 import com.mrcrafterman.regreporting.upload.domain.ProcessingJobStatus;
-import com.mrcrafterman.regreporting.upload.domain.ProcessingJobStatusHistory;
 import com.mrcrafterman.regreporting.upload.domain.ProcessingJobTransitionSource;
 import com.mrcrafterman.regreporting.upload.domain.UploadedFile;
 import com.mrcrafterman.regreporting.upload.domain.UploadedFileStatus;
@@ -12,8 +11,8 @@ import com.mrcrafterman.regreporting.upload.dto.ReportFileUploadResponse;
 import com.mrcrafterman.regreporting.upload.dto.StoredFile;
 import com.mrcrafterman.regreporting.upload.dto.UploadedFileResponse;
 import com.mrcrafterman.regreporting.upload.infrastructure.ProcessingJobRepository;
-import com.mrcrafterman.regreporting.upload.infrastructure.ProcessingJobStatusHistoryRepository;
 import com.mrcrafterman.regreporting.upload.infrastructure.UploadedFileRepository;
+import com.mrcrafterman.regreporting.users.application.CurrentUserProvider;
 import com.mrcrafterman.regreporting.users.domain.User;
 import com.mrcrafterman.regreporting.users.infrastructure.UserRepository;
 import org.springframework.stereotype.Service;
@@ -27,29 +26,32 @@ import java.util.UUID;
 @Service
 public class ReportFileService {
 
+    private final CurrentUserProvider currentUserProvider;
     private final FileStorageService fileStorageService;
     private final UploadedFileRepository uploadedFileRepository;
     private final ProcessingJobRepository processingJobRepository;
+    private final ProcessingJobHistoryService processingJobHistoryService;
     private final UserRepository userRepository;
-    private final ProcessingJobStatusHistoryRepository processingJobStatusHistoryRepository;
 
     public ReportFileService(
+            CurrentUserProvider currentUserProvider,
             FileStorageService fileStorageService,
             UploadedFileRepository uploadedFileRepository,
             ProcessingJobRepository processingJobRepository,
-            UserRepository userRepository,
-            ProcessingJobStatusHistoryRepository processingJobStatusHistoryRepository
+            ProcessingJobHistoryService processingJobHistoryService,
+            UserRepository userRepository
     ) {
+        this.currentUserProvider = currentUserProvider;
         this.fileStorageService = fileStorageService;
         this.uploadedFileRepository = uploadedFileRepository;
         this.processingJobRepository = processingJobRepository;
+        this.processingJobHistoryService = processingJobHistoryService;
         this.userRepository = userRepository;
-        this.processingJobStatusHistoryRepository = processingJobStatusHistoryRepository;
     }
 
     @Transactional
     public ReportFileUploadResponse uploadReportFile(MultipartFile file) {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserProvider.getCurrentUser();
         String username = currentUser.getUsername();
         String originalFilename = Objects.requireNonNull(file.getOriginalFilename());
 
@@ -109,15 +111,13 @@ public class ReportFileService {
                     new ProcessingJob(savedFile, "File uploaded successfully")
             );
 
-            processingJobStatusHistoryRepository.save(
-                    new ProcessingJobStatusHistory(
-                            processingJob,
-                            null,
-                            ProcessingJobStatus.PENDING_EXECUTION,
-                            ProcessingJobTransitionSource.USER,
-                            currentUser,
-                            "File uploaded and queued for execution"
-                    )
+            processingJobHistoryService.recordTransition(
+                    processingJob,
+                    null,
+                    ProcessingJobStatus.PENDING_EXECUTION,
+                    ProcessingJobTransitionSource.USER,
+                    currentUser,
+                    "File uploaded and queued for execution"
             );
         } else {
             existingJob.markPendingExecution("File replaced successfully");
@@ -148,7 +148,7 @@ public class ReportFileService {
 
     @Transactional
     public ReportFileUploadResponse updateReportFile(UUID fileId, MultipartFile file) {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserProvider.getCurrentUser();
         String username = currentUser.getUsername();
 
         UploadedFile uploadedFile = uploadedFileRepository
@@ -207,7 +207,7 @@ public class ReportFileService {
 
     @Transactional
     public void deleteUploadedFile(UUID fileId) {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserProvider.getCurrentUser();
 
         UploadedFile uploadedFile = uploadedFileRepository
                 .findByIdAndUploadedByIdAndStatusIn(
@@ -263,11 +263,6 @@ public class ReportFileService {
                 .orElseThrow(() -> new ResourceNotFoundException("Uploaded file not found"));
 
         uploadedFile.markMissing();
-    }
-
-    private User getCurrentUser() {
-        return userRepository.findByUsername("analyst01")
-                .orElseThrow(() -> new IllegalStateException("Current development user not found"));
     }
 
     private UploadedFileResponse toUploadedFileResponse(UploadedFile uploadedFile) {

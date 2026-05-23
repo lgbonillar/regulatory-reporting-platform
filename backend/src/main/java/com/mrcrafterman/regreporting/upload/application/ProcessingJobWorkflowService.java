@@ -4,8 +4,8 @@ import com.mrcrafterman.regreporting.upload.domain.ProcessingJob;
 import com.mrcrafterman.regreporting.upload.domain.ProcessingJobStatus;
 import com.mrcrafterman.regreporting.upload.domain.ProcessingJobTransitionSource;
 import com.mrcrafterman.regreporting.upload.dto.ProcessingJobResponse;
+import com.mrcrafterman.regreporting.users.application.CurrentUserProvider;
 import com.mrcrafterman.regreporting.users.domain.User;
-import com.mrcrafterman.regreporting.users.infrastructure.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,16 +16,16 @@ public class ProcessingJobWorkflowService {
 
     private final ProcessingJobQueryService processingJobQueryService;
     private final ProcessingJobHistoryService processingJobHistoryService;
-    private final UserRepository userRepository;
+    private final CurrentUserProvider currentUserProvider;
 
     public ProcessingJobWorkflowService(
             ProcessingJobQueryService processingJobQueryService,
             ProcessingJobHistoryService processingJobHistoryService,
-            UserRepository userRepository
+            CurrentUserProvider currentUserProvider
     ) {
         this.processingJobQueryService = processingJobQueryService;
         this.processingJobHistoryService = processingJobHistoryService;
-        this.userRepository = userRepository;
+        this.currentUserProvider = currentUserProvider;
     }
 
     @Transactional
@@ -33,7 +33,7 @@ public class ProcessingJobWorkflowService {
         ProcessingJob job = processingJobQueryService.getJob(jobId);
         job.getUploadedFile().ensureCanBeProcessed();
 
-        User administrator = getCurrentAdministrator();
+        User administrator = currentUserProvider.getCurrentAdministrator();
         ProcessingJobStatus previousStatus = job.getStatus();
 
         job.startProcessing(administrator);
@@ -95,7 +95,7 @@ public class ProcessingJobWorkflowService {
         ProcessingJob job = processingJobQueryService.getJob(jobId);
         job.getUploadedFile().ensureCanBeProcessed();
 
-        User administrator = getCurrentAdministrator();
+        User administrator = currentUserProvider.getCurrentAdministrator();
         ProcessingJobStatus previousStatus = job.getStatus();
 
         job.approve(administrator);
@@ -115,7 +115,7 @@ public class ProcessingJobWorkflowService {
     @Transactional
     public ProcessingJobResponse reject(UUID jobId, String reason) {
         ProcessingJob job = processingJobQueryService.getJob(jobId);
-        User administrator = getCurrentAdministrator();
+        User administrator = currentUserProvider.getCurrentAdministrator();
         ProcessingJobStatus previousStatus = job.getStatus();
 
         job.reject(administrator, reason);
@@ -135,7 +135,7 @@ public class ProcessingJobWorkflowService {
     @Transactional
     public ProcessingJobResponse revoke(UUID jobId, String reason) {
         ProcessingJob job = processingJobQueryService.getJob(jobId);
-        User administrator = getCurrentAdministrator();
+        User administrator = currentUserProvider.getCurrentAdministrator();
         ProcessingJobStatus previousStatus = job.getStatus();
 
         job.revoke(administrator, reason);
@@ -150,13 +150,6 @@ public class ProcessingJobWorkflowService {
         );
 
         return processingJobQueryService.toProcessingJobResponse(job);
-    }
-
-    private User getCurrentAdministrator() {
-        return userRepository.findByUsername("admin01")
-                .orElseThrow(() -> new IllegalStateException(
-                        "Current development administrator not found"
-                ));
     }
 
 }
