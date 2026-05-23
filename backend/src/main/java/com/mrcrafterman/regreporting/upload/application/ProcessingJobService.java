@@ -7,6 +7,7 @@ import com.mrcrafterman.regreporting.upload.domain.ProcessingJobStatusHistory;
 import com.mrcrafterman.regreporting.upload.domain.ProcessingJobTransitionSource;
 import com.mrcrafterman.regreporting.upload.domain.UploadedFile;
 import com.mrcrafterman.regreporting.upload.dto.ProcessingJobResponse;
+import com.mrcrafterman.regreporting.upload.dto.ProcessingJobStatusHistoryResponse;
 import com.mrcrafterman.regreporting.upload.infrastructure.ProcessingJobRepository;
 import com.mrcrafterman.regreporting.upload.infrastructure.ProcessingJobStatusHistoryRepository;
 import com.mrcrafterman.regreporting.users.domain.User;
@@ -171,6 +172,19 @@ public class ProcessingJobService {
         return toProcessingJobResponse(job);
     }
 
+    @Transactional(readOnly = true)
+    public List<ProcessingJobStatusHistoryResponse> getProcessingJobHistory(UUID jobId) {
+        if (!processingJobRepository.existsById(jobId)) {
+            throw new ResourceNotFoundException("Processing job not found");
+        }
+
+        return processingJobStatusHistoryRepository
+                .findByProcessingJobIdOrderByCreatedAtAsc(jobId)
+                .stream()
+                .map(this::toProcessingJobStatusHistoryResponse)
+                .toList();
+    }
+
     private ProcessingJobResponse toProcessingJobResponse(ProcessingJob processingJob) {
         UploadedFile uploadedFile = processingJob.getUploadedFile();
 
@@ -184,6 +198,24 @@ public class ProcessingJobService {
                 uploadedFile.getUploadedBy().getUsername(),
                 processingJob.getCreatedAt(),
                 processingJob.getUpdatedAt()
+        );
+    }
+
+    private ProcessingJobStatusHistoryResponse toProcessingJobStatusHistoryResponse(
+            ProcessingJobStatusHistory history
+    ) {
+        return new ProcessingJobStatusHistoryResponse(
+                history.getId(),
+                history.getPreviousStatus() == null
+                        ? null
+                        : history.getPreviousStatus().name(),
+                history.getNewStatus().name(),
+                history.getTransitionSource().name(),
+                history.getTransitionedBy() == null
+                        ? null
+                        : history.getTransitionedBy().getUsername(),
+                history.getReason(),
+                history.getCreatedAt()
         );
     }
 

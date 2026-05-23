@@ -4,6 +4,7 @@ import com.mrcrafterman.regreporting.upload.application.ProcessingJobService;
 import com.mrcrafterman.regreporting.upload.dto.ProcessingJobFailureRequest;
 import com.mrcrafterman.regreporting.upload.dto.ProcessingJobReasonRequest;
 import com.mrcrafterman.regreporting.upload.dto.ProcessingJobResponse;
+import com.mrcrafterman.regreporting.upload.dto.ProcessingJobStatusHistoryResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -83,6 +84,15 @@ public class ProcessingJobController {
     ) {
         return ResponseEntity.ok(
                 processingJobService.revoke(jobId, request.reason())
+        );
+    }
+
+    @GetMapping("/{jobId}/history")
+    public ResponseEntity<List<ProcessingJobStatusHistoryResponse>> getProcessingJobHistory(
+            @PathVariable UUID jobId
+    ) {
+        return ResponseEntity.ok(
+                processingJobService.getProcessingJobHistory(jobId)
         );
     }
 
