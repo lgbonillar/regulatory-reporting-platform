@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms'
 
 import { FileStatus, ProcessingJobStatus } from '../../../../core/regulatory.model'
 import { FileDownloadLink } from '../../../../shared/components/file-download-link/file-download-link'
-import { ProcessingJobResponse } from '../../models/processing-job.model'
+import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../../models/processing-job.model'
 import { ProcessingJobService } from '../../services/processing-job.service'
 
 const CURRENT_USERNAME = 'analyst01'
@@ -17,17 +17,23 @@ const FIRST_FILE_INDEX = 0
   templateUrl: './processing-jobs-page.html'
 })
 export class ProcessingJobsPage implements OnInit {
+
   private readonly processingJobService = inject(ProcessingJobService)
 
   protected readonly jobs = signal<ProcessingJobResponse[]>([])
   protected readonly selectedJob = signal<ProcessingJobResponse | null>(null)
+  protected readonly selectedJobHistory = signal<ProcessingJobStatusHistoryResponse[]>([])
   protected readonly selectedStatuses = signal<Set<ProcessingJobStatus>>(new Set())
   protected readonly isStatusFilterOpen = signal(false)
   protected readonly errorMessage = signal<string | null>(null)
+  protected readonly historyErrorMessage = signal<string | null>(null)
   protected readonly isLoading = signal(false)
+  protected readonly isHistoryLoading = signal(false)
+  protected readonly isActionRunning = signal(false)
   protected readonly filterUsername = signal('')
   protected readonly currentUsername = CURRENT_USERNAME
   protected readonly selectedStatusCount = computed(() => this.selectedStatuses().size)
+
   protected readonly statusOptions: readonly ProcessingJobStatus[] = [
     'PENDING_EXECUTION',
     'PROCESSING',
@@ -74,7 +80,7 @@ export class ProcessingJobsPage implements OnInit {
       : false
 
     if (!currentJobRemainsVisible) {
-      this.selectedJob.set(visibleJobs.at(FIRST_FILE_INDEX) ?? null)
+      this.setSelectedJob(visibleJobs.at(FIRST_FILE_INDEX) ?? null)
     }
   }
 
@@ -84,7 +90,7 @@ export class ProcessingJobsPage implements OnInit {
 
   protected clearStatusFilters (): void {
     this.selectedStatuses.set(new Set())
-    this.selectedJob.set(this.jobs().at(FIRST_FILE_INDEX) ?? null)
+    this.setSelectedJob(this.jobs().at(FIRST_FILE_INDEX) ?? null)
   }
 
   protected onStatusFilterChange (event: Event, status: ProcessingJobStatus): void {
@@ -118,7 +124,59 @@ export class ProcessingJobsPage implements OnInit {
   }
 
   protected selectJob (job: ProcessingJobResponse): void {
-    this.selectedJob.set(job)
+    this.setSelectedJob(job)
+  }
+
+  protected startSelectedJob (): void {
+    const job = this.selectedJob()
+
+    if (!job) {
+      return
+    }
+
+    this.runJobAction(this.processingJobService.startProcessing(job.jobId))
+  }
+
+  protected approveSelectedJob (): void {
+    const job = this.selectedJob()
+
+    if (!job) {
+      return
+    }
+
+    this.runJobAction(this.processingJobService.approve(job.jobId))
+  }
+
+  protected rejectSelectedJob (): void {
+    const job = this.selectedJob()
+
+    if (!job) {
+      return
+    }
+
+    const reason = window.prompt('Reason for rejection')?.trim()
+
+    if (!reason) {
+      return
+    }
+
+    this.runJobAction(this.processingJobService.reject(job.jobId, reason))
+  }
+
+  protected revokeSelectedJob (): void {
+    const job = this.selectedJob()
+
+    if (!job) {
+      return
+    }
+
+    const reason = window.prompt('Reason for revocation')?.trim()
+
+    if (!reason) {
+      return
+    }
+
+    this.runJobAction(this.processingJobService.revoke(job.jobId, reason))
   }
 
   protected getStatusClasses (status: ProcessingJobStatus): string {
@@ -160,6 +218,14 @@ export class ProcessingJobsPage implements OnInit {
     return labelsByStatus[status]
   }
 
+  protected getTransitionActorLabel (history: ProcessingJobStatusHistoryResponse): string {
+    if (history.transitionSource === 'SYSTEM') {
+      return 'System'
+    }
+
+    return history.transitionedBy ?? 'Unknown user'
+  }
+
   private loadJobs (username?: string): void {
     this.isLoading.set(true)
     this.errorMessage.set(null)
@@ -171,13 +237,66 @@ export class ProcessingJobsPage implements OnInit {
     request.subscribe({
       next: (jobs) => {
         this.jobs.set(jobs)
-        this.selectedJob.set(jobs.at(FIRST_FILE_INDEX) ?? null)
+        this.setSelectedJob(jobs.at(FIRST_FILE_INDEX) ?? null)
       },
       error: (error: unknown) => {
         this.errorMessage.set(this.resolveErrorMessage(error))
+        this.isLoading.set(false)
       },
       complete: () => {
         this.isLoading.set(false)
+      }
+    })
+  }
+
+  private setSelectedJob (job: ProcessingJobResponse | null): void {
+    this.selectedJob.set(job)
+
+    if (!job) {
+      this.selectedJobHistory.set([])
+      this.historyErrorMessage.set(null)
+      return
+    }
+
+    this.loadSelectedJobHistory(job.jobId)
+  }
+
+  private loadSelectedJobHistory (jobId: string): void {
+    this.isHistoryLoading.set(true)
+    this.historyErrorMessage.set(null)
+
+    this.processingJobService.getProcessingJobHistory(jobId).subscribe({
+      next: (history) => {
+        this.selectedJobHistory.set(history)
+      },
+      error: (error: unknown) => {
+        this.selectedJobHistory.set([])
+        this.historyErrorMessage.set(this.resolveErrorMessage(error))
+        this.isHistoryLoading.set(false)
+      },
+      complete: () => {
+        this.isHistoryLoading.set(false)
+      }
+    })
+  }
+
+  private runJobAction (request: ReturnType<ProcessingJobService['startProcessing']>): void {
+    this.isActionRunning.set(true)
+    this.errorMessage.set(null)
+
+    request.subscribe({
+      next: (updatedJob) => {
+        this.jobs.update((jobs) =>
+          jobs.map((job) => job.jobId === updatedJob.jobId ? updatedJob : job)
+        )
+        this.setSelectedJob(updatedJob)
+      },
+      error: (error: unknown) => {
+        this.errorMessage.set(this.resolveErrorMessage(error))
+        this.isActionRunning.set(false)
+      },
+      complete: () => {
+        this.isActionRunning.set(false)
       }
     })
   }
@@ -189,4 +308,5 @@ export class ProcessingJobsPage implements OnInit {
 
     return 'Unexpected error. Please try again.'
   }
+  
 }
