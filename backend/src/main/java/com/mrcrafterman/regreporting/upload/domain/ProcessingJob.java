@@ -1,10 +1,10 @@
 package com.mrcrafterman.regreporting.upload.domain;
 
+import com.mrcrafterman.regreporting.shared.BusinessConflictException;
 import com.mrcrafterman.regreporting.users.domain.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -12,7 +12,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "processing_jobs")
 @Getter
-@Setter
 @NoArgsConstructor
 public class ProcessingJob {
 
@@ -84,13 +83,103 @@ public class ProcessingJob {
     }
 
     public void markPendingExecution(String message) {
-        this.status = ProcessingJobStatus.PENDING_EXECUTION;
+        requireStatus(ProcessingJobStatus.PENDING_EXECUTION, "update the pending file");
+
         this.message = message;
         this.updatedAt = LocalDateTime.now();
     }
 
     public boolean allowsFileModification() {
         return this.status == ProcessingJobStatus.PENDING_EXECUTION;
+    }
+
+    public void startProcessing(User administrator) {
+        requireAdministrator(administrator);
+        requireStatus(ProcessingJobStatus.PENDING_EXECUTION, "start processing");
+
+        this.status = ProcessingJobStatus.PROCESSING;
+        this.triggeredBy = administrator;
+        this.triggeredAt = LocalDateTime.now();
+        this.message = "Processing started";
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void markProcessingCompleted() {
+        requireStatus(ProcessingJobStatus.PROCESSING, "complete processing");
+
+        this.status = ProcessingJobStatus.AWAITING_APPROVAL;
+        this.processingCompletedAt = LocalDateTime.now();
+        this.failureReason = null;
+        this.message = "Processing completed; awaiting administrator approval";
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void markProcessingFailed(String reason) {
+        requireStatus(ProcessingJobStatus.PROCESSING, "fail processing");
+        requireReason(reason, "Failure reason is required");
+
+        this.status = ProcessingJobStatus.PROCESSING_FAILED;
+        this.processingCompletedAt = LocalDateTime.now();
+        this.failureReason = reason.trim();
+        this.message = "Processing failed";
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void approve(User administrator) {
+        requireAdministrator(administrator);
+        requireStatus(ProcessingJobStatus.AWAITING_APPROVAL, "approve");
+
+        this.status = ProcessingJobStatus.APPROVED;
+        this.approvedBy = administrator;
+        this.approvedAt = LocalDateTime.now();
+        this.message = "Submission approved";
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void reject(User administrator, String reason) {
+        requireAdministrator(administrator);
+        requireStatus(ProcessingJobStatus.AWAITING_APPROVAL, "reject");
+        requireReason(reason, "Rejection reason is required");
+
+        this.status = ProcessingJobStatus.REJECTED;
+        this.rejectedBy = administrator;
+        this.rejectedAt = LocalDateTime.now();
+        this.rejectionReason = reason.trim();
+        this.message = "Submission rejected";
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void revoke(User administrator, String reason) {
+        requireAdministrator(administrator);
+        requireStatus(ProcessingJobStatus.APPROVED, "revoke");
+        requireReason(reason, "Revocation reason is required");
+
+        this.status = ProcessingJobStatus.REVOKED;
+        this.revokedBy = administrator;
+        this.revokedAt = LocalDateTime.now();
+        this.revocationReason = reason.trim();
+        this.message = "Previously approved submission revoked";
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    private void requireStatus(ProcessingJobStatus requiredStatus, String action) {
+        if (this.status != requiredStatus) {
+            throw new BusinessConflictException(
+                    "Cannot " + action + " processing job in state " + this.status
+            );
+        }
+    }
+
+    private void requireAdministrator(User administrator) {
+        if (administrator == null) {
+            throw new IllegalArgumentException("Administrator is required");
+        }
+    }
+
+    private void requireReason(String reason, String message) {
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException(message);
+        }
     }
 
 }
