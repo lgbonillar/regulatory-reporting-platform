@@ -22,12 +22,12 @@ public interface ProcessingJobRepository extends JpaRepository<ProcessingJob, UU
     List<ProcessingJob> findAllWithUploadedFile();
 
     @Query("""
-            SELECT job
-            FROM ProcessingJob job
-            JOIN FETCH job.uploadedFile uploadedFile
-            WHERE uploadedFile.uploadedBy = :username
-            ORDER BY job.createdAt DESC
-            """)
+          SELECT job
+          FROM ProcessingJob job
+          JOIN FETCH job.uploadedFile uploadedFile
+          WHERE uploadedFile.uploadedBy.username = :username
+          ORDER BY job.createdAt DESC
+          """)
     List<ProcessingJob> findAllByUsername(@Param("username") String username);
 
     @Query("""

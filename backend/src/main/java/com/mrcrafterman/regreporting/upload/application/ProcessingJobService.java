@@ -48,7 +48,7 @@ public class ProcessingJobService {
                 uploadedFile.getStatus().name(),
                 processingJob.getStatus().name(),
                 processingJob.getMessage(),
-                uploadedFile.getUploadedBy(),
+                uploadedFile.getUploadedBy().getUsername(),
                 processingJob.getCreatedAt(),
                 processingJob.getUpdatedAt()
         );

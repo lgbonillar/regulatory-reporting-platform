@@ -10,30 +10,19 @@ import java.util.UUID;
 
 public interface UploadedFileRepository extends JpaRepository<UploadedFile, UUID> {
 
-    Optional<UploadedFile> findByUploadedByAndOriginalFilename(
-            String uploadedBy,
+    Optional<UploadedFile> findByUploadedByIdAndOriginalFilename(
+            UUID uploadedById,
             String originalFilename
     );
 
-    List<UploadedFile> findByUploadedByAndStatusOrderByUploadedAtDesc(
-            String uploadedBy,
-            UploadedFileStatus status
-    );
-
-    Optional<UploadedFile> findByIdAndUploadedByAndStatus(
-            UUID id,
-            String uploadedBy,
-            UploadedFileStatus status
-    );
-
-    List<UploadedFile> findByUploadedByAndStatusInOrderByUploadedAtDesc(
-            String uploadedBy,
+    List<UploadedFile> findByUploadedByIdAndStatusInOrderByUploadedAtDesc(
+            UUID uploadedById,
             List<UploadedFileStatus> statuses
     );
 
-    Optional<UploadedFile> findByIdAndUploadedByAndStatusIn(
+    Optional<UploadedFile> findByIdAndUploadedByIdAndStatusIn(
             UUID id,
-            String uploadedBy,
+            UUID uploadedById,
             List<UploadedFileStatus> statuses
     );
 

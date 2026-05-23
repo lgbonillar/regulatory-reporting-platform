@@ -1,5 +1,6 @@
 package com.mrcrafterman.regreporting.upload.domain;
 
+import com.mrcrafterman.regreporting.users.domain.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -41,8 +42,9 @@ public class UploadedFile {
     @Column(name = "status", nullable = false)
     private UploadedFileStatus status;
 
-    @Column(name = "uploaded_by", nullable = false)
-    private String uploadedBy;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "uploaded_by_user_id", nullable = false)
+    private User uploadedBy;
 
     @Column(name = "uploaded_at", nullable = false)
     private LocalDateTime uploadedAt = LocalDateTime.now();
@@ -58,7 +60,7 @@ public class UploadedFile {
             long fileSize,
             String checksum,
             UploadedFileStatus status,
-            String uploadedBy
+            User uploadedBy
     ) {
         this.originalFilename = originalFilename;
         this.storedFilename = storedFilename;

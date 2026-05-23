@@ -10,6 +10,8 @@ import com.mrcrafterman.regreporting.upload.dto.StoredFile;
 import com.mrcrafterman.regreporting.upload.dto.UploadedFileResponse;
 import com.mrcrafterman.regreporting.upload.infrastructure.ProcessingJobRepository;
 import com.mrcrafterman.regreporting.upload.infrastructure.UploadedFileRepository;
+import com.mrcrafterman.regreporting.users.domain.User;
+import com.mrcrafterman.regreporting.users.infrastructure.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,26 +26,30 @@ public class ReportFileService {
     private final FileStorageService fileStorageService;
     private final UploadedFileRepository uploadedFileRepository;
     private final ProcessingJobRepository processingJobRepository;
+    private final UserRepository userRepository;
 
     public ReportFileService(
             FileStorageService fileStorageService,
             UploadedFileRepository uploadedFileRepository,
-            ProcessingJobRepository processingJobRepository
+            ProcessingJobRepository processingJobRepository,
+            UserRepository userRepository
     ) {
         this.fileStorageService = fileStorageService;
         this.uploadedFileRepository = uploadedFileRepository;
         this.processingJobRepository = processingJobRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
     public ReportFileUploadResponse uploadReportFile(MultipartFile file) {
-        String username = "analyst01";
+        User currentUser = getCurrentUser();
+        String username = currentUser.getUsername();
 
         StoredFile storedFile = fileStorageService.store(file, username);
         String originalFilename = Objects.requireNonNull(file.getOriginalFilename());
 
         UploadedFile uploadedFile = uploadedFileRepository
-                .findByUploadedByAndOriginalFilename(username, originalFilename)
+                .findByUploadedByIdAndOriginalFilename(currentUser.getId(), originalFilename)
                 .map(existingFile -> {
                     existingFile.replaceWith(
                             storedFile.storedFilename(),
@@ -63,7 +69,7 @@ public class ReportFileService {
                         file.getSize(),
                         storedFile.checksum(),
                         UploadedFileStatus.STORED,
-                        username
+                        currentUser
                 ));
 
         UploadedFile savedFile = uploadedFileRepository.save(uploadedFile);
@@ -106,12 +112,13 @@ public class ReportFileService {
 
     @Transactional
     public ReportFileUploadResponse updateReportFile(UUID fileId, MultipartFile file) {
-        String username = "analyst01";
+        User currentUser = getCurrentUser();
+        String username = currentUser.getUsername();
 
         UploadedFile uploadedFile = uploadedFileRepository
-                .findByIdAndUploadedByAndStatusIn(
+                .findByIdAndUploadedByIdAndStatusIn(
                         fileId,
-                        username,
+                        currentUser.getId(),
                         List.of(
                                 UploadedFileStatus.STORED,
                                 UploadedFileStatus.MISSING,
@@ -158,12 +165,12 @@ public class ReportFileService {
 
     @Transactional
     public void deleteUploadedFile(UUID fileId) {
-        String username = "analyst01";
+        User currentUser = getCurrentUser();
 
         UploadedFile uploadedFile = uploadedFileRepository
-                .findByIdAndUploadedByAndStatusIn(
+                .findByIdAndUploadedByIdAndStatusIn(
                         fileId,
-                        username,
+                        currentUser.getId(),
                         List.of(
                                 UploadedFileStatus.STORED,
                                 UploadedFileStatus.MISSING,
@@ -178,9 +185,12 @@ public class ReportFileService {
 
     @Transactional(readOnly = true)
     public List<UploadedFileResponse> listUploadedFiles(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
         return uploadedFileRepository
-                .findByUploadedByAndStatusInOrderByUploadedAtDesc(
-                        username,
+                .findByUploadedByIdAndStatusInOrderByUploadedAtDesc(
+                        user.getId(),
                         List.of(
                                 UploadedFileStatus.STORED,
                                 UploadedFileStatus.MISSING,
@@ -200,6 +210,11 @@ public class ReportFileService {
         uploadedFile.markMissing();
     }
 
+    private User getCurrentUser() {
+        return userRepository.findByUsername("analyst01")
+                .orElseThrow(() -> new IllegalStateException("Current development user not found"));
+    }
+
     private UploadedFileResponse toUploadedFileResponse(UploadedFile uploadedFile) {
         return new UploadedFileResponse(
                 uploadedFile.getId(),
@@ -209,7 +224,7 @@ public class ReportFileService {
                 uploadedFile.getFileSize(),
                 uploadedFile.getChecksum(),
                 uploadedFile.getStatus().name(),
-                uploadedFile.getUploadedBy(),
+                uploadedFile.getUploadedBy().getUsername(),
                 uploadedFile.getUploadedAt(),
                 uploadedFile.getUpdatedAt()
         );
