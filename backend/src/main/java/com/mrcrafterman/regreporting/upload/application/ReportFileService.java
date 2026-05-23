@@ -1,16 +1,12 @@
 package com.mrcrafterman.regreporting.upload.application;
 
-import com.mrcrafterman.regreporting.shared.BusinessConflictException;
 import com.mrcrafterman.regreporting.shared.ResourceNotFoundException;
 import com.mrcrafterman.regreporting.upload.domain.ProcessingJob;
-import com.mrcrafterman.regreporting.upload.domain.ProcessingJobStatus;
-import com.mrcrafterman.regreporting.upload.domain.ProcessingJobTransitionSource;
 import com.mrcrafterman.regreporting.upload.domain.UploadedFile;
 import com.mrcrafterman.regreporting.upload.domain.UploadedFileStatus;
 import com.mrcrafterman.regreporting.upload.dto.ReportFileUploadResponse;
 import com.mrcrafterman.regreporting.upload.dto.StoredFile;
 import com.mrcrafterman.regreporting.upload.dto.UploadedFileResponse;
-import com.mrcrafterman.regreporting.upload.infrastructure.ProcessingJobRepository;
 import com.mrcrafterman.regreporting.upload.infrastructure.UploadedFileRepository;
 import com.mrcrafterman.regreporting.users.application.CurrentUserProvider;
 import com.mrcrafterman.regreporting.users.domain.User;
@@ -29,23 +25,20 @@ public class ReportFileService {
     private final CurrentUserProvider currentUserProvider;
     private final FileStorageService fileStorageService;
     private final UploadedFileRepository uploadedFileRepository;
-    private final ProcessingJobRepository processingJobRepository;
-    private final ProcessingJobHistoryService processingJobHistoryService;
+    private final ProcessingJobCreationService processingJobCreationService;
     private final UserRepository userRepository;
 
     public ReportFileService(
             CurrentUserProvider currentUserProvider,
             FileStorageService fileStorageService,
             UploadedFileRepository uploadedFileRepository,
-            ProcessingJobRepository processingJobRepository,
-            ProcessingJobHistoryService processingJobHistoryService,
+            ProcessingJobCreationService processingJobCreationService,
             UserRepository userRepository
     ) {
         this.currentUserProvider = currentUserProvider;
         this.fileStorageService = fileStorageService;
         this.uploadedFileRepository = uploadedFileRepository;
-        this.processingJobRepository = processingJobRepository;
-        this.processingJobHistoryService = processingJobHistoryService;
+        this.processingJobCreationService = processingJobCreationService;
         this.userRepository = userRepository;
     }
 
@@ -62,18 +55,13 @@ public class ReportFileService {
         ProcessingJob existingJob = null;
 
         if (existingFile != null) {
-            existingJob = processingJobRepository
-                    .findByUploadedFileId(existingFile.getId())
+            existingJob = processingJobCreationService
+                    .findByUploadedFile(existingFile)
                     .orElseThrow(() -> new IllegalStateException(
                             "Processing job not found for uploaded file"
                     ));
 
-            if (!existingJob.allowsFileModification()) {
-                throw new BusinessConflictException(
-                        "The file cannot be replaced because its processing job is already in state "
-                                + existingJob.getStatus()
-                );
-            }
+            processingJobCreationService.ensureFileCanBeReplaced(existingJob);
         }
 
         StoredFile storedFile = fileStorageService.store(file, username);
@@ -107,21 +95,9 @@ public class ReportFileService {
         ProcessingJob processingJob;
 
         if (existingJob == null) {
-            processingJob = processingJobRepository.save(
-                    new ProcessingJob(savedFile, "File uploaded successfully")
-            );
-
-            processingJobHistoryService.recordTransition(
-                    processingJob,
-                    null,
-                    ProcessingJobStatus.PENDING_EXECUTION,
-                    ProcessingJobTransitionSource.USER,
-                    currentUser,
-                    "File uploaded and queued for execution"
-            );
+            processingJob = processingJobCreationService.createInitialJob(savedFile, currentUser);
         } else {
-            existingJob.markPendingExecution("File replaced successfully");
-            processingJob = processingJobRepository.save(existingJob);
+            processingJob = processingJobCreationService.markFileReplaced(existingJob);
         }
 
         return new ReportFileUploadResponse(
@@ -163,18 +139,13 @@ public class ReportFileService {
                 )
                 .orElseThrow(() -> new ResourceNotFoundException("Uploaded file not found"));
 
-        ProcessingJob processingJob = processingJobRepository
-                .findByUploadedFileId(uploadedFile.getId())
+        ProcessingJob processingJob = processingJobCreationService
+                .findByUploadedFile(uploadedFile)
                 .orElseThrow(() -> new IllegalStateException(
                         "Processing job not found for uploaded file"
                 ));
 
-        if (!processingJob.allowsFileModification()) {
-            throw new BusinessConflictException(
-                    "The file cannot be updated because its processing job is already in state "
-                            + processingJob.getStatus()
-            );
-        }
+        processingJobCreationService.ensureFileCanBeUpdated(processingJob);
 
         String previousStoragePath = uploadedFile.getStoragePath();
 
@@ -192,8 +163,7 @@ public class ReportFileService {
                 storedFile.checksum()
         );
 
-        processingJob.markPendingExecution("File updated successfully");
-        ProcessingJob savedJob = processingJobRepository.save(processingJob);
+        ProcessingJob savedJob = processingJobCreationService.markFileUpdated(processingJob);
 
         return new ReportFileUploadResponse(
                 uploadedFile.getId(),
@@ -221,18 +191,13 @@ public class ReportFileService {
                 )
                 .orElseThrow(() -> new ResourceNotFoundException("Uploaded file not found"));
 
-        ProcessingJob processingJob = processingJobRepository
-                .findByUploadedFileId(uploadedFile.getId())
+        ProcessingJob processingJob = processingJobCreationService
+                .findByUploadedFile(uploadedFile)
                 .orElseThrow(() -> new IllegalStateException(
                         "Processing job not found for uploaded file"
                 ));
 
-        if (!processingJob.allowsFileModification()) {
-            throw new BusinessConflictException(
-                    "The file cannot be deleted because its processing job is already in state "
-                            + processingJob.getStatus()
-            );
-        }
+        processingJobCreationService.ensureFileCanBeDeleted(processingJob);
 
         fileStorageService.delete(uploadedFile.getStoragePath());
         uploadedFile.markDeleted();
