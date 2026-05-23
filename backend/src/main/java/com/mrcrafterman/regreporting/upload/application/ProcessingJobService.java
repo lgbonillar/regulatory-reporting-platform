@@ -57,6 +57,8 @@ public class ProcessingJobService {
     @Transactional
     public ProcessingJobResponse startProcessing(UUID jobId) {
         ProcessingJob job = getJob(jobId);
+        job.getUploadedFile().ensureCanBeProcessed();
+
         User administrator = getCurrentAdministrator();
         ProcessingJobStatus previousStatus = job.getStatus();
 
@@ -77,6 +79,8 @@ public class ProcessingJobService {
     @Transactional
     public ProcessingJobResponse completeProcessing(UUID jobId) {
         ProcessingJob job = getJob(jobId);
+        job.getUploadedFile().ensureCanBeProcessed();
+
         ProcessingJobStatus previousStatus = job.getStatus();
 
         job.markProcessingCompleted();
@@ -115,6 +119,8 @@ public class ProcessingJobService {
     @Transactional
     public ProcessingJobResponse approve(UUID jobId) {
         ProcessingJob job = getJob(jobId);
+        job.getUploadedFile().ensureCanBeProcessed();
+
         User administrator = getCurrentAdministrator();
         ProcessingJobStatus previousStatus = job.getStatus();
 

@@ -1,7 +1,18 @@
 package com.mrcrafterman.regreporting.upload.domain;
 
+import com.mrcrafterman.regreporting.shared.BusinessConflictException;
 import com.mrcrafterman.regreporting.users.domain.User;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -101,6 +112,19 @@ public class UploadedFile {
     public void markFailed() {
         this.status = UploadedFileStatus.FAILED;
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public boolean canBeProcessed() {
+        return this.status == UploadedFileStatus.STORED;
+    }
+
+    public void ensureCanBeProcessed() {
+        if (!canBeProcessed()) {
+            throw new BusinessConflictException(
+                    "The file cannot be processed because it is in state " +
+                            this.status
+            );
+        }
     }
 
 }
