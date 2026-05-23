@@ -3,12 +3,15 @@ package com.mrcrafterman.regreporting.upload.application;
 import com.mrcrafterman.regreporting.shared.ResourceNotFoundException;
 import com.mrcrafterman.regreporting.upload.domain.ProcessingJob;
 import com.mrcrafterman.regreporting.upload.domain.ProcessingJobStatus;
+import com.mrcrafterman.regreporting.upload.domain.ProcessingJobStatusHistory;
+import com.mrcrafterman.regreporting.upload.domain.ProcessingJobTransitionSource;
 import com.mrcrafterman.regreporting.upload.domain.UploadedFile;
 import com.mrcrafterman.regreporting.upload.domain.UploadedFileStatus;
 import com.mrcrafterman.regreporting.upload.dto.ReportFileUploadResponse;
 import com.mrcrafterman.regreporting.upload.dto.StoredFile;
 import com.mrcrafterman.regreporting.upload.dto.UploadedFileResponse;
 import com.mrcrafterman.regreporting.upload.infrastructure.ProcessingJobRepository;
+import com.mrcrafterman.regreporting.upload.infrastructure.ProcessingJobStatusHistoryRepository;
 import com.mrcrafterman.regreporting.upload.infrastructure.UploadedFileRepository;
 import com.mrcrafterman.regreporting.users.domain.User;
 import com.mrcrafterman.regreporting.users.infrastructure.UserRepository;
@@ -27,17 +30,20 @@ public class ReportFileService {
     private final UploadedFileRepository uploadedFileRepository;
     private final ProcessingJobRepository processingJobRepository;
     private final UserRepository userRepository;
+    private final ProcessingJobStatusHistoryRepository processingJobStatusHistoryRepository;
 
     public ReportFileService(
             FileStorageService fileStorageService,
             UploadedFileRepository uploadedFileRepository,
             ProcessingJobRepository processingJobRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            ProcessingJobStatusHistoryRepository processingJobStatusHistoryRepository
     ) {
         this.fileStorageService = fileStorageService;
         this.uploadedFileRepository = uploadedFileRepository;
         this.processingJobRepository = processingJobRepository;
         this.userRepository = userRepository;
+        this.processingJobStatusHistoryRepository = processingJobStatusHistoryRepository;
     }
 
     @Transactional
@@ -76,25 +82,34 @@ public class ReportFileService {
 
         ProcessingJob processingJob = processingJobRepository
                 .findByUploadedFileId(savedFile.getId())
-                .map(existingJob -> {
-                    existingJob.markPending("File uploaded successfully");
-                    return existingJob;
-                })
-                .orElseGet(() -> new ProcessingJob(
-                        savedFile,
-                        ProcessingJobStatus.PENDING,
-                        "File uploaded successfully"
-                ));
+                .orElse(null);
 
-        ProcessingJob savedJob = processingJobRepository.save(processingJob);
+        if (processingJob == null) {
+            processingJob = processingJobRepository.save(
+                    new ProcessingJob(savedFile, "File uploaded successfully")
+            );
+
+            processingJobStatusHistoryRepository.save(
+                    new ProcessingJobStatusHistory(
+                            processingJob,
+                            null,
+                            ProcessingJobStatus.PENDING_EXECUTION,
+                            ProcessingJobTransitionSource.USER,
+                            currentUser,
+                            "File uploaded and queued for execution"
+                    )
+            );
+        } else {
+            processingJob.markPendingExecution("File uploaded successfully");
+        }
 
         return new ReportFileUploadResponse(
                 savedFile.getId(),
-                savedJob.getId(),
+                processingJob.getId(),
                 savedFile.getOriginalFilename(),
                 savedFile.getStatus().name(),
-                savedJob.getStatus().name(),
-                savedJob.getMessage()
+                processingJob.getStatus().name(),
+                processingJob.getMessage()
         );
     }
 
@@ -142,12 +157,11 @@ public class ReportFileService {
         ProcessingJob processingJob = processingJobRepository
                 .findByUploadedFileId(uploadedFile.getId())
                 .map(existingJob -> {
-                    existingJob.markPending("File updated successfully");
+                    existingJob.markPendingExecution("File updated successfully");
                     return existingJob;
                 })
                 .orElseGet(() -> new ProcessingJob(
                         uploadedFile,
-                        ProcessingJobStatus.PENDING,
                         "File updated successfully"
                 ));
 

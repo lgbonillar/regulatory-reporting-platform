@@ -40,7 +40,7 @@
     </div>
   </header>
 
-  <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+  <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
     <button
       class="rounded-lg border bg-white p-4 text-left shadow-sm transition hover:border-slate-400"
       type="button"
@@ -55,12 +55,12 @@
     <button
       class="rounded-lg border bg-white p-4 text-left shadow-sm transition hover:border-amber-400"
       type="button"
-      [class.border-amber-500]="isStatusFilterActive('PENDING')"
-      [class.border-slate-200]="!isStatusFilterActive('PENDING')"
-      (click)="applyStatusFilter('PENDING')"
+      [class.border-amber-500]="isStatusFilterActive('PENDING_EXECUTION')"
+      [class.border-slate-200]="!isStatusFilterActive('PENDING_EXECUTION')"
+      (click)="applyStatusFilter('PENDING_EXECUTION')"
     >
       <p class="text-sm text-slate-500">Pending</p>
-      <p class="mt-2 text-2xl font-semibold text-amber-700">{{ jobSummary().pending }}</p>
+      <p class="mt-2 text-2xl font-semibold text-amber-700">{{ jobSummary().pendingExecution }}</p>
     </button>
 
     <button
@@ -77,23 +77,56 @@
     <button
       class="rounded-lg border bg-white p-4 text-left shadow-sm transition hover:border-emerald-400"
       type="button"
-      [class.border-emerald-500]="isStatusFilterActive('COMPLETED')"
-      [class.border-slate-200]="!isStatusFilterActive('COMPLETED')"
-      (click)="applyStatusFilter('COMPLETED')"
+      [class.border-emerald-500]="isStatusFilterActive('AWAITING_APPROVAL')"
+      [class.border-slate-200]="!isStatusFilterActive('AWAITING_APPROVAL')"
+      (click)="applyStatusFilter('AWAITING_APPROVAL')"
     >
-      <p class="text-sm text-slate-500">Completed</p>
-      <p class="mt-2 text-2xl font-semibold text-emerald-700">{{ jobSummary().completed }}</p>
+      <p class="text-sm text-slate-500">Awaiting Approval</p>
+      <p class="mt-2 text-2xl font-semibold text-emerald-700">{{ jobSummary().awaitingApproval }}</p>
     </button>
 
     <button
       class="rounded-lg border bg-white p-4 text-left shadow-sm transition hover:border-red-400"
       type="button"
-      [class.border-red-500]="isStatusFilterActive('FAILED')"
-      [class.border-slate-200]="!isStatusFilterActive('FAILED')"
-      (click)="applyStatusFilter('FAILED')"
+      [class.border-red-500]="isStatusFilterActive('PROCESSING_FAILED')"
+      [class.border-slate-200]="!isStatusFilterActive('PROCESSING_FAILED')"
+      (click)="applyStatusFilter('PROCESSING_FAILED')"
     >
       <p class="text-sm text-slate-500">Failed</p>
-      <p class="mt-2 text-2xl font-semibold text-red-700">{{ jobSummary().failed }}</p>
+      <p class="mt-2 text-2xl font-semibold text-red-700">{{ jobSummary().processingFailed }}</p>
+    </button>
+
+    <button
+      class="rounded-lg border bg-white p-4 text-left shadow-sm transition hover:border-emerald-400"
+      type="button"
+      [class.border-emerald-500]="isStatusFilterActive('APPROVED')"
+      [class.border-slate-200]="!isStatusFilterActive('APPROVED')"
+      (click)="applyStatusFilter('APPROVED')"
+    >
+      <p class="text-sm text-slate-500">Approved</p>
+      <p class="mt-2 text-2xl font-semibold text-emerald-700">{{ jobSummary().approved }}</p>
+    </button>
+
+    <button
+      class="rounded-lg border bg-white p-4 text-left shadow-sm transition hover:border-rose-400"
+      type="button"
+      [class.border-rose-500]="isStatusFilterActive('REJECTED')"
+      [class.border-slate-200]="!isStatusFilterActive('REJECTED')"
+      (click)="applyStatusFilter('REJECTED')"
+    >
+      <p class="text-sm text-slate-500">Rejected</p>
+      <p class="mt-2 text-2xl font-semibold text-rose-700">{{ jobSummary().rejected }}</p>
+    </button>
+
+    <button
+      class="rounded-lg border bg-white p-4 text-left shadow-sm transition hover:border-slate-400"
+      type="button"
+      [class.border-slate-600]="isStatusFilterActive('REVOKED')"
+      [class.border-slate-200]="!isStatusFilterActive('REVOKED')"
+      (click)="applyStatusFilter('REVOKED')"
+    >
+      <p class="text-sm text-slate-500">Revoked</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-700">{{ jobSummary().revoked }}</p>
     </button>
   </section>
 
@@ -141,8 +174,8 @@
                   <td class="px-6 py-4 text-slate-600">{{ job.uploadedBy }}</td>
 
                   <td class="px-6 py-4">
-                    <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium" [class]="getStatusClasses(job.jobStatus)">
-                      {{ job.jobStatus }}
+                    <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset" [class]="getStatusClasses(job.jobStatus)">
+                      {{ getStatusLabel(job.jobStatus) }}
                     </span>
                   </td>
 
@@ -178,8 +211,8 @@
               </div>
 
               <div class="flex flex-wrap items-center gap-2">
-                <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium" [class]="getStatusClasses(job.jobStatus)">
-                  {{ job.jobStatus }}
+                <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset" [class]="getStatusClasses(job.jobStatus)">
+                  {{ getStatusLabel(job.jobStatus) }}
                 </span>
 
                 <span class="text-sm text-slate-500">{{ job.uploadedBy }}</span>
@@ -235,8 +268,8 @@
           <div>
             <dt class="font-medium text-slate-500">Job Status</dt>
             <dd class="mt-1">
-              <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium" [class]="getStatusClasses(job.jobStatus)">
-                {{ job.jobStatus }}
+              <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset" [class]="getStatusClasses(job.jobStatus)">
+                {{ getStatusLabel(job.jobStatus) }}
               </span>
             </dd>
           </div>
@@ -244,7 +277,7 @@
           <div>
             <dt class="font-medium text-slate-500">File status</dt>
             <dd class="mt-1">
-              <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium" [class]="getFileStatusClasses(job.fileStatus)">
+              <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset" [class]="getFileStatusClasses(job.fileStatus)">
                 {{ job.fileStatus }}
               </span>
             </dd>

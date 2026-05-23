@@ -28,7 +28,7 @@
                   "  pm.expect(response.fileId).to.be.a('string');",
                   "  pm.expect(response.jobId).to.be.a('string');",
                   "  pm.expect(response.originalFilename).to.be.a('string');",
-                  "  pm.expect(response.jobStatus).to.eql('PENDING');",
+                  "  pm.expect(response.jobStatus).to.eql('PENDING_EXECUTION');",
                   "  pm.expect(response.fileStatus).to.eql('STORED');",
                   "  pm.expect(response.message).to.eql('File uploaded successfully');",
                   "});",
@@ -99,7 +99,14 @@
                   "  pm.expect(uploadedFile.fileStatus).to.eql('STORED');\r",
                   "  pm.expect(uploadedFile.uploadedBy).to.eql(username);\r",
                   "});\r",
-                  ""
+                  "\r",
+                  "pm.test('file statuses are valid and visible', function () {\r",
+                  "  const visibleFileStatuses = ['STORED', 'MISSING', 'FAILED'];\r",
+                  "\r",
+                  "  response.forEach((file) => {\r",
+                  "    pm.expect(visibleFileStatuses).to.include(file.fileStatus);\r",
+                  "  });\r",
+                  "});"
                 ],
                 "type": "text/javascript",
                 "packages": {},
@@ -197,7 +204,7 @@
                   "pm.test('updates same file record', function () {\r",
                   "  pm.expect(response.fileId).to.eql(fileId);\r",
                   "  pm.expect(response.jobId).to.be.a('string');\r",
-                  "  pm.expect(response.jobStatus).to.eql('PENDING');\r",
+                  "  pm.expect(response.jobStatus).to.eql('PENDING_EXECUTION');\r",
                   "  pm.expect(response.fileStatus).to.eql('STORED');\r",
                   "  pm.expect(response.message).to.eql('File updated successfully');\r",
                   "});\r",
@@ -423,7 +430,7 @@
               "script": {
                 "exec": [
                   "pm.test('does not download deleted file', function () {\r",
-                  "  pm.expect(pm.response.code).to.be.oneOf([400, 404]);\r",
+                  "  pm.response.to.have.status(404);\r",
                   "});"
                 ],
                 "type": "text/javascript",
@@ -444,6 +451,47 @@
                 "api",
                 "report-files",
                 "{{updatedFileId}}",
+                "download"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download missing report file",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();\r",
+                  "\r",
+                  "pm.test('returns 404 Not Found', function () {\r",
+                  "  pm.response.to.have.status(404);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('returns uploaded file not found message', function () {\r",
+                  "  pm.expect(response.message).to.eql('Uploaded file not found');\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/report-files/{{missingFileId}}/download",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "report-files",
+                "{{missingFileId}}",
                 "download"
               ]
             }
@@ -481,6 +529,7 @@
                   "    pm.expect(job).to.have.property('jobId');\r",
                   "    pm.expect(job).to.have.property('fileId');\r",
                   "    pm.expect(job).to.have.property('originalFilename');\r",
+                  "    pm.expect(job).to.have.property('fileStatus');\r",
                   "    pm.expect(job).to.have.property('jobStatus');\r",
                   "    pm.expect(job).to.have.property('message');\r",
                   "    pm.expect(job).to.have.property('uploadedBy');\r",
@@ -489,17 +538,34 @@
                   "});\r",
                   "\r",
                   "pm.test('job statuses are valid', function () {\r",
-                  "  const validStatuses = ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'];\r",
+                  "  const validStatuses = [\r",
+                  "    'PENDING_EXECUTION',\r",
+                  "    'PROCESSING',\r",
+                  "    'PROCESSING_FAILED',\r",
+                  "    'AWAITING_APPROVAL',\r",
+                  "    'APPROVED',\r",
+                  "    'REJECTED',\r",
+                  "    'REVOKED'\r",
+                  "  ];\r",
                   "\r",
                   "  response.forEach((job) => {\r",
                   "    pm.expect(validStatuses).to.include(job.jobStatus);\r",
                   "  });\r",
                   "});\r",
                   "\r",
+                  "pm.test('file statuses are valid', function () {\r",
+                  "  const validFileStatuses = ['STORED', 'MISSING', 'FAILED', 'DELETED'];\r",
+                  "\r",
+                  "  response.forEach((job) => {\r",
+                  "    pm.expect(validFileStatuses).to.include(job.fileStatus);\r",
+                  "  });\r",
+                  "});\r",
+                  "\r",
                   "if (response.length > 0) {\r",
                   "  pm.collectionVariables.set('jobId', response[0].jobId);\r",
-                  "  pm.collectionVariables.set('fileId', response[0].fileId);\r",
+                  "  pm.collectionVariables.set('processingJobFileId', response[0].fileId);\r",
                   "}\r",
+                  "\r",
                   ""
                 ],
                 "type": "text/javascript",
@@ -553,6 +619,7 @@
                   "    pm.expect(job).to.have.property('jobId');\r",
                   "    pm.expect(job).to.have.property('fileId');\r",
                   "    pm.expect(job).to.have.property('originalFilename');\r",
+                  "    pm.expect(job).to.have.property('fileStatus');\r",
                   "    pm.expect(job).to.have.property('jobStatus');\r",
                   "    pm.expect(job).to.have.property('message');\r",
                   "    pm.expect(job).to.have.property('uploadedBy');\r",
@@ -562,7 +629,7 @@
                   "\r",
                   "if (response.length > 0) {\r",
                   "  pm.collectionVariables.set('jobId', response[0].jobId);\r",
-                  "  pm.collectionVariables.set('fileId', response[0].fileId);\r",
+                  "  pm.collectionVariables.set('processingJobFileId', response[0].fileId);\r",
                   "}\r",
                   ""
                 ],
@@ -632,6 +699,7 @@
                   "  pm.expect(response).to.have.property('jobId');\r",
                   "  pm.expect(response).to.have.property('fileId');\r",
                   "  pm.expect(response).to.have.property('originalFilename');\r",
+                  "  pm.expect(response).to.have.property('fileStatus');\r",
                   "  pm.expect(response).to.have.property('jobStatus');\r",
                   "  pm.expect(response).to.have.property('message');\r",
                   "  pm.expect(response).to.have.property('uploadedBy');\r",
@@ -639,9 +707,23 @@
                   "});\r",
                   "\r",
                   "pm.test('job status is valid', function () {\r",
-                  "  const validStatuses = ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'];\r",
+                  "  const validStatuses = [\r",
+                  "    'PENDING_EXECUTION',\r",
+                  "    'PROCESSING',\r",
+                  "    'PROCESSING_FAILED',\r",
+                  "    'AWAITING_APPROVAL',\r",
+                  "    'APPROVED',\r",
+                  "    'REJECTED',\r",
+                  "    'REVOKED'\r",
+                  "  ];\r",
                   "\r",
                   "  pm.expect(validStatuses).to.include(response.jobStatus);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('file status is valid', function () {\r",
+                  "  const validFileStatuses = ['STORED', 'MISSING', 'FAILED', 'DELETED'];\r",
+                  "\r",
+                  "  pm.expect(validFileStatuses).to.include(response.fileStatus);\r",
                   "});\r",
                   ""
                 ],
@@ -759,6 +841,14 @@
     },
     {
       "key": "updatedJobId",
+      "value": ""
+    },
+    {
+      "key": "missingFileId",
+      "value": ""
+    },
+    {
+      "key": "processingJobFileId",
       "value": ""
     }
   ]

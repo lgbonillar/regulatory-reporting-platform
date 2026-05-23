@@ -9,6 +9,7 @@ import { ProcessingJobResponse, ProcessingJobStatusFilter } from '../../models/p
 import { ProcessingJobService } from '../../services/processing-job.service'
 
 const CURRENT_USERNAME = 'analyst01'
+const FIRST_FILE_INDEX = 0
 
 @Component({
   selector: 'app-processing-jobs-page',
@@ -31,10 +32,13 @@ export class ProcessingJobsPage implements OnInit {
 
     return {
       total: jobs.length,
-      pending: jobs.filter((job) => job.jobStatus === 'PENDING').length,
+      pendingExecution: jobs.filter((job) => job.jobStatus === 'PENDING_EXECUTION').length,
       processing: jobs.filter((job) => job.jobStatus === 'PROCESSING').length,
-      completed: jobs.filter((job) => job.jobStatus === 'COMPLETED').length,
-      failed: jobs.filter((job) => job.jobStatus === 'FAILED').length
+      processingFailed: jobs.filter((job) => job.jobStatus === 'PROCESSING_FAILED').length,
+      awaitingApproval: jobs.filter((job) => job.jobStatus === 'AWAITING_APPROVAL').length,
+      approved: jobs.filter((job) => job.jobStatus === 'APPROVED').length,
+      rejected: jobs.filter((job) => job.jobStatus === 'REJECTED').length,
+      revoked: jobs.filter((job) => job.jobStatus === 'REVOKED').length
     }
   })
 
@@ -55,7 +59,7 @@ export class ProcessingJobsPage implements OnInit {
   protected applyStatusFilter (status: ProcessingJobStatusFilter): void {
     this.statusFilter.set(status)
 
-    const selectedJob = this.filteredJobs().at(0) ?? null
+    const selectedJob = this.filteredJobs().at(FIRST_FILE_INDEX) ?? null
     this.selectedJob.set(selectedJob)
   }
 
@@ -94,10 +98,13 @@ export class ProcessingJobsPage implements OnInit {
 
   protected getStatusClasses (status: ProcessingJobStatus): string {
     const classesByStatus: Record<ProcessingJobStatus, string> = {
-      PENDING: 'bg-amber-50 text-amber-700',
-      PROCESSING: 'bg-sky-50 text-sky-700',
-      COMPLETED: 'bg-emerald-50 text-emerald-700',
-      FAILED: 'bg-red-50 text-red-700'
+      PENDING_EXECUTION: 'bg-amber-50 text-amber-800 ring-amber-200',
+      PROCESSING: 'bg-sky-50 text-sky-800 ring-sky-200',
+      PROCESSING_FAILED: 'bg-red-50 text-red-800 ring-red-200',
+      AWAITING_APPROVAL: 'bg-violet-50 text-violet-800 ring-violet-200',
+      APPROVED: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+      REJECTED: 'bg-rose-50 text-rose-800 ring-rose-200',
+      REVOKED: 'bg-slate-100 text-slate-700 ring-slate-300'
     }
 
     return classesByStatus[status]
@@ -114,6 +121,20 @@ export class ProcessingJobsPage implements OnInit {
     return classesByStatus[status]
   }
 
+  protected getStatusLabel (status: ProcessingJobStatus): string {
+    const labelsByStatus: Record<ProcessingJobStatus, string> = {
+      PENDING_EXECUTION: 'Pending execution',
+      PROCESSING: 'Processing',
+      PROCESSING_FAILED: 'Processing failed',
+      AWAITING_APPROVAL: 'Awaiting approval',
+      APPROVED: 'Approved',
+      REJECTED: 'Rejected',
+      REVOKED: 'Revoked'
+    }
+
+    return labelsByStatus[status]
+  }
+
   private loadJobs (username?: string): void {
     this.isLoading.set(true)
     this.errorMessage.set(null)
@@ -125,7 +146,7 @@ export class ProcessingJobsPage implements OnInit {
     request.subscribe({
       next: (jobs) => {
         this.jobs.set(jobs)
-        this.selectedJob.set(jobs.at(0) ?? null)
+        this.selectedJob.set(jobs.at(FIRST_FILE_INDEX) ?? null)
       },
       error: (error: unknown) => {
         this.errorMessage.set(this.resolveErrorMessage(error))
