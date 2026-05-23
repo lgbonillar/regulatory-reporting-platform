@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms'
 
 import { FileStatus, ProcessingJobStatus } from '../../../../core/regulatory.model'
 import { FileDownloadLink } from '../../../../shared/components/file-download-link/file-download-link'
-import { ProcessingJobResponse, ProcessingJobStatusFilter } from '../../models/processing-job.model'
+import { ProcessingJobResponse } from '../../models/processing-job.model'
 import { ProcessingJobService } from '../../services/processing-job.service'
 
 const CURRENT_USERNAME = 'analyst01'
@@ -21,50 +21,75 @@ export class ProcessingJobsPage implements OnInit {
 
   protected readonly jobs = signal<ProcessingJobResponse[]>([])
   protected readonly selectedJob = signal<ProcessingJobResponse | null>(null)
-  protected readonly statusFilter = signal<ProcessingJobStatusFilter>('ALL')
+  protected readonly selectedStatuses = signal<Set<ProcessingJobStatus>>(new Set())
+  protected readonly isStatusFilterOpen = signal(false)
   protected readonly errorMessage = signal<string | null>(null)
   protected readonly isLoading = signal(false)
   protected readonly filterUsername = signal('')
   protected readonly currentUsername = CURRENT_USERNAME
-
-  protected readonly jobSummary = computed(() => {
-    const jobs = this.jobs()
-
-    return {
-      total: jobs.length,
-      pendingExecution: jobs.filter((job) => job.jobStatus === 'PENDING_EXECUTION').length,
-      processing: jobs.filter((job) => job.jobStatus === 'PROCESSING').length,
-      processingFailed: jobs.filter((job) => job.jobStatus === 'PROCESSING_FAILED').length,
-      awaitingApproval: jobs.filter((job) => job.jobStatus === 'AWAITING_APPROVAL').length,
-      approved: jobs.filter((job) => job.jobStatus === 'APPROVED').length,
-      rejected: jobs.filter((job) => job.jobStatus === 'REJECTED').length,
-      revoked: jobs.filter((job) => job.jobStatus === 'REVOKED').length
-    }
-  })
+  protected readonly selectedStatusCount = computed(() => this.selectedStatuses().size)
+  protected readonly statusOptions: readonly ProcessingJobStatus[] = [
+    'PENDING_EXECUTION',
+    'PROCESSING',
+    'PROCESSING_FAILED',
+    'AWAITING_APPROVAL',
+    'APPROVED',
+    'REJECTED',
+    'REVOKED'
+  ]
 
   protected readonly filteredJobs = computed(() => {
-    const statusFilter = this.statusFilter()
+    const selectedStatuses = this.selectedStatuses()
 
-    if (statusFilter === 'ALL') {
+    if (selectedStatuses.size === 0) {
       return this.jobs()
     }
 
-    return this.jobs().filter((job) => job.jobStatus === statusFilter)
+    return this.jobs().filter((job) => selectedStatuses.has(job.jobStatus))
   })
 
   ngOnInit (): void {
     this.loadAllJobs()
   }
 
-  protected applyStatusFilter (status: ProcessingJobStatusFilter): void {
-    this.statusFilter.set(status)
-
-    const selectedJob = this.filteredJobs().at(FIRST_FILE_INDEX) ?? null
-    this.selectedJob.set(selectedJob)
+  protected toggleStatusFilterPanel (): void {
+    this.isStatusFilterOpen.update((isOpen) => !isOpen)
   }
 
-  protected isStatusFilterActive (status: ProcessingJobStatusFilter): boolean {
-    return this.statusFilter() === status
+  protected toggleStatusFilter (status: ProcessingJobStatus, checked: boolean): void {
+    const updatedStatuses = new Set(this.selectedStatuses())
+
+    if (checked) {
+      updatedStatuses.add(status)
+    } else {
+      updatedStatuses.delete(status)
+    }
+
+    this.selectedStatuses.set(updatedStatuses)
+
+    const visibleJobs = this.filteredJobs()
+    const currentJob = this.selectedJob()
+    const currentJobRemainsVisible = currentJob
+      ? visibleJobs.some((job) => job.jobId === currentJob.jobId)
+      : false
+
+    if (!currentJobRemainsVisible) {
+      this.selectedJob.set(visibleJobs.at(FIRST_FILE_INDEX) ?? null)
+    }
+  }
+
+  protected isStatusSelected (status: ProcessingJobStatus): boolean {
+    return this.selectedStatuses().has(status)
+  }
+
+  protected clearStatusFilters (): void {
+    this.selectedStatuses.set(new Set())
+    this.selectedJob.set(this.jobs().at(FIRST_FILE_INDEX) ?? null)
+  }
+
+  protected onStatusFilterChange (event: Event, status: ProcessingJobStatus): void {
+    const checkbox = event.target as HTMLInputElement
+    this.toggleStatusFilter(status, checkbox.checked)
   }
 
   protected loadAllJobs (): void {

@@ -1,7 +1,5 @@
 import { FileStatus, ProcessingJobStatus } from '../../../core/regulatory.model'
 
-export type ProcessingJobStatusFilter = ProcessingJobStatus | 'ALL'
-
 export interface ProcessingJobResponse {
   jobId: string
   fileId: string
