@@ -196,6 +196,26 @@ public class ProcessingJobService {
                 processingJob.getStatus().name(),
                 processingJob.getMessage(),
                 uploadedFile.getUploadedBy().getUsername(),
+                processingJob.getTriggeredBy() == null
+                        ? null
+                        : processingJob.getTriggeredBy().getUsername(),
+                processingJob.getTriggeredAt(),
+                processingJob.getProcessingCompletedAt(),
+                processingJob.getFailureReason(),
+                processingJob.getApprovedBy() == null
+                        ? null
+                        : processingJob.getApprovedBy().getUsername(),
+                processingJob.getApprovedAt(),
+                processingJob.getRejectedBy() == null
+                        ? null
+                        : processingJob.getRejectedBy().getUsername(),
+                processingJob.getRejectedAt(),
+                processingJob.getRejectionReason(),
+                processingJob.getRevokedBy() == null
+                        ? null
+                        : processingJob.getRevokedBy().getUsername(),
+                processingJob.getRevokedAt(),
+                processingJob.getRevocationReason(),
                 processingJob.getCreatedAt(),
                 processingJob.getUpdatedAt()
         );
@@ -240,7 +260,7 @@ public class ProcessingJobService {
     }
 
     private ProcessingJob getJob(UUID jobId) {
-        return processingJobRepository.findById(jobId)
+        return processingJobRepository.findByIdWithUploadedFile(jobId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Processing job not found"
                 ));

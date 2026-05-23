@@ -14,27 +14,43 @@ public interface ProcessingJobRepository extends JpaRepository<ProcessingJob, UU
     Optional<ProcessingJob> findByUploadedFileId(UUID uploadedFileId);
 
     @Query("""
-            SELECT job
-            FROM ProcessingJob job
-            JOIN FETCH job.uploadedFile uploadedFile
-            ORDER BY job.createdAt DESC
-            """)
+          SELECT job
+          FROM ProcessingJob job
+          JOIN FETCH job.uploadedFile uploadedFile
+          JOIN FETCH uploadedFile.uploadedBy uploadedBy
+          LEFT JOIN FETCH job.triggeredBy triggeredBy
+          LEFT JOIN FETCH job.approvedBy approvedBy
+          LEFT JOIN FETCH job.rejectedBy rejectedBy
+          LEFT JOIN FETCH job.revokedBy revokedBy
+          ORDER BY job.createdAt DESC
+          """)
     List<ProcessingJob> findAllWithUploadedFile();
 
     @Query("""
           SELECT job
           FROM ProcessingJob job
           JOIN FETCH job.uploadedFile uploadedFile
-          WHERE uploadedFile.uploadedBy.username = :username
+          JOIN FETCH uploadedFile.uploadedBy uploadedBy
+          LEFT JOIN FETCH job.triggeredBy triggeredBy
+          LEFT JOIN FETCH job.approvedBy approvedBy
+          LEFT JOIN FETCH job.rejectedBy rejectedBy
+          LEFT JOIN FETCH job.revokedBy revokedBy
+          WHERE uploadedBy.username = :username
           ORDER BY job.createdAt DESC
           """)
     List<ProcessingJob> findAllByUsername(@Param("username") String username);
 
     @Query("""
-            SELECT job
-            FROM ProcessingJob job
-            JOIN FETCH job.uploadedFile uploadedFile
-            WHERE job.id = :jobId
-            """)
+          SELECT job
+          FROM ProcessingJob job
+          JOIN FETCH job.uploadedFile uploadedFile
+          JOIN FETCH uploadedFile.uploadedBy uploadedBy
+          LEFT JOIN FETCH job.triggeredBy triggeredBy
+          LEFT JOIN FETCH job.approvedBy approvedBy
+          LEFT JOIN FETCH job.rejectedBy rejectedBy
+          LEFT JOIN FETCH job.revokedBy revokedBy
+          WHERE job.id = :jobId
+          """)
     Optional<ProcessingJob> findByIdWithUploadedFile(@Param("jobId") UUID jobId);
+
 }

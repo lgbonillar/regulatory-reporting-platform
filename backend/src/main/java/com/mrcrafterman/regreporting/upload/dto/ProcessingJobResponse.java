@@ -11,6 +11,18 @@ public record ProcessingJobResponse (
         String jobStatus,
         String message,
         String uploadedBy,
+        String triggeredBy,
+        LocalDateTime triggeredAt,
+        LocalDateTime processingCompletedAt,
+        String failureReason,
+        String approvedBy,
+        LocalDateTime approvedAt,
+        String rejectedBy,
+        LocalDateTime rejectedAt,
+        String rejectionReason,
+        String revokedBy,
+        LocalDateTime revokedAt,
+        String revocationReason,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ){
