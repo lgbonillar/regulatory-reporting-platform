@@ -1,5 +1,6 @@
 package com.mrcrafterman.regreporting.upload.application;
 
+import com.mrcrafterman.regreporting.shared.BusinessConflictException;
 import com.mrcrafterman.regreporting.shared.ResourceNotFoundException;
 import com.mrcrafterman.regreporting.upload.domain.ProcessingJob;
 import com.mrcrafterman.regreporting.upload.domain.ProcessingJobStatus;
@@ -50,41 +51,60 @@ public class ReportFileService {
     public ReportFileUploadResponse uploadReportFile(MultipartFile file) {
         User currentUser = getCurrentUser();
         String username = currentUser.getUsername();
-
-        StoredFile storedFile = fileStorageService.store(file, username);
         String originalFilename = Objects.requireNonNull(file.getOriginalFilename());
 
-        UploadedFile uploadedFile = uploadedFileRepository
+        UploadedFile existingFile = uploadedFileRepository
                 .findByUploadedByIdAndOriginalFilename(currentUser.getId(), originalFilename)
-                .map(existingFile -> {
-                    existingFile.replaceWith(
-                            storedFile.storedFilename(),
-                            storedFile.relativeStoragePath(),
-                            file.getContentType(),
-                            file.getSize(),
-                            storedFile.checksum()
-                    );
-
-                    return existingFile;
-                })
-                .orElseGet(() -> new UploadedFile(
-                        originalFilename,
-                        storedFile.storedFilename(),
-                        storedFile.relativeStoragePath(),
-                        file.getContentType(),
-                        file.getSize(),
-                        storedFile.checksum(),
-                        UploadedFileStatus.STORED,
-                        currentUser
-                ));
-
-        UploadedFile savedFile = uploadedFileRepository.save(uploadedFile);
-
-        ProcessingJob processingJob = processingJobRepository
-                .findByUploadedFileId(savedFile.getId())
                 .orElse(null);
 
-        if (processingJob == null) {
+        ProcessingJob existingJob = null;
+
+        if (existingFile != null) {
+            existingJob = processingJobRepository
+                    .findByUploadedFileId(existingFile.getId())
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Processing job not found for uploaded file"
+                    ));
+
+            if (!existingJob.allowsFileModification()) {
+                throw new BusinessConflictException(
+                        "The file cannot be replaced because its processing job is already in state "
+                                + existingJob.getStatus()
+                );
+            }
+        }
+
+        StoredFile storedFile = fileStorageService.store(file, username);
+
+        UploadedFile uploadedFile;
+
+        if (existingFile != null) {
+            existingFile.replaceWith(
+                    storedFile.storedFilename(),
+                    storedFile.relativeStoragePath(),
+                    file.getContentType(),
+                    file.getSize(),
+                    storedFile.checksum()
+            );
+
+            uploadedFile = existingFile;
+        } else {
+            uploadedFile = new UploadedFile(
+                    originalFilename,
+                    storedFile.storedFilename(),
+                    storedFile.relativeStoragePath(),
+                    file.getContentType(),
+                    file.getSize(),
+                    storedFile.checksum(),
+                    UploadedFileStatus.STORED,
+                    currentUser
+            );
+        }
+
+        UploadedFile savedFile = uploadedFileRepository.save(uploadedFile);
+        ProcessingJob processingJob;
+
+        if (existingJob == null) {
             processingJob = processingJobRepository.save(
                     new ProcessingJob(savedFile, "File uploaded successfully")
             );
@@ -100,7 +120,8 @@ public class ReportFileService {
                     )
             );
         } else {
-            processingJob.markPendingExecution("File uploaded successfully");
+            existingJob.markPendingExecution("File replaced successfully");
+            processingJob = processingJobRepository.save(existingJob);
         }
 
         return new ReportFileUploadResponse(
@@ -140,11 +161,28 @@ public class ReportFileService {
                                 UploadedFileStatus.FAILED
                         )
                 )
-                .orElseThrow(() -> new IllegalArgumentException("Uploaded file not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Uploaded file not found"));
 
-        fileStorageService.delete(uploadedFile.getStoragePath());
+        ProcessingJob processingJob = processingJobRepository
+                .findByUploadedFileId(uploadedFile.getId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Processing job not found for uploaded file"
+                ));
+
+        if (!processingJob.allowsFileModification()) {
+            throw new BusinessConflictException(
+                    "The file cannot be updated because its processing job is already in state "
+                            + processingJob.getStatus()
+            );
+        }
+
+        String previousStoragePath = uploadedFile.getStoragePath();
 
         StoredFile storedFile = fileStorageService.store(file, username);
+
+        if (!previousStoragePath.equals(storedFile.relativeStoragePath())) {
+            fileStorageService.delete(previousStoragePath);
+        }
 
         uploadedFile.replaceWith(
                 storedFile.storedFilename(),
@@ -154,17 +192,7 @@ public class ReportFileService {
                 storedFile.checksum()
         );
 
-        ProcessingJob processingJob = processingJobRepository
-                .findByUploadedFileId(uploadedFile.getId())
-                .map(existingJob -> {
-                    existingJob.markPendingExecution("File updated successfully");
-                    return existingJob;
-                })
-                .orElseGet(() -> new ProcessingJob(
-                        uploadedFile,
-                        "File updated successfully"
-                ));
-
+        processingJob.markPendingExecution("File updated successfully");
         ProcessingJob savedJob = processingJobRepository.save(processingJob);
 
         return new ReportFileUploadResponse(
@@ -192,6 +220,19 @@ public class ReportFileService {
                         )
                 )
                 .orElseThrow(() -> new ResourceNotFoundException("Uploaded file not found"));
+
+        ProcessingJob processingJob = processingJobRepository
+                .findByUploadedFileId(uploadedFile.getId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Processing job not found for uploaded file"
+                ));
+
+        if (!processingJob.allowsFileModification()) {
+            throw new BusinessConflictException(
+                    "The file cannot be deleted because its processing job is already in state "
+                            + processingJob.getStatus()
+            );
+        }
 
         fileStorageService.delete(uploadedFile.getStoragePath());
         uploadedFile.markDeleted();

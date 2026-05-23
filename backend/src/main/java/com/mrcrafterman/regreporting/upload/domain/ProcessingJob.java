@@ -89,4 +89,8 @@ public class ProcessingJob {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public boolean allowsFileModification() {
+        return this.status == ProcessingJobStatus.PENDING_EXECUTION;
+    }
+
 }

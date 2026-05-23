@@ -38,4 +38,18 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(BusinessConflictException.class)
+    public ResponseEntity<ApiErrorResponse> handleBusinessConflictException(
+            BusinessConflictException exception
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ApiErrorResponse(
+                        Instant.now(),
+                        HttpStatus.CONFLICT.value(),
+                        "Conflict",
+                        exception.getMessage()
+                ));
+    }
+
 }
