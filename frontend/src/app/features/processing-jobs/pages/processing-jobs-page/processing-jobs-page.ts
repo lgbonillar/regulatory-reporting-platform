@@ -15,7 +15,7 @@ import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../..
 import { ProcessingJobService } from '../../services/processing-job.service'
 
 const CURRENT_USERNAME = 'analyst01'
-const FIRST_FILE_INDEX = 0
+const FIRST_JOB_INDEX = 0
 
 @Component({
   selector: 'app-processing-jobs-page',
@@ -53,7 +53,7 @@ export class ProcessingJobsPage implements OnInit {
   protected readonly filteredJobs = computed(() => {
     const selectedStatuses = this.selectedStatuses()
 
-    if (selectedStatuses.size === FIRST_FILE_INDEX) {
+    if (selectedStatuses.size === FIRST_JOB_INDEX) {
       return this.jobs()
     }
 
@@ -61,7 +61,7 @@ export class ProcessingJobsPage implements OnInit {
   })
 
   ngOnInit (): void {
-    this.loadAllJobs()
+    this.loadJobs()
   }
 
   protected toggleStatusFilterPanel (): void {
@@ -86,17 +86,13 @@ export class ProcessingJobsPage implements OnInit {
       : false
 
     if (!currentJobRemainsVisible) {
-      this.setSelectedJob(visibleJobs.at(FIRST_FILE_INDEX) ?? null)
+      this.setSelectedJob(visibleJobs.at(FIRST_JOB_INDEX) ?? null)
     }
   }
 
   protected clearStatusFilters (): void {
     this.selectedStatuses.set(new Set())
-    this.setSelectedJob(this.jobs().at(FIRST_FILE_INDEX) ?? null)
-  }
-
-  protected loadAllJobs (): void {
-    this.loadJobs()
+    this.setSelectedJob(this.jobs().at(FIRST_JOB_INDEX) ?? null)
   }
 
   protected loadMyJobs (): void {
@@ -176,14 +172,6 @@ export class ProcessingJobsPage implements OnInit {
     this.runJobAction(this.processingJobService.revoke(job.jobId, reason))
   }
 
-  protected getTransitionActorLabel (history: ProcessingJobStatusHistoryResponse): string {
-    if (history.transitionSource === 'SYSTEM') {
-      return 'System'
-    }
-
-    return history.transitionedBy ?? 'Unknown user'
-  }
-
   private loadJobs (username?: string): void {
     this.isLoading.set(true)
     this.errorMessage.set(null)
@@ -195,7 +183,7 @@ export class ProcessingJobsPage implements OnInit {
     request.subscribe({
       next: (jobs) => {
         this.jobs.set(jobs)
-        this.setSelectedJob(jobs.at(FIRST_FILE_INDEX) ?? null)
+        this.setSelectedJob(jobs.at(FIRST_JOB_INDEX) ?? null)
       },
       error: (error: unknown) => {
         this.errorMessage.set(this.resolveErrorMessage(error))
