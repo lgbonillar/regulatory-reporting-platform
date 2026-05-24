@@ -1,16 +1,12 @@
-import { DatePipe } from '@angular/common'
 import { HttpErrorResponse } from '@angular/common/http'
 import { Component, computed, inject, OnInit, signal } from '@angular/core'
 
 import { AppAlert } from '../../../../shared/components/app-alert/app-alert'
 import { AppButton } from '../../../../shared/components/app-button/app-button'
 import { AppPanel } from '../../../../shared/components/app-panel/app-panel'
-import { FileDownloadLink } from '../../../../shared/components/file-download-link/file-download-link'
-import { FilePickerButton } from '../../../../shared/components/file-picker-button/file-picker-button'
 import { PageHeader } from '../../../../shared/components/page-header/page-header'
 import { PageState } from '../../../../shared/components/page-state/page-state'
-import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
-import { UploadedFilesList } from '../../../../shared/components/uploaded-files-list/uploaded-files-list'
+import { UploadedFilesList } from '../../components/uploaded-files-list/uploaded-files-list'
 import { ReportFileUploadResponse, UploadedFileResponse } from '../../models/report-file-upload.model'
 import { ReportFileUploadService } from '../../services/report-file-upload.service'
 
@@ -20,7 +16,14 @@ const FIRST_FILE_INDEX = 0
 
 @Component({
   selector: 'app-upload-report-page',
-  imports: [ AppAlert, AppButton, AppPanel, DatePipe, FileDownloadLink, FilePickerButton, StatusBadge, PageHeader, PageState, UploadedFilesList ],
+  imports: [
+    AppAlert,
+    AppButton,
+    AppPanel,
+    PageHeader,
+    PageState,
+    UploadedFilesList
+  ],
   templateUrl: './upload-report-page.html'
 })
 export class UploadReportPage implements OnInit {

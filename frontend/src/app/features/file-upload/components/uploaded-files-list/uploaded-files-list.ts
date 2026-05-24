@@ -1,11 +1,11 @@
 import { DatePipe } from '@angular/common'
 import { Component, input, output } from '@angular/core'
 
-import { UploadedFileResponse } from '../../../features/file-upload/models/report-file-upload.model'
-import { FileDownloadLink } from '../../../shared/components/file-download-link/file-download-link'
-import { FilePickerButton } from '../../../shared/components/file-picker-button/file-picker-button'
-import { StatusBadge } from '../../../shared/components/status-badge/status-badge'
-import { AppButton } from '../app-button/app-button'
+import { AppButton } from '../../../../shared/components/app-button/app-button'
+import { FileDownloadLink } from '../../../../shared/components/file-download-link/file-download-link'
+import { FilePickerButton } from '../../../../shared/components/file-picker-button/file-picker-button'
+import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
+import { UploadedFileResponse } from '../../models/report-file-upload.model'
 
 @Component({
   selector: 'app-uploaded-files-list',

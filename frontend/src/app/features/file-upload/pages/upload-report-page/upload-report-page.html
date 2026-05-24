@@ -67,59 +67,12 @@
 
     } @else if (hasFiles()) {
 
-      <div class="hidden overflow-x-auto md:block">
-        <app-uploaded-files-list
-          [files]="files()"
-          [actionFileId]="actionFileId()"
-          (replacementSelected)="onReplacementFileSelected($event.event, $event.fileId)"
-          (deleteSelected)="deleteReportFile($event)"
-        />
-      </div>
-
-      <div class="divide-y divide-slate-200 md:hidden">
-        @for (file of files(); track file.fileId) {
-          <article class="flex flex-col gap-4 px-4 py-4">
-            <div>
-              <app-file-download-link
-                [fileId]="file.fileId"
-                [filename]="file.originalFilename"
-                [fileStatus]="file.fileStatus"
-              />
-              <p class="mt-1 break-all text-xs text-slate-500">
-                {{ file.fileId }}
-              </p>
-            </div>
-
-            <div class="flex flex-wrap items-center gap-2 text-sm">
-
-              <app-status-badge [status]="file.fileStatus" />
-
-              <span class="text-slate-500">
-                {{ file.uploadedAt | date: 'mediumDate' }}
-              </span>
-            </div>
-
-            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-
-              <app-file-picker-button
-                label="Update"
-                accept=".xlsx"
-                [disabled]="isFileActionRunning(file.fileId)"
-                (fileSelected)="onReplacementFileSelected($event, file.fileId)"
-              />
-
-              <app-button
-                variant="danger"
-                [disabled]="isFileActionRunning(file.fileId)"
-                (click)="deleteReportFile(file.fileId)"
-              >
-                Delete
-              </app-button>
-              
-            </div>
-          </article>
-        }
-      </div>
+      <app-uploaded-files-list
+        [files]="files()"
+        [actionFileId]="actionFileId()"
+        (replacementSelected)="onReplacementFileSelected($event.event, $event.fileId)"
+        (deleteSelected)="deleteReportFile($event)"
+      />
 
     } @else {
 
