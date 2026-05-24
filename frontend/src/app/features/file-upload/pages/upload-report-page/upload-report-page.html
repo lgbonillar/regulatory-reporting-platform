@@ -65,7 +65,7 @@
         />
       </div>
 
-    } @else if (store.files().length > 0) {
+    } @else if (store.hasFiles()) {
 
       <app-uploaded-files-list
         [files]="store.files()"
