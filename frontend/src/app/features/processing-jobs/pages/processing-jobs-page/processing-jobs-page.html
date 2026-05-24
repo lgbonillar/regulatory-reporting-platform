@@ -56,9 +56,6 @@
             {{ filteredJobs().length }} shown
           </span>
 
-          @if (isLoading()) {
-            <span class="text-sm text-slate-500">Loading...</span>
-          }
         </div>
 
         <div class="relative">
@@ -129,7 +126,18 @@
         </div>
       </div>
 
-      @if (filteredJobs().length > 0) {
+      @if (isLoading()) {
+
+        <div class="p-6">
+          <app-page-state
+            type="loading"
+            title="Loading jobs"
+            message="Please wait while processing jobs are loaded."
+          />
+        </div>
+
+      } @else if (filteredJobs().length > 0) {
+
         <div class="hidden overflow-x-auto lg:block">
           <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
             <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
@@ -220,16 +228,23 @@
             </article>
           }
         </div>
+
       } @else {
-        <div class="px-4 py-10 text-center sm:px-6">
-          <p class="text-sm font-medium text-slate-700">No processing jobs found.</p>
+
+        <div class="p-6">
+          <app-page-state
+            type="empty"
+            title="No processing jobs found"
+            message="Try changing the filters or loading all jobs."
+          />
         </div>
+
       }
     </div>
 
     <aside class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-    @if (selectedJob(); as job) {
-      <div class="border-b border-slate-200 pb-4">
+      @if (selectedJob(); as job) {
+        <div class="border-b border-slate-200 pb-4">
         <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
           Selected process
         </p>
@@ -323,7 +338,7 @@
         <div>
           <dt class="font-medium text-slate-500">File status</dt>
           <dd class="mt-1">
-            <app-status-badge [status]="job.jobStatus" />
+            <app-status-badge [status]="job.fileStatus" />
           </dd>
         </div>
 
@@ -429,19 +444,26 @@
       <section class="mt-6 border-t border-slate-200 pt-4">
         <div class="flex items-center justify-between gap-3">
           <h3 class="text-sm font-semibold text-slate-950">History</h3>
-
-          @if (isHistoryLoading()) {
-            <span class="text-xs text-slate-500">Loading...</span>
-          }
         </div>
 
-        @if (historyErrorMessage()) {
-          <p class="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-            {{ historyErrorMessage() }}
-          </p>
-        }
+        @if (isHistoryLoading()) {
 
-        @if (selectedJobHistory().length > 0) {
+          <app-page-state
+            type="loading"
+            title="Loading history"
+            message="Please wait while the status history is loaded."
+          />
+
+        } @else if (historyErrorMessage()) {
+
+          <app-page-state
+            type="error"
+            title="History could not be loaded"
+            [message]="historyErrorMessage()"
+          />
+
+        } @else if (selectedJobHistory().length > 0) {
+
           <ol class="mt-4 space-y-4">
             @for (history of selectedJobHistory(); track history.id) {
               <li class="border-l-2 border-slate-200 pl-4">
@@ -464,14 +486,24 @@
               </li>
             }
           </ol>
-        } @else if (!isHistoryLoading() && !historyErrorMessage()) {
-          <p class="mt-3 text-sm text-slate-500">No history available.</p>
+
+        } @else {
+
+          <app-page-state
+            type="empty"
+            title="No status history"
+            message="This job does not have status transitions yet."
+          />
+
         }
       </section>
-    } @else {
-      <h2 class="text-base font-semibold text-slate-950">Job details</h2>
-      <p class="mt-4 text-sm text-slate-500">Select a job to view details.</p>
-    }
-  </aside>
+      } @else {
+        <app-page-state
+          type="empty"
+          title="No process selected"
+          message="Select a processing job to view its details."
+        />
+      }
+    </aside>
   </section>
 </section>

@@ -66,17 +66,20 @@
         <h2 class="text-base font-semibold text-slate-950">Files</h2>
         <p class="text-sm text-slate-500">Stored reports for {{ username() }}</p>
       </div>
+    </div>
 
-      @if (isLoadingFiles()) {
+    @if (isLoadingFiles()) {
+
+      <div class="p-6">
         <app-page-state
           type="loading"
           title="Loading files"
           message="Please wait while the report files are loaded."
         />
-      }
-    </div>
+      </div>
 
-    @if (hasFiles()) {
+    } @else if (hasFiles()) {
+
       <div class="hidden overflow-x-auto md:block">
         <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
           <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
@@ -197,12 +200,15 @@
           </article>
         }
       </div>
+
     } @else {
+
       <app-page-state
         type="empty"
         title="No files uploaded"
         message="Upload an Excel file to start a processing flow."
       />
+      
     }
   </section>
 </section>
