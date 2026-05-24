@@ -7,36 +7,12 @@
   </app-page-header>
 
   <app-panel padding="normal">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-      <div class="flex-1">
-        <label class="block cursor-pointer text-sm font-medium text-slate-700" for="report-file">
-          Upload report file
-        </label>
-
-        <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <input
-            id="report-file"
-            class="block w-full cursor-pointer rounded-md border border-slate-300 bg-white text-sm text-slate-700 file:mr-4 file:cursor-pointer file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-slate-700"
-            type="file"
-            accept=".xlsx"
-            (change)="onFileSelected($event)"
-          />
-
-          <app-button
-            variant="primary"
-            [loading]="store.isUploading()"
-            [disabled]="store.isUploading()"
-            (click)="store.uploadSelectedFile()"
-          >
-            Upload
-          </app-button>
-        </div>
-
-        @if (store.selectedFileSummary()) {
-          <p class="mt-2 text-sm text-slate-500">{{ store.selectedFileSummary() }}</p>
-        }
-      </div>
-    </div>
+    <app-report-file-upload-control
+      [selectedFileSummary]="store.selectedFileSummary()"
+      [isUploading]="store.isUploading()"
+      (fileSelected)="onFileSelected($event)"
+      (uploadRequested)="store.uploadSelectedFile()"
+    />
   </app-panel>
 
   @if (store.errorMessage()) {

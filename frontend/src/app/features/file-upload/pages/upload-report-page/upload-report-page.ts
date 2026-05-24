@@ -1,11 +1,11 @@
 import { Component, inject, OnInit, signal } from '@angular/core'
 
 import { AppAlert } from '../../../../shared/components/app-alert/app-alert'
-import { AppButton } from '../../../../shared/components/app-button/app-button'
 import { AppPanel } from '../../../../shared/components/app-panel/app-panel'
 import { ConfirmationDialog } from '../../../../shared/components/confirmation-dialog/confirmation-dialog'
 import { PageHeader } from '../../../../shared/components/page-header/page-header'
 import { PageState } from '../../../../shared/components/page-state/page-state'
+import { ReportFileUploadControl } from '../../components/report-file-upload-control/report-file-upload-control'
 import { UploadedFilesList } from '../../components/uploaded-files-list/uploaded-files-list'
 import { UploadReportPageStore } from './upload-report-page.store'
 
@@ -13,7 +13,7 @@ const FIRST_FILE_INDEX = 0
 
 @Component({
   selector: 'app-upload-report-page',
-  imports: [ AppAlert, AppButton, AppPanel, ConfirmationDialog, PageHeader, PageState, UploadedFilesList ],
+  imports: [ AppAlert, AppPanel, ConfirmationDialog, PageHeader, PageState, ReportFileUploadControl, UploadedFilesList ],
   providers: [ UploadReportPageStore ],
   templateUrl: './upload-report-page.html'
 })
