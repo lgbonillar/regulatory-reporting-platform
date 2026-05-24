@@ -6,6 +6,7 @@ import { AppAlert } from '../../../../shared/components/app-alert/app-alert'
 import { AppButton } from '../../../../shared/components/app-button/app-button'
 import { AppPanel } from '../../../../shared/components/app-panel/app-panel'
 import { FileDownloadLink } from '../../../../shared/components/file-download-link/file-download-link'
+import { PageHeader } from '../../../../shared/components/page-header/page-header'
 import { PageState } from '../../../../shared/components/page-state/page-state'
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
 import { ReportFileUploadResponse, UploadedFileResponse } from '../../models/report-file-upload.model'
@@ -17,7 +18,7 @@ const FIRST_FILE_INDEX = 0
 
 @Component({
   selector: 'app-upload-report-page',
-  imports: [ AppAlert, AppButton, AppPanel, DatePipe, FileDownloadLink, StatusBadge, PageState ],
+  imports: [ AppAlert, AppButton, AppPanel, DatePipe, FileDownloadLink, StatusBadge, PageHeader, PageState ],
   templateUrl: './upload-report-page.html'
 })
 export class UploadReportPage implements OnInit {

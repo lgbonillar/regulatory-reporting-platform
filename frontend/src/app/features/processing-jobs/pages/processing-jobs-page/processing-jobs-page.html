@@ -1,10 +1,5 @@
 <section class="flex w-full flex-col gap-6">
-  <header class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-    <div>
-      <p class="text-sm font-medium text-slate-500">Processing jobs</p>
-      <h1 class="text-2xl font-semibold text-slate-950 sm:text-3xl">Job monitor</h1>
-    </div>
-
+  <app-page-header eyebrow="Processing jobs" title="Job monitor">
     <div class="flex flex-col gap-2 sm:flex-row">
       <input
         class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-500 sm:w-64"
@@ -26,7 +21,7 @@
         All
       </app-button>
     </div>
-  </header>
+  </app-page-header>
 
   @if (errorMessage()) {
     <app-alert type="error" [message]="errorMessage()!" />

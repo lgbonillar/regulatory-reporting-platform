@@ -1,15 +1,10 @@
 <section class="flex w-full flex-col gap-6">
-  <header class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-    <div>
-      <p class="text-sm font-medium text-slate-500">Report files</p>
-      <h1 class="text-2xl font-semibold text-slate-950 sm:text-3xl">Uploaded Excel files</h1>
-    </div>
-
+  <app-page-header eyebrow="Report files" title="Uploaded Excel files">
     <p class="text-sm text-slate-500">
       User:
       <span class="font-medium text-slate-800">{{ username() }}</span>
     </p>
-  </header>
+  </app-page-header>
 
   <app-panel padding="normal">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
