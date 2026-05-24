@@ -131,7 +131,7 @@ class UploadedFileCommandServiceTest {
         when(uploadedFileRepository.findByIdAndUploadedByIdAndStatusIn(
                 fileId,
                 analyst.getId(),
-                java.util.List.of(
+                List.of(
                         UploadedFileStatus.STORED,
                         UploadedFileStatus.MISSING,
                         UploadedFileStatus.FAILED
@@ -168,7 +168,7 @@ class UploadedFileCommandServiceTest {
         when(uploadedFileRepository.findByIdAndUploadedByIdAndStatusIn(
                 fileId,
                 analyst.getId(),
-                java.util.List.of(
+                List.of(
                         UploadedFileStatus.STORED,
                         UploadedFileStatus.MISSING,
                         UploadedFileStatus.FAILED
@@ -191,7 +191,7 @@ class UploadedFileCommandServiceTest {
         when(uploadedFileRepository.findByIdAndUploadedByIdAndStatusIn(
                 fileId,
                 analyst.getId(),
-                java.util.List.of(
+                List.of(
                         UploadedFileStatus.STORED,
                         UploadedFileStatus.MISSING,
                         UploadedFileStatus.FAILED
@@ -218,7 +218,7 @@ class UploadedFileCommandServiceTest {
         when(uploadedFileRepository.findByIdAndUploadedByIdAndStatusIn(
                 fileId,
                 analyst.getId(),
-                java.util.List.of(
+                List.of(
                         UploadedFileStatus.STORED,
                         UploadedFileStatus.MISSING,
                         UploadedFileStatus.FAILED

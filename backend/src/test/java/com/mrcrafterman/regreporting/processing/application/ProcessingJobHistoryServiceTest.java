@@ -91,8 +91,7 @@ class ProcessingJobHistoryServiceTest {
 
         assertThat(result.getFirst().newStatus()).isEqualTo(ProcessingJobStatus.PROCESSING.name());
 
-        assertThat(result.getFirst().transitionSource()).isEqualTo(ProcessingJobTransitionSource.USER.name
-                ());
+        assertThat(result.getFirst().transitionSource()).isEqualTo(ProcessingJobTransitionSource.USER.name());
         assertThat(result.getFirst().transitionedBy()).isEqualTo("admin01");
 
 
