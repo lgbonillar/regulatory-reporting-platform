@@ -94,4 +94,18 @@
     />
   </section>
 
+  <app-confirmation-dialog
+    [isOpen]="isConfirmationOpen()"
+    [title]="confirmationTitle()"
+    [message]="confirmationMessage()"
+    [confirmLabel]="confirmationLabel()"
+    confirmVariant="danger"
+    [requiresReason]="true"
+    reasonLabel="Reason"
+    reasonPlaceholder="Write a clear reason for this decision."
+    [isSubmitting]="store.isActionRunning()"
+    (cancelRequested)="cancelConfirmation()"
+    (confirmRequested)="confirmAction($event)"
+  />
+
 </section>

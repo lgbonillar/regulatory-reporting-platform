@@ -71,7 +71,7 @@
         [files]="store.files()"
         [actionFileId]="store.actionFileId()"
         (replacementSelected)="onReplacementFileSelected($event.event, $event.fileId)"
-        (deleteSelected)="store.deleteReportFile($event)"
+        (deleteSelected)="requestDeleteReportFile($event)"
       />
 
     } @else {
@@ -86,4 +86,15 @@
       
     }
   </app-panel>
+
+  <app-confirmation-dialog
+    [isOpen]="pendingDeleteFileId() !== null"
+    title="Delete file"
+    message="This file will no longer be available for processing. This action cannot be undone."
+    confirmLabel="Delete"
+    confirmVariant="danger"
+    [isSubmitting]="store.actionFileId() !== null"
+    (cancelRequested)="cancelDeleteReportFile()"
+    (confirmRequested)="confirmDeleteReportFile()"
+  />
 </section>
