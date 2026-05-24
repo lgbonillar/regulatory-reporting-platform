@@ -2,13 +2,14 @@ import { DatePipe } from '@angular/common'
 import { Component, input, output } from '@angular/core'
 
 import { AppButton } from '../../../../shared/components/app-button/app-button'
+import { CopyableCode } from '../../../../shared/components/copyable-code/copyable-code'
 import { FileDownloadLink } from '../../../../shared/components/file-download-link/file-download-link'
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
 import { ProcessingJobResponse } from '../../models/processing-job.model'
 
 @Component({
   selector: 'app-processing-jobs-list',
-  imports: [ AppButton, DatePipe, FileDownloadLink, StatusBadge ],
+  imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, StatusBadge ],
   template: `
     <div class="hidden overflow-x-auto lg:block">
       <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
@@ -37,7 +38,9 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
                   [filename]="job.originalFilename"
                   [fileStatus]="job.fileStatus"
                 />
-                <p class="mt-1 break-all text-xs text-slate-500">{{ job.jobId }}</p>
+                <div class="mt-1">
+                  <app-copyable-code [value]="job.jobId" [ariaLabel]="'Copy job ID'" />
+                </div>
               </td>
 
               <td class="px-6 py-4 text-slate-600">{{ job.uploadedBy }}</td>
@@ -73,7 +76,9 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
               [filename]="job.originalFilename"
               [fileStatus]="job.fileStatus"
             />
-            <p class="mt-1 break-all text-xs text-slate-500">{{ job.jobId }}</p>
+            <div class="mt-1">
+              <app-copyable-code [value]="job.jobId" [ariaLabel]="'Copy job ID'" />
+            </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-2">

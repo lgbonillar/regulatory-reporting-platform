@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common'
 import { Component, input, output } from '@angular/core'
 
 import { AppButton } from '../../../../shared/components/app-button/app-button'
+import { CopyableCode } from '../../../../shared/components/copyable-code/copyable-code'
 import { FileDownloadLink } from '../../../../shared/components/file-download-link/file-download-link'
 import { FilePickerButton } from '../../../../shared/components/file-picker-button/file-picker-button'
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
@@ -9,7 +10,7 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
 
 @Component({
   selector: 'app-uploaded-files-list',
-  imports: [ AppButton, DatePipe, FileDownloadLink, FilePickerButton, StatusBadge ],
+  imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, FilePickerButton, StatusBadge ],
   template: `
     <div class="hidden overflow-x-auto md:block">
       <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
@@ -33,9 +34,9 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
                     [fileStatus]="file.fileStatus"
                   />
 
-                  <p class="mt-1 break-all text-xs text-slate-500">
-                    {{ file.fileId }}
-                  </p>
+                  <div class="mt-1">
+                    <app-copyable-code [value]="file.fileId" [ariaLabel]="'Copy file ID'" />
+                  </div>
                 </div>
               </td>
 
@@ -81,9 +82,9 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
               [fileStatus]="file.fileStatus"
             />
 
-            <p class="mt-1 break-all text-xs text-slate-500">
-              {{ file.fileId }}
-            </p>
+            <div class="mt-1">
+              <app-copyable-code [value]="file.fileId" [ariaLabel]="'Copy file ID'" />
+            </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-2 text-sm">

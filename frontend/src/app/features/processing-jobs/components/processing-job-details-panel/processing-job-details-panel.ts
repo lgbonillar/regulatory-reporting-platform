@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common'
 import { Component, input, output } from '@angular/core'
 
 import { AppButton } from '../../../../shared/components/app-button/app-button'
+import { CopyableCode } from '../../../../shared/components/copyable-code/copyable-code'
 import { FileDownloadLink } from '../../../../shared/components/file-download-link/file-download-link'
 import { PageState } from '../../../../shared/components/page-state/page-state'
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
@@ -9,7 +10,7 @@ import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../..
 
 @Component({
   selector: 'app-processing-job-details-panel',
-  imports: [ AppButton, DatePipe, FileDownloadLink, PageState, StatusBadge ],
+  imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, PageState, StatusBadge ],
   template: `
     <aside class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
       @if (job(); as selectedJob) {
@@ -25,9 +26,7 @@ import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../..
           <div class="mt-3 flex flex-wrap items-center gap-2">
             <app-status-badge [status]="selectedJob.jobStatus" />
 
-            <span class="text-xs text-slate-500">
-              {{ selectedJob.jobId }}
-            </span>
+          <app-copyable-code [value]="selectedJob.jobId" [ariaLabel]="'Copy job ID'" />
           </div>
 
           <div class="mt-4 flex flex-wrap gap-2">
@@ -78,12 +77,16 @@ import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../..
         <dl class="mt-4 grid gap-4 text-sm">
           <div>
             <dt class="font-medium text-slate-500">Job ID</dt>
-            <dd class="mt-1 break-all text-slate-900">{{ selectedJob.jobId }}</dd>
+            <dd class="mt-1">
+              <app-copyable-code [value]="selectedJob.jobId" [ariaLabel]="'Copy job ID'" />
+            </dd>
           </div>
 
           <div>
             <dt class="font-medium text-slate-500">File ID</dt>
-            <dd class="mt-1 break-all text-slate-900">{{ selectedJob.fileId }}</dd>
+            <dd class="mt-1">
+              <app-copyable-code [value]="selectedJob.fileId" [ariaLabel]="'Copy file ID'" />
+            </dd>
           </div>
 
           <div>
