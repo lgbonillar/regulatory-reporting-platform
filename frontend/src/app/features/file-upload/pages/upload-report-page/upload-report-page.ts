@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common'
 import { HttpErrorResponse } from '@angular/common/http'
 import { Component, computed, inject, OnInit, signal } from '@angular/core'
 
+import { AppAlert } from '../../../../shared/components/app-alert/app-alert'
 import { FileDownloadLink } from '../../../../shared/components/file-download-link/file-download-link'
 import { PageState } from '../../../../shared/components/page-state/page-state'
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
@@ -14,7 +15,7 @@ const FIRST_FILE_INDEX = 0
 
 @Component({
   selector: 'app-upload-report-page',
-  imports: [ DatePipe, FileDownloadLink, StatusBadge, PageState ],
+  imports: [ AppAlert, DatePipe, FileDownloadLink, StatusBadge, PageState ],
   templateUrl: './upload-report-page.html'
 })
 export class UploadReportPage implements OnInit {

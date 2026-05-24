@@ -49,15 +49,11 @@
   </section>
 
   @if (errorMessage()) {
-    <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-      {{ errorMessage() }}
-    </div>
+    <app-alert type="error" [message]="errorMessage()!" />
   }
 
   @if (successMessage()) {
-    <div class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-      {{ successMessage() }}
-    </div>
+    <app-alert type="success" [message]="successMessage()!" />
   }
 
   <section class="rounded-lg border border-slate-200 bg-white shadow-sm">

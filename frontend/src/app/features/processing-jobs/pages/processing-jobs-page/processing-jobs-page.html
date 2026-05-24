@@ -41,9 +41,7 @@
   </header>
 
   @if (errorMessage()) {
-    <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-      {{ errorMessage() }}
-    </div>
+    <app-alert type="error" [message]="errorMessage()!" />
   }
 
   <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
