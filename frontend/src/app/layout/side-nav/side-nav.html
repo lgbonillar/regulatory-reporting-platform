@@ -1,0 +1,65 @@
+<aside
+    class="fixed inset-y-0 left-0 z-30 flex flex-col border-r border-slate-800 bg-slate-950 text-white transition-all duration-200"
+    [class.w-20]="isCollapsed()"
+    [class.w-72]="!isCollapsed()"
+    aria-label="Primary navigation"
+  >
+  <div class="flex h-16 items-center gap-3 border-b border-slate-800 px-4">
+    <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-sm font-bold">
+      R
+    </span>
+
+    @if (!isCollapsed()) {
+      <div class="min-w-0">
+        <p class="truncate text-sm font-semibold">Regulatory Reporting</p>
+        <p class="truncate text-xs text-slate-400">MVP workspace</p>
+      </div>
+    }
+  </div>
+
+  <button
+    class="mx-3 mt-4 rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+    type="button"
+    (click)="toggleCollapsed.emit()"
+  >
+    @if (isCollapsed()) {
+      →
+    } @else {
+      Collapse
+    }
+  </button>
+
+  <nav class="mt-4 flex flex-1 flex-col gap-1 px-3">
+    @for (item of items(); track item.route) {
+      @if (item.disabled) {
+        <span
+          class="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-500"
+          [attr.title]="isCollapsed() ? item.label : null"
+        >
+          <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-xs font-semibold">
+            {{ getIconLabel(item) }}
+          </span>
+
+          @if (!isCollapsed()) {
+            <span>{{ item.label }}</span>
+          }
+        </span>
+      } @else {
+        <a
+          class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 no-underline transition hover:bg-slate-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          routerLinkActive="bg-slate-800 text-white"
+          [routerLink]="item.route"
+          [attr.title]="isCollapsed() ? item.label : null"
+        >
+          <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-xs font-semibold">
+            {{ getIconLabel(item) }}
+          </span>
+
+          @if (!isCollapsed()) {
+            <span>{{ item.label }}</span>
+          }
+        </a>
+      }
+    }
+  </nav>
+</aside>
