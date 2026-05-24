@@ -135,10 +135,6 @@ export class UploadReportPage implements OnInit {
     })
   }
 
-  protected isFileActionRunning (fileId: string): boolean {
-    return this.actionFileId() === fileId
-  }
-
   private loadReportFiles (): void {
     this.isLoadingFiles.set(true)
 

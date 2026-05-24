@@ -11,6 +11,7 @@ import { FileDownloadLink } from '../../../../shared/components/file-download-li
 import { PageHeader } from '../../../../shared/components/page-header/page-header'
 import { PageState } from '../../../../shared/components/page-state/page-state'
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
+import { ProcessingJobsList } from '../../components/processing-jobs-list/processing-jobs-list'
 import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../../models/processing-job.model'
 import { ProcessingJobService } from '../../services/processing-job.service'
 
@@ -19,7 +20,7 @@ const FIRST_FILE_INDEX = 0
 
 @Component({
   selector: 'app-processing-jobs-page',
-  imports: [ AppAlert, AppButton, AppPanel, AppTextInput, DatePipe, FileDownloadLink, StatusBadge, PageHeader, PageState ],
+  imports: [ AppAlert, AppButton, AppPanel, AppTextInput, DatePipe, FileDownloadLink, StatusBadge, PageHeader, PageState, ProcessingJobsList ],
   templateUrl: './processing-jobs-page.html'
 })
 export class ProcessingJobsPage implements OnInit {
