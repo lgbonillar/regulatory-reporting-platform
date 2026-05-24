@@ -27,18 +27,14 @@
             (change)="onFileSelected($event)"
           />
 
-          <button
-            class="inline-flex items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-            type="button"
+          <app-button
+            variant="primary"
+            [loading]="isUploading()"
             [disabled]="isUploading()"
             (click)="uploadSelectedFile()"
           >
-            @if (isUploading()) {
-              Uploading...
-            } @else {
-              Upload
-            }
-          </button>
+            Upload
+          </app-button>
         </div>
 
         @if (selectedFileSummary()) {
@@ -129,14 +125,13 @@
                       />
                     </label>
 
-                    <button
-                      class="inline-flex items-center justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-red-300"
-                      type="button"
+                    <app-button
+                      variant="danger"
                       [disabled]="isFileActionRunning(file.fileId)"
                       (click)="deleteReportFile(file.fileId)"
                     >
                       Delete
-                    </button>
+                    </app-button>
                   </div>
                 </td>
               </tr>
