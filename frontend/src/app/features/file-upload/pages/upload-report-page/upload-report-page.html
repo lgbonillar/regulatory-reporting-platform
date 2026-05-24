@@ -105,20 +105,13 @@
 
                 <td class="px-6 py-4">
                   <div class="flex items-center justify-end gap-2">
-                    <label
-                      class="inline-flex cursor-pointer items-center justify-center rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                      [class.pointer-events-none]="isFileActionRunning(file.fileId)"
-                      [class.opacity-50]="isFileActionRunning(file.fileId)"
-                    >
-                      Update
-                      <input
-                        class="sr-only"
-                        type="file"
-                        accept=".xlsx"
-                        [disabled]="isFileActionRunning(file.fileId)"
-                        (change)="onReplacementFileSelected($event, file.fileId)"
-                      />
-                    </label>
+
+                    <app-file-picker-button
+                      label="Update"
+                      accept=".xlsx"
+                      [disabled]="isFileActionRunning(file.fileId)"
+                      (fileSelected)="onReplacementFileSelected($event, file.fileId)"
+                    />
 
                     <app-button
                       variant="danger"
@@ -127,6 +120,7 @@
                     >
                       Delete
                     </app-button>
+                    
                   </div>
                 </td>
               </tr>
@@ -159,20 +153,13 @@
             </div>
 
             <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <label
-                class="inline-flex cursor-pointer items-center justify-center rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                [class.pointer-events-none]="isFileActionRunning(file.fileId)"
-                [class.opacity-50]="isFileActionRunning(file.fileId)"
-              >
-                Update
-                <input
-                  class="sr-only"
-                  type="file"
-                  accept=".xlsx"
-                  [disabled]="isFileActionRunning(file.fileId)"
-                  (change)="onReplacementFileSelected($event, file.fileId)"
-                />
-              </label>
+
+              <app-file-picker-button
+                label="Update"
+                accept=".xlsx"
+                [disabled]="isFileActionRunning(file.fileId)"
+                (fileSelected)="onReplacementFileSelected($event, file.fileId)"
+              />
 
               <button
                 class="inline-flex items-center justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-red-300"
