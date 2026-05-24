@@ -2,7 +2,7 @@
   <app-page-header eyebrow="Report files" title="Uploaded Excel files">
     <p class="text-sm text-slate-500">
       User:
-      <span class="font-medium text-slate-800">{{ username() }}</span>
+      <span class="font-medium text-slate-800">{{ store.username() }}</span>
     </p>
   </app-page-header>
 
@@ -24,38 +24,38 @@
 
           <app-button
             variant="primary"
-            [loading]="isUploading()"
-            [disabled]="isUploading()"
-            (click)="uploadSelectedFile()"
+            [loading]="store.isUploading()"
+            [disabled]="store.isUploading()"
+            (click)="store.uploadSelectedFile()"
           >
             Upload
           </app-button>
         </div>
 
-        @if (selectedFileSummary()) {
-          <p class="mt-2 text-sm text-slate-500">{{ selectedFileSummary() }}</p>
+        @if (store.selectedFileSummary()) {
+          <p class="mt-2 text-sm text-slate-500">{{ store.selectedFileSummary() }}</p>
         }
       </div>
     </div>
   </app-panel>
 
-  @if (errorMessage()) {
-    <app-alert type="error" [message]="errorMessage()!" />
+  @if (store.errorMessage()) {
+    <app-alert type="error" [message]="store.errorMessage()!" />
   }
 
-  @if (successMessage()) {
-    <app-alert type="success" [message]="successMessage()!" />
+  @if (store.successMessage()) {
+    <app-alert type="success" [message]="store.successMessage()!" />
   }
 
   <app-panel>
     <div class="flex flex-col gap-2 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
       <div>
         <h2 class="text-base font-semibold text-slate-950">Files</h2>
-        <p class="text-sm text-slate-500">Stored reports for {{ username() }}</p>
+        <p class="text-sm text-slate-500">Stored reports for {{ store.username() }}</p>
       </div>
     </div>
 
-    @if (isLoadingFiles()) {
+    @if (store.isLoadingFiles()) {
 
       <div class="p-6">
         <app-page-state
@@ -65,13 +65,13 @@
         />
       </div>
 
-    } @else if (hasFiles()) {
+    } @else if (store.files().length > 0) {
 
       <app-uploaded-files-list
-        [files]="files()"
-        [actionFileId]="actionFileId()"
+        [files]="store.files()"
+        [actionFileId]="store.actionFileId()"
         (replacementSelected)="onReplacementFileSelected($event.event, $event.fileId)"
-        (deleteSelected)="deleteReportFile($event)"
+        (deleteSelected)="store.deleteReportFile($event)"
       />
 
     } @else {
