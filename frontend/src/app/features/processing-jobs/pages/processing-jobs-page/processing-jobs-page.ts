@@ -9,7 +9,7 @@ import { AppTextInput } from '../../../../shared/components/app-text-input/app-t
 import { PageHeader } from '../../../../shared/components/page-header/page-header'
 import { PageState } from '../../../../shared/components/page-state/page-state'
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
-import { ProcessingJobDetailsPanel } from '../../components/processing-jobs-details-panel/processing-jobs-details-panel'
+import { ProcessingJobDetailsPanel } from '../../components/processing-job-details-panel/processing-job-details-panel'
 import { ProcessingJobsList } from '../../components/processing-jobs-list/processing-jobs-list'
 import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../../models/processing-job.model'
 import { ProcessingJobService } from '../../services/processing-job.service'
