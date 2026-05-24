@@ -4,6 +4,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core'
 
 import { FileStatus } from '../../../../core/regulatory.model'
 import { FileDownloadLink } from '../../../../shared/components/file-download-link/file-download-link'
+import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
 import { ReportFileUploadResponse, UploadedFileResponse } from '../../models/report-file-upload.model'
 import { ReportFileUploadService } from '../../services/report-file-upload.service'
 
@@ -13,7 +14,7 @@ const FIRST_FILE_INDEX = 0
 
 @Component({
   selector: 'app-upload-report-page',
-  imports: [ DatePipe, FileDownloadLink ],
+  imports: [ DatePipe, FileDownloadLink, StatusBadge ],
   templateUrl: './upload-report-page.html'
 })
 export class UploadReportPage implements OnInit {

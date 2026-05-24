@@ -102,12 +102,7 @@
                 </td>
 
                 <td class="px-6 py-4">
-                  <span
-                    class="inline-flex rounded-full px-2 py-1 text-xs font-medium"
-                    [class]="getFileStatusClasses(file.fileStatus)"
-                  >
-                    {{ file.fileStatus }}
-                  </span>
+                  <app-status-badge [status]="file.fileStatus" variant="file" />
                 </td>
 
                 <td class="px-6 py-4 text-slate-600">
@@ -163,12 +158,7 @@
 
             <div class="flex flex-wrap items-center gap-2 text-sm">
 
-              <span
-                class="inline-flex rounded-full px-2 py-1 text-xs font-medium"
-                [class]="getFileStatusClasses(file.fileStatus)"
-              >
-                {{ file.fileStatus }}
-              </span>
+              <app-status-badge [status]="file.fileStatus" variant="file" />
 
               <span class="text-slate-500">
                 {{ file.uploadedAt | date: 'mediumDate' }}

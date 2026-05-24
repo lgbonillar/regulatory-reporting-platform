@@ -120,12 +120,7 @@
                       (change)="onStatusFilterChange($event, status)"
                     />
 
-                    <span
-                      class="inline-flex rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset"
-                      [class]="getStatusClasses(status)"
-                    >
-                      {{ getStatusLabel(status) }}
-                    </span>
+                    <app-status-badge [status]="status" variant="job" />
                   </label>
                 }
               </fieldset>
@@ -168,9 +163,7 @@
                   <td class="px-6 py-4 text-slate-600">{{ job.uploadedBy }}</td>
 
                   <td class="px-6 py-4">
-                    <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset" [class]="getStatusClasses(job.jobStatus)">
-                      {{ getStatusLabel(job.jobStatus) }}
-                    </span>
+                    <app-status-badge [status]="job.jobStatus" variant="job" />
                   </td>
 
                   <td class="px-6 py-4 text-slate-600">
@@ -208,9 +201,7 @@
               </div>
 
               <div class="flex flex-wrap items-center gap-2">
-                <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset" [class]="getStatusClasses(job.jobStatus)">
-                  {{ getStatusLabel(job.jobStatus) }}
-                </span>
+                <app-status-badge [status]="job.jobStatus" variant="job" />
 
                 <span class="text-sm text-slate-500">{{ job.uploadedBy }}</span>
               </div>
@@ -248,12 +239,7 @@
         </h2>
 
         <div class="mt-3 flex flex-wrap items-center gap-2">
-          <span
-            class="inline-flex rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset"
-            [class]="getStatusClasses(job.jobStatus)"
-          >
-            {{ getStatusLabel(job.jobStatus) }}
-          </span>
+          <app-status-badge [status]="job.jobStatus" variant="job" />
 
           <span class="text-xs text-slate-500">
             {{ job.jobId }}
@@ -330,24 +316,14 @@
         <div>
           <dt class="font-medium text-slate-500">Job Status</dt>
           <dd class="mt-1">
-            <span
-              class="inline-flex rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset"
-              [class]="getStatusClasses(job.jobStatus)"
-            >
-              {{ getStatusLabel(job.jobStatus) }}
-            </span>
+            <app-status-badge [status]="job.jobStatus" variant="job" />
           </dd>
         </div>
 
         <div>
           <dt class="font-medium text-slate-500">File status</dt>
           <dd class="mt-1">
-            <span
-              class="inline-flex rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset"
-              [class]="getFileStatusClasses(job.fileStatus)"
-            >
-              {{ job.fileStatus }}
-            </span>
+            <app-status-badge [status]="job.jobStatus" variant="job" />
           </dd>
         </div>
 
@@ -471,22 +447,12 @@
               <li class="border-l-2 border-slate-200 pl-4">
                 <div class="flex flex-wrap items-center gap-2">
                   @if (history.previousStatus) {
-                    <span
-                      class="inline-flex rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset"
-                      [class]="getStatusClasses(history.previousStatus)"
-                    >
-                      {{ getStatusLabel(history.previousStatus) }}
-                    </span>
+                    <app-status-badge [status]="job.jobStatus" variant="job" />
 
                     <span class="text-xs text-slate-400">to</span>
                   }
 
-                  <span
-                    class="inline-flex rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset"
-                    [class]="getStatusClasses(history.newStatus)"
-                  >
-                    {{ getStatusLabel(history.newStatus) }}
-                  </span>
+                  <app-status-badge [status]="job.jobStatus" variant="job" />
                 </div>
 
                 <p class="mt-2 text-sm text-slate-900">
