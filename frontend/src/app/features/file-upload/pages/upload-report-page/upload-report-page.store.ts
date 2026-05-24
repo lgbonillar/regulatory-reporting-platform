@@ -1,6 +1,6 @@
-import { HttpErrorResponse } from '@angular/common/http'
 import { computed, inject, Injectable, signal } from '@angular/core'
 
+import { resolveHttpErrorMessage } from '../../../../shared/utils/http-error-message'
 import { ReportFileUploadResponse, UploadedFileResponse } from '../../models/report-file-upload.model'
 import { ReportFileUploadService } from '../../services/report-file-upload.service'
 
@@ -58,7 +58,7 @@ export class UploadReportPageStore {
         this.loadReportFiles()
       },
       error: (error: unknown) => {
-        this.errorMessage.set(this.resolveErrorMessage(error))
+        this.errorMessage.set(resolveHttpErrorMessage(error))
       },
       complete: () => {
         this.isUploading.set(false)
@@ -77,7 +77,7 @@ export class UploadReportPageStore {
         this.loadReportFiles()
       },
       error: (error: unknown) => {
-        this.errorMessage.set(this.resolveErrorMessage(error))
+        this.errorMessage.set(resolveHttpErrorMessage(error))
       },
       complete: () => {
         this.actionFileId.set(null)
@@ -96,7 +96,7 @@ export class UploadReportPageStore {
         this.loadReportFiles()
       },
       error: (error: unknown) => {
-        this.errorMessage.set(this.resolveErrorMessage(error))
+        this.errorMessage.set(resolveHttpErrorMessage(error))
       },
       complete: () => {
         this.actionFileId.set(null)
@@ -112,7 +112,7 @@ export class UploadReportPageStore {
         this.files.set(files)
       },
       error: (error: unknown) => {
-        this.errorMessage.set(this.resolveErrorMessage(error))
+        this.errorMessage.set(resolveHttpErrorMessage(error))
       },
       complete: () => {
         this.isLoadingFiles.set(false)
@@ -120,11 +120,4 @@ export class UploadReportPageStore {
     })
   }
 
-  private resolveErrorMessage (error: unknown): string {
-    if (error instanceof HttpErrorResponse) {
-      return error.error?.message ?? 'Request failed. Please try again.'
-    }
-
-    return 'Unexpected error. Please try again.'
-  }
 }

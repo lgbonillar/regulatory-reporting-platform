@@ -1,7 +1,7 @@
-import { HttpErrorResponse } from '@angular/common/http'
 import { computed, inject, Injectable, signal } from '@angular/core'
 
 import { ProcessingJobStatus } from '../../../../core/regulatory.model'
+import { resolveHttpErrorMessage } from '../../../../shared/utils/http-error-message'
 import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../../models/processing-job.model'
 import { ProcessingJobService } from '../../services/processing-job.service'
 
@@ -68,7 +68,7 @@ export class ProcessingJobsPageStore {
         this.setSelectedJob(jobs.at(FIRST_JOB_INDEX) ?? null)
       },
       error: (error: unknown) => {
-        this.errorMessage.set(this.resolveErrorMessage(error))
+        this.errorMessage.set(resolveHttpErrorMessage(error))
         this.isLoading.set(false)
       },
       complete: () => {
@@ -180,21 +180,13 @@ export class ProcessingJobsPageStore {
         this.setSelectedJob(updatedJob)
       },
       error: (error: unknown) => {
-        this.errorMessage.set(this.resolveErrorMessage(error))
+        this.errorMessage.set(resolveHttpErrorMessage(error))
         this.isActionRunning.set(false)
       },
       complete: () => {
         this.isActionRunning.set(false)
       }
     })
-  }
-
-  private resolveErrorMessage (error: unknown): string {
-    if (error instanceof HttpErrorResponse) {
-      return error.error?.message ?? 'Request failed. Please try again.'
-    }
-
-    return 'Unexpected error. Please try again.'
   }
 
   private setSelectedJob (job: ProcessingJobResponse | null): void {
@@ -219,7 +211,7 @@ export class ProcessingJobsPageStore {
       },
       error: (error: unknown) => {
         this.selectedJobHistory.set([])
-        this.historyErrorMessage.set(this.resolveErrorMessage(error))
+        this.historyErrorMessage.set(resolveHttpErrorMessage(error))
         this.isHistoryLoading.set(false)
       },
       complete: () => {
