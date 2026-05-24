@@ -1,4 +1,4 @@
-import { Component, computed, effect, input, output, signal } from '@angular/core'
+import { Component, computed, effect, ElementRef, HostListener, input, output, signal, viewChild } from '@angular/core'
 
 import { AppButton } from '../app-button/app-button'
 
@@ -9,7 +9,11 @@ type ConfirmationVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'war
   imports: [ AppButton ],
   template: `
     @if (isOpen()) {
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6">
+      <div
+        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6"
+        tabindex="-1"
+        (mousedown)="cancelOnBackdrop($event)"
+      >
         <section
           class="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-xl"
           role="dialog"
@@ -33,6 +37,7 @@ type ConfirmationVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'war
               </label>
 
               <textarea
+                #reasonTextarea
                 id="confirmation-reason"
                 class="mt-2 min-h-28 w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
                 [placeholder]="reasonPlaceholder()"
@@ -47,7 +52,7 @@ type ConfirmationVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'war
             <app-button
               variant="secondary"
               [disabled]="isSubmitting()"
-              (click)="cancelRequested.emit()"
+              (click)="cancel()"
             >
               {{ cancelLabel() }}
             </app-button>
@@ -56,7 +61,7 @@ type ConfirmationVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'war
               [variant]="confirmVariant()"
               [disabled]="isConfirmDisabled()"
               [loading]="isSubmitting()"
-              (click)="confirm()"
+              (click)="submit()"
             >
               {{ confirmLabel() }}
             </app-button>
@@ -67,6 +72,7 @@ type ConfirmationVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'war
   `
 })
 export class ConfirmationDialog {
+
   readonly isOpen = input(false)
   readonly title = input.required<string>()
   readonly message = input.required<string>()
@@ -82,6 +88,7 @@ export class ConfirmationDialog {
   readonly confirmRequested = output<string | null>()
 
   protected readonly reason = signal('')
+  protected readonly reasonTextarea = viewChild<ElementRef<HTMLTextAreaElement>>('reasonTextarea')
   protected readonly titleId = `confirmation-dialog-title-${crypto.randomUUID()}`
   protected readonly isConfirmDisabled = computed(() =>
     this.isSubmitting() || (this.requiresReason() && !this.reason().trim())
@@ -91,13 +98,43 @@ export class ConfirmationDialog {
     effect(() => {
       if (!this.isOpen()) {
         this.reason.set('')
+        return
+      }
+
+      if (this.requiresReason()) {
+        setTimeout(() => {
+          const textarea = this.reasonTextarea()?.nativeElement
+
+          textarea?.focus()
+          textarea?.select()
+        })
       }
     })
   }
 
-  protected confirm (): void {
+  protected cancel (): void {
+    if (this.isSubmitting()) return
+
+    this.cancelRequested.emit()
+  }
+
+  protected cancelOnBackdrop (event: MouseEvent): void {
+    if (event.target !== event.currentTarget) return
+
+    this.cancel()
+  }
+
+  @HostListener('document:keydown.escape')
+  protected cancelOnEscape (): void {
+    if (!this.isOpen()) return
+
+    this.cancel()
+  }
+
+  protected submit (): void {
     if (this.isConfirmDisabled()) return
 
     this.confirmRequested.emit(this.requiresReason() ? this.reason().trim() : null)
   }
+
 }

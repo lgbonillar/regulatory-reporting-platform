@@ -39,12 +39,17 @@ export class AppButton {
   readonly loading = input(false)
 
   protected readonly classes = computed(() => {
-    const stateClasses = this.loading()
-      ? 'cursor-wait opacity-70'
-      : this.disabled()
-        ? 'cursor-not-allowed opacity-60'
-        : 'cursor-pointer'
+    let stateClasses = 'cursor-pointer'
+
+    if (this.loading()) {
+      stateClasses = 'cursor-wait opacity-70'
+    }
+
+    if (this.disabled()) {
+      stateClasses = 'cursor-not-allowed opacity-60'
+    }
 
     return `${baseClasses} ${variantClasses[this.variant()]} ${stateClasses}`
   })
+
 }
