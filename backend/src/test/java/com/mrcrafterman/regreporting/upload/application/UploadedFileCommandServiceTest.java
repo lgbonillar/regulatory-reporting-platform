@@ -65,8 +65,7 @@ class UploadedFileCommandServiceTest {
                 org.mockito.ArgumentMatchers.same(analyst)
         )).thenAnswer(invocation -> new ProcessingJob(invocation.getArgument(0), "File uploaded successfully"));
 
-                ReportFileUploadResponse result =
-                uploadedFileCommandService.uploadReportFile(multipartFile);
+        ReportFileUploadResponse result = uploadedFileCommandService.uploadReportFile(multipartFile);
 
         ArgumentCaptor<UploadedFile> uploadedFileCaptor =
                 ArgumentCaptor.forClass(UploadedFile.class);
@@ -154,6 +153,122 @@ class UploadedFileCommandServiceTest {
         );
         user.setId(UUID.randomUUID());
         return user;
+    }
+
+    @Test
+    void updateReportFileReplacesStoredFileAndMarksJobUpdated() {
+        UUID fileId = UUID.randomUUID();
+        User analyst = analyst();
+        UploadedFile uploadedFile = uploadedFile(UploadedFileStatus.STORED);
+        ProcessingJob processingJob = new ProcessingJob(uploadedFile, "File uploaded");
+        MockMultipartFile multipartFile = multipartFile();
+        StoredFile storedFile = new StoredFile(
+                "updated-report.xlsx",
+                "/uploads/updated-report.xlsx",
+                "updated-checksum"
+        );
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(analyst);
+        when(uploadedFileRepository.findByIdAndUploadedByIdAndStatusIn(
+                fileId,
+                analyst.getId(),
+                java.util.List.of(
+                        UploadedFileStatus.STORED,
+                        UploadedFileStatus.MISSING,
+                        UploadedFileStatus.FAILED
+                )
+        )).thenReturn(Optional.of(uploadedFile));
+        when(processingJobCreationService.findByUploadedFile(uploadedFile))
+                .thenReturn(Optional.of(processingJob));
+        when(fileStorageService.store(multipartFile, "analyst01")).thenReturn(storedFile);
+        when(processingJobCreationService.markFileUpdated(processingJob)).thenReturn(processingJob);
+
+        ReportFileUploadResponse result = uploadedFileCommandService.updateReportFile(fileId,
+                multipartFile);
+
+        verify(processingJobCreationService).ensureFileCanBeUpdated(processingJob);
+        verify(fileStorageService).delete("/uploads/stored-report.xlsx");
+
+        assertThat(uploadedFile.getStoredFilename()).isEqualTo("updated-report.xlsx");
+        assertThat(uploadedFile.getStoragePath()).isEqualTo("/uploads/updated-report.xlsx");
+        assertThat(uploadedFile.getChecksum()).isEqualTo("updated-checksum");
+        assertThat(uploadedFile.getStatus()).isEqualTo(UploadedFileStatus.STORED);
+
+        assertThat(result.originalFilename()).isEqualTo("report.xlsx");
+        assertThat(result.fileStatus()).isEqualTo(UploadedFileStatus.STORED.name());
+        assertThat(result.jobStatus()).isEqualTo(ProcessingJobStatus.PENDING_EXECUTION.name());
+    }
+
+    @Test
+    void updateReportFileThrowsResourceNotFoundWhenFileDoesNotExist() {
+        UUID fileId = UUID.randomUUID();
+        User analyst = analyst();
+        MockMultipartFile multipartFile = multipartFile();
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(analyst);
+        when(uploadedFileRepository.findByIdAndUploadedByIdAndStatusIn(
+                fileId,
+                analyst.getId(),
+                java.util.List.of(
+                        UploadedFileStatus.STORED,
+                        UploadedFileStatus.MISSING,
+                        UploadedFileStatus.FAILED
+                )
+        )).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> uploadedFileCommandService.updateReportFile(fileId, multipartFile))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Uploaded file not found");
+    }
+
+    @Test
+    void deleteUploadedFileMarksFileAsDeleted() {
+        UUID fileId = UUID.randomUUID();
+        User analyst = analyst();
+        UploadedFile uploadedFile = uploadedFile(UploadedFileStatus.STORED);
+        ProcessingJob processingJob = new ProcessingJob(uploadedFile, "File uploaded");
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(analyst);
+        when(uploadedFileRepository.findByIdAndUploadedByIdAndStatusIn(
+                fileId,
+                analyst.getId(),
+                java.util.List.of(
+                        UploadedFileStatus.STORED,
+                        UploadedFileStatus.MISSING,
+                        UploadedFileStatus.FAILED
+                )
+        )).thenReturn(Optional.of(uploadedFile));
+        when(processingJobCreationService.findByUploadedFile(uploadedFile))
+                .thenReturn(Optional.of(processingJob));
+
+        uploadedFileCommandService.deleteUploadedFile(fileId);
+
+        verify(processingJobCreationService).ensureFileCanBeDeleted(processingJob);
+        verify(fileStorageService).delete("/uploads/stored-report.xlsx");
+
+        assertThat(uploadedFile.getStatus()).isEqualTo(UploadedFileStatus.DELETED);
+        assertThat(uploadedFile.getUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    void deleteUploadedFileThrowsResourceNotFoundWhenFileDoesNotExist() {
+        UUID fileId = UUID.randomUUID();
+        User analyst = analyst();
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(analyst);
+        when(uploadedFileRepository.findByIdAndUploadedByIdAndStatusIn(
+                fileId,
+                analyst.getId(),
+                java.util.List.of(
+                        UploadedFileStatus.STORED,
+                        UploadedFileStatus.MISSING,
+                        UploadedFileStatus.FAILED
+                )
+        )).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> uploadedFileCommandService.deleteUploadedFile(fileId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Uploaded file not found");
     }
 
 }
