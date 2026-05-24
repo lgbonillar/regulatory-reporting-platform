@@ -26,31 +26,27 @@ export class ProcessingJobService {
     return this.httpClient.get<ProcessingJobResponse>(`${this.endpointUrl}/${jobId}`)
   }
 
-  getProcessingJobHistory(jobId: string):
+  getProcessingJobHistory (jobId: string):
   Observable<ProcessingJobStatusHistoryResponse[]> {
     return this.httpClient.get<ProcessingJobStatusHistoryResponse[]>(
       `${this.endpointUrl}/${jobId}/history`
     )
   }
 
-  startProcessing(jobId: string): Observable<ProcessingJobResponse> {
-    return this.httpClient.post<ProcessingJobResponse>(`${this.endpointUrl}/
-    ${jobId}/start`, {})
+  startProcessing (jobId: string): Observable<ProcessingJobResponse> {
+    return this.httpClient.post<ProcessingJobResponse>(`${this.endpointUrl}/${jobId}/start`, {})
   }
 
-  approve(jobId: string): Observable<ProcessingJobResponse> {
-    return this.httpClient.post<ProcessingJobResponse>(`${this.endpointUrl}/
-    ${jobId}/approve`, {})
+  approve (jobId: string): Observable<ProcessingJobResponse> {
+    return this.httpClient.post<ProcessingJobResponse>(`${this.endpointUrl}/${jobId}/approve`, {})
   }
 
-  reject(jobId: string, reason: string): Observable<ProcessingJobResponse> {
-    return this.httpClient.post<ProcessingJobResponse>(`${this.endpointUrl}/
-    ${jobId}/reject`, { reason })
+  reject (jobId: string, reason: string): Observable<ProcessingJobResponse> {
+    return this.httpClient.post<ProcessingJobResponse>(`${this.endpointUrl}/${jobId}/reject`, { reason })
   }
 
-  revoke(jobId: string, reason: string): Observable<ProcessingJobResponse> {
-    return this.httpClient.post<ProcessingJobResponse>(`${this.endpointUrl}/
-    ${jobId}/revoke`, { reason })
+  revoke (jobId: string, reason: string): Observable<ProcessingJobResponse> {
+    return this.httpClient.post<ProcessingJobResponse>(`${this.endpointUrl}/${jobId}/revoke`, { reason })
   }
-  
+
 }
