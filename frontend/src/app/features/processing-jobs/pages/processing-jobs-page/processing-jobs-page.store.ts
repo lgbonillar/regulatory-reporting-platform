@@ -97,6 +97,10 @@ export class ProcessingJobsPageStore {
     this.isStatusFilterOpen.update((isOpen) => !isOpen)
   }
 
+  closeStatusFilterPanel (): void {
+    this.isStatusFilterOpen.set(false)
+  }
+
   toggleStatusFilter (status: ProcessingJobStatus, checked: boolean): void {
     const updatedStatuses = new Set(this.selectedStatuses())
 

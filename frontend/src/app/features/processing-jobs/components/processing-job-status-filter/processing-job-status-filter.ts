@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core'
+import { Component, ElementRef, HostListener, inject, input, output } from '@angular/core'
 
 import { ProcessingJobStatus } from '../../../../core/regulatory.model'
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
@@ -77,12 +77,41 @@ const FIRST_FILE_INDEX = 0
   `
 })
 export class ProcessingJobStatusFilter {
+  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef)
+
   readonly statuses = input.required<readonly ProcessingJobStatus[]>()
   readonly selectedStatuses = input.required<Set<ProcessingJobStatus>>()
   readonly selectedCount = input(FIRST_FILE_INDEX)
   readonly isOpen = input(false)
 
   readonly toggleRequested = output<void>()
+  readonly closeRequested = output<void>()
   readonly clearRequested = output<void>()
   readonly statusChanged = output<{ status: ProcessingJobStatus, checked: boolean }>()
+
+  @HostListener('document:mousedown', [ '$event' ])
+  protected closeOnOutsideClick (event: MouseEvent): void {
+    if (!this.isOpen()) return
+
+    const target = event.target
+
+    if (!(target instanceof Node)) return
+    if (this.elementRef.nativeElement.contains(target)) return
+
+    this.closeRequested.emit()
+  }
+
+  @HostListener('document:keydown.escape')
+  protected closeOnEscape (): void {
+    if (!this.isOpen()) return
+
+    this.closeRequested.emit()
+  }
+
+  @HostListener('window:scroll')
+  protected closeOnScroll (): void {
+    if (!this.isOpen()) return
+
+    this.closeRequested.emit()
+  }
 }

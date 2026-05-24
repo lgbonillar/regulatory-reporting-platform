@@ -44,6 +44,7 @@
           [selectedCount]="store.selectedStatusCount()"
           [isOpen]="store.isStatusFilterOpen()"
           (toggleRequested)="store.toggleStatusFilterPanel()"
+          (closeRequested)="store.closeStatusFilterPanel()"
           (clearRequested)="store.clearStatusFilters()"
           (statusChanged)="store.toggleStatusFilter($event.status, $event.checked)"
         />
