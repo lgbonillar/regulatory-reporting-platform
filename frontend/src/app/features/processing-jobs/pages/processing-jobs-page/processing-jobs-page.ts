@@ -8,8 +8,8 @@ import { AppPanel } from '../../../../shared/components/app-panel/app-panel'
 import { AppTextInput } from '../../../../shared/components/app-text-input/app-text-input'
 import { PageHeader } from '../../../../shared/components/page-header/page-header'
 import { PageState } from '../../../../shared/components/page-state/page-state'
-import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
 import { ProcessingJobDetailsPanel } from '../../components/processing-job-details-panel/processing-job-details-panel'
+import { ProcessingJobStatusFilter } from '../../components/processing-job-status-filter/processing-job-status-filter'
 import { ProcessingJobsList } from '../../components/processing-jobs-list/processing-jobs-list'
 import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../../models/processing-job.model'
 import { ProcessingJobService } from '../../services/processing-job.service'
@@ -19,7 +19,7 @@ const FIRST_FILE_INDEX = 0
 
 @Component({
   selector: 'app-processing-jobs-page',
-  imports: [ AppAlert, AppButton, AppPanel, AppTextInput, StatusBadge, PageHeader, PageState, ProcessingJobDetailsPanel, ProcessingJobsList ],
+  imports: [ AppAlert, AppButton, AppPanel, AppTextInput, PageHeader, PageState, ProcessingJobDetailsPanel, ProcessingJobsList, ProcessingJobStatusFilter ],
   templateUrl: './processing-jobs-page.html'
 })
 export class ProcessingJobsPage implements OnInit {
@@ -90,18 +90,9 @@ export class ProcessingJobsPage implements OnInit {
     }
   }
 
-  protected isStatusSelected (status: ProcessingJobStatus): boolean {
-    return this.selectedStatuses().has(status)
-  }
-
   protected clearStatusFilters (): void {
     this.selectedStatuses.set(new Set())
     this.setSelectedJob(this.jobs().at(FIRST_FILE_INDEX) ?? null)
-  }
-
-  protected onStatusFilterChange (event: Event, status: ProcessingJobStatus): void {
-    const checkbox = event.target as HTMLInputElement
-    this.toggleStatusFilter(status, checkbox.checked)
   }
 
   protected loadAllJobs (): void {

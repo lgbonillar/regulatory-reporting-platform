@@ -37,72 +37,16 @@
 
         </div>
 
-        <div class="relative">
-          <button
-            class="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2
-            text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            type="button"
-            [attr.aria-expanded]="isStatusFilterOpen()"
-            aria-controls="job-status-filters"
-            (click)="toggleStatusFilterPanel()"
-          >
-            <svg
-              class="size-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3Z" />
-            </svg>
+        <app-processing-job-status-filter
+          [statuses]="statusOptions"
+          [selectedStatuses]="selectedStatuses()"
+          [selectedCount]="selectedStatusCount()"
+          [isOpen]="isStatusFilterOpen()"
+          (toggleRequested)="toggleStatusFilterPanel()"
+          (clearRequested)="clearStatusFilters()"
+          (statusChanged)="toggleStatusFilter($event.status, $event.checked)"
+        />
 
-            Filters
-
-            @if (selectedStatusCount() > 0) {
-              <span class="rounded-full bg-slate-900 px-2 py-0.5 text-xs text-white">
-                {{ selectedStatusCount() }}
-              </span>
-            }
-          </button>
-
-          @if (isStatusFilterOpen()) {
-            <div
-              id="job-status-filters"
-              class="absolute right-0 z-10 mt-2 w-72 rounded-lg border border-slate-200 bg-white p-3
-              shadow-lg"
-            >
-              <div class="mb-3 flex items-center justify-between">
-                <p class="text-sm font-semibold text-slate-900">Status</p>
-
-                <button
-                  class="text-sm font-medium text-slate-600 hover:text-slate-900"
-                  type="button"
-                  (click)="clearStatusFilters()"
-                >
-                  Clear
-                </button>
-              </div>
-
-              <fieldset class="grid gap-2">
-                <legend class="sr-only">Filter jobs by status</legend>
-
-                @for (status of statusOptions; track status) {
-                  <label class="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 hover:bg-slate-50">
-                    <input
-                      class="size-4 rounded border-slate-300"
-                      type="checkbox"
-                      [checked]="isStatusSelected(status)"
-                      (change)="onStatusFilterChange($event, status)"
-                    />
-
-                    <app-status-badge [status]="status" />
-                  </label>
-                }
-              </fieldset>
-            </div>
-          }
-        </div>
       </div>
 
       @if (isLoading()) {
