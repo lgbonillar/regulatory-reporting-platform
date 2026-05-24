@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core'
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router'
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router'
 
 import { UserRole } from '../../core/auth/session.model'
 import { SessionService } from '../../core/auth/session.service'
@@ -12,6 +12,9 @@ import { NavigationService } from '../../core/navigation/navigation.service'
   templateUrl: './main-shell.html'
 })
 export class MainShell {
+
+  private readonly router = inject(Router)
+
   protected readonly sessionService = inject(SessionService)
   protected readonly navigationService = inject(NavigationService)
 
@@ -25,6 +28,13 @@ export class MainShell {
     const select = event.target as HTMLSelectElement
 
     this.sessionService.setMockRole(select.value as UserRole)
+
+    const firstAvailableItem = this.navigationService.navigationItems()
+      .find((item) => !item.disabled)
+
+    if (firstAvailableItem) {
+      void this.router.navigateByUrl(firstAvailableItem.route)
+    }
   }
 
   protected getIconLabel (item: NavigationItem): string {
