@@ -11,7 +11,7 @@ const FIRST_FILE_INDEX = 0
   template: `
     <div class="relative">
       <button
-        class="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2
+        class="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2
         text-sm font-medium text-slate-700 transition hover:bg-slate-50"
         type="button"
         [attr.aria-expanded]="isOpen()"
@@ -47,7 +47,7 @@ const FIRST_FILE_INDEX = 0
             <p class="text-sm font-semibold text-slate-900">Status</p>
 
             <button
-              class="text-sm font-medium text-slate-600 hover:text-slate-900"
+              class="cursor-pointer text-sm font-medium text-slate-600 hover:text-slate-900"
               type="button"
               (click)="clearRequested.emit()"
             >
@@ -61,7 +61,7 @@ const FIRST_FILE_INDEX = 0
             @for (status of statuses(); track status) {
               <label class="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 hover:bg-slate-50">
                 <input
-                  class="size-4 rounded border-slate-300"
+                  class="size-4 cursor-pointer rounded border-slate-300"
                   type="checkbox"
                   [checked]="selectedStatuses().has(status)"
                   (change)="statusChanged.emit({ status, checked: $any($event.target).checked })"

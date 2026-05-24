@@ -18,7 +18,7 @@
   </div>
 
   <button
-    class="mx-3 mt-4 rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+    class="mx-3 mt-4 cursor-pointer rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
     type="button"
     (click)="toggleCollapsed.emit()"
   >
@@ -46,7 +46,7 @@
         </span>
       } @else {
         <a
-          class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 no-underline transition hover:bg-slate-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 no-underline transition hover:bg-slate-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
           routerLinkActive="bg-slate-800 text-white"
           [routerLink]="item.route"
           [attr.title]="isCollapsed() ? item.label : null"

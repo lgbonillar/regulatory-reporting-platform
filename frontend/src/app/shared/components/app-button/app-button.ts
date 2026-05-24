@@ -5,8 +5,7 @@ type ButtonType = 'button' | 'submit' | 'reset'
 
 const baseClasses = [
   'inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition',
-  'focus:outline-none focus:ring-2 focus:ring-offset-2',
-  'disabled:cursor-not-allowed disabled:opacity-60'
+  'focus:outline-none focus:ring-2 focus:ring-offset-2'
 ].join(' ')
 
 const variantClasses: Record<ButtonVariant, string> = {
@@ -39,5 +38,13 @@ export class AppButton {
   readonly disabled = input(false)
   readonly loading = input(false)
 
-  protected readonly classes = computed(() => `${baseClasses} ${variantClasses[this.variant()]}`)
+  protected readonly classes = computed(() => {
+    const stateClasses = this.loading()
+      ? 'cursor-wait opacity-70'
+      : this.disabled()
+        ? 'cursor-not-allowed opacity-60'
+        : 'cursor-pointer'
+
+    return `${baseClasses} ${variantClasses[this.variant()]} ${stateClasses}`
+  })
 }
