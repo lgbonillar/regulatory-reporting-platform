@@ -68,7 +68,11 @@
       </div>
 
       @if (isLoadingFiles()) {
-        <p class="text-sm text-slate-500">Loading...</p>
+        <app-page-state
+          type="loading"
+          title="Loading files"
+          message="Please wait while the report files are loaded."
+        />
       }
     </div>
 
@@ -194,10 +198,11 @@
         }
       </div>
     } @else {
-      <div class="px-4 py-10 text-center sm:px-6">
-        <p class="text-sm font-medium text-slate-700">No files uploaded yet.</p>
-        <p class="mt-1 text-sm text-slate-500">Upload an Excel file to start.</p>
-      </div>
+      <app-page-state
+        type="empty"
+        title="No files uploaded"
+        message="Upload an Excel file to start a processing flow."
+      />
     }
   </section>
 </section>
