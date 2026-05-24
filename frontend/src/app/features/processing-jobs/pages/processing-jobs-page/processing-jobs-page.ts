@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms'
 import { ProcessingJobStatus } from '../../../../core/regulatory.model'
 import { AppAlert } from '../../../../shared/components/app-alert/app-alert'
 import { AppButton } from '../../../../shared/components/app-button/app-button'
+import { AppPanel } from '../../../../shared/components/app-panel/app-panel'
 import { FileDownloadLink } from '../../../../shared/components/file-download-link/file-download-link'
 import { PageState } from '../../../../shared/components/page-state/page-state'
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
@@ -17,7 +18,7 @@ const FIRST_FILE_INDEX = 0
 
 @Component({
   selector: 'app-processing-jobs-page',
-  imports: [ AppAlert, AppButton, DatePipe, FormsModule, FileDownloadLink, StatusBadge, PageState ],
+  imports: [ AppAlert, AppButton, AppPanel, DatePipe, FormsModule, FileDownloadLink, StatusBadge, PageState ],
   templateUrl: './processing-jobs-page.html'
 })
 export class ProcessingJobsPage implements OnInit {
