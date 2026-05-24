@@ -1,6 +1,6 @@
-package com.mrcrafterman.regreporting.upload.infrastructure;
+package com.mrcrafterman.regreporting.processing.infrastructure;
 
-import com.mrcrafterman.regreporting.upload.domain.ProcessingJob;
+import com.mrcrafterman.regreporting.processing.domain.ProcessingJob;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

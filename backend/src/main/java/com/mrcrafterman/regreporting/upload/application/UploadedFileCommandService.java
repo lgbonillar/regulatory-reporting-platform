@@ -1,7 +1,8 @@
 package com.mrcrafterman.regreporting.upload.application;
 
+import com.mrcrafterman.regreporting.processing.application.ProcessingJobCreationService;
 import com.mrcrafterman.regreporting.shared.ResourceNotFoundException;
-import com.mrcrafterman.regreporting.upload.domain.ProcessingJob;
+import com.mrcrafterman.regreporting.processing.domain.ProcessingJob;
 import com.mrcrafterman.regreporting.upload.domain.UploadedFile;
 import com.mrcrafterman.regreporting.upload.domain.UploadedFileStatus;
 import com.mrcrafterman.regreporting.upload.dto.ReportFileUploadResponse;

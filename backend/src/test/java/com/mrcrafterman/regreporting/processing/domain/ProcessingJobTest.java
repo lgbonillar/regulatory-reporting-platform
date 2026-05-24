@@ -1,6 +1,8 @@
-package com.mrcrafterman.regreporting.upload.domain;
+package com.mrcrafterman.regreporting.processing.domain;
 
 import com.mrcrafterman.regreporting.shared.BusinessConflictException;
+import com.mrcrafterman.regreporting.upload.domain.UploadedFile;
+import com.mrcrafterman.regreporting.upload.domain.UploadedFileStatus;
 import com.mrcrafterman.regreporting.users.domain.User;
 import com.mrcrafterman.regreporting.users.domain.UserStatus;
 import org.junit.jupiter.api.Test;

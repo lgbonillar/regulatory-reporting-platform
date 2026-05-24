@@ -1,4 +1,4 @@
-package com.mrcrafterman.regreporting.upload.dto;
+package com.mrcrafterman.regreporting.processing.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

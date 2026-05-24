@@ -1,6 +1,7 @@
-package com.mrcrafterman.regreporting.upload.domain;
+package com.mrcrafterman.regreporting.processing.domain;
 
 import com.mrcrafterman.regreporting.shared.BusinessConflictException;
+import com.mrcrafterman.regreporting.upload.domain.UploadedFile;
 import com.mrcrafterman.regreporting.users.domain.User;
 import jakarta.persistence.*;
 import lombok.Getter;

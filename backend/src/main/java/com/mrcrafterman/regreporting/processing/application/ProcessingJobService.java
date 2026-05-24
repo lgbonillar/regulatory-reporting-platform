@@ -1,7 +1,7 @@
-package com.mrcrafterman.regreporting.upload.application;
+package com.mrcrafterman.regreporting.processing.application;
 
-import com.mrcrafterman.regreporting.upload.dto.ProcessingJobResponse;
-import com.mrcrafterman.regreporting.upload.dto.ProcessingJobStatusHistoryResponse;
+import com.mrcrafterman.regreporting.processing.dto.ProcessingJobResponse;
+import com.mrcrafterman.regreporting.processing.dto.ProcessingJobStatusHistoryResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

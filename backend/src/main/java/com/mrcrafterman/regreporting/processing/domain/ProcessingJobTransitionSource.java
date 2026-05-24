@@ -1,4 +1,4 @@
-package com.mrcrafterman.regreporting.upload.domain;
+package com.mrcrafterman.regreporting.processing.domain;
 
 public enum ProcessingJobTransitionSource {
     USER,

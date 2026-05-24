@@ -1,4 +1,4 @@
-package com.mrcrafterman.regreporting.upload.dto;
+package com.mrcrafterman.regreporting.processing.dto;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

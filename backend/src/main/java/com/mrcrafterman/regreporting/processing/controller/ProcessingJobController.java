@@ -1,10 +1,10 @@
-package com.mrcrafterman.regreporting.upload.controller;
+package com.mrcrafterman.regreporting.processing.controller;
 
-import com.mrcrafterman.regreporting.upload.application.ProcessingJobService;
-import com.mrcrafterman.regreporting.upload.dto.ProcessingJobFailureRequest;
-import com.mrcrafterman.regreporting.upload.dto.ProcessingJobReasonRequest;
-import com.mrcrafterman.regreporting.upload.dto.ProcessingJobResponse;
-import com.mrcrafterman.regreporting.upload.dto.ProcessingJobStatusHistoryResponse;
+import com.mrcrafterman.regreporting.processing.application.ProcessingJobService;
+import com.mrcrafterman.regreporting.processing.dto.ProcessingJobFailureRequest;
+import com.mrcrafterman.regreporting.processing.dto.ProcessingJobReasonRequest;
+import com.mrcrafterman.regreporting.processing.dto.ProcessingJobResponse;
+import com.mrcrafterman.regreporting.processing.dto.ProcessingJobStatusHistoryResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

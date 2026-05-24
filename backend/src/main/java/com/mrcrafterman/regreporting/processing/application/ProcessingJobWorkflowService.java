@@ -1,9 +1,9 @@
-package com.mrcrafterman.regreporting.upload.application;
+package com.mrcrafterman.regreporting.processing.application;
 
-import com.mrcrafterman.regreporting.upload.domain.ProcessingJob;
-import com.mrcrafterman.regreporting.upload.domain.ProcessingJobStatus;
-import com.mrcrafterman.regreporting.upload.domain.ProcessingJobTransitionSource;
-import com.mrcrafterman.regreporting.upload.dto.ProcessingJobResponse;
+import com.mrcrafterman.regreporting.processing.domain.ProcessingJob;
+import com.mrcrafterman.regreporting.processing.domain.ProcessingJobStatus;
+import com.mrcrafterman.regreporting.processing.domain.ProcessingJobTransitionSource;
+import com.mrcrafterman.regreporting.processing.dto.ProcessingJobResponse;
 import com.mrcrafterman.regreporting.users.application.CurrentUserProvider;
 import com.mrcrafterman.regreporting.users.domain.User;
 import org.springframework.stereotype.Service;
