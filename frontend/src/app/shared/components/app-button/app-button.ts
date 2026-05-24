@@ -1,42 +1,27 @@
-import { Component, input } from '@angular/core'
+import { Component, computed, input } from '@angular/core'
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'warning'
 type ButtonType = 'button' | 'submit' | 'reset'
+
+const baseClasses = [
+  'inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition',
+  'focus:outline-none focus:ring-2 focus:ring-offset-2',
+  'disabled:cursor-not-allowed disabled:opacity-60'
+].join(' ')
+
+const variantClasses: Record<ButtonVariant, string> = {
+  primary: 'border-slate-900 bg-slate-900 text-white hover:bg-slate-800 focus:ring-slate-500',
+  secondary: 'border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50 focus:ring-slate-400',
+  danger: 'border-rose-300 bg-white text-rose-700 hover:border-rose-400 hover:bg-rose-50 focus:ring-rose-400',
+  success: 'border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-600 focus:ring-emerald-500',
+  warning: 'border-amber-300 bg-white text-amber-700 hover:border-amber-400 hover:bg-amber-50 focus:ring-amber-400'
+}
 
 @Component({
   selector: 'app-button',
   template: `
     <button
-      class="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-      [class.bg-slate-900]="variant() === 'primary'"
-      [class.text-white]="variant() === 'primary'"
-      [class.hover:bg-slate-700]="variant() === 'primary'"
-      [class.focus:ring-slate-500]="variant() === 'primary'"
-
-      [class.border]="variant() === 'secondary'"
-      [class.border-slate-300]="variant() === 'secondary'"
-      [class.bg-white]="variant() === 'secondary'"
-      [class.text-slate-700]="variant() === 'secondary'"
-      [class.hover:bg-slate-50]="variant() === 'secondary'"
-      [class.focus:ring-slate-500]="variant() === 'secondary'"
-
-      [class.bg-red-600]="variant() === 'danger'"
-      [class.text-white]="variant() === 'danger'"
-      [class.hover:bg-red-500]="variant() === 'danger'"
-      [class.focus:ring-red-500]="variant() === 'danger'"
-
-      [class.bg-emerald-700]="variant() === 'success'"
-      [class.text-white]="variant() === 'success'"
-      [class.hover:bg-emerald-600]="variant() === 'success'"
-      [class.focus:ring-emerald-500]="variant() === 'success'"
-
-      [class.border]="variant() === 'warning'"
-      [class.border-rose-300]="variant() === 'warning'"
-      [class.bg-white]="variant() === 'warning'"
-      [class.text-rose-700]="variant() === 'warning'"
-      [class.hover:bg-rose-50]="variant() === 'warning'"
-      [class.focus:ring-rose-500]="variant() === 'warning'"
-
+      [class]="classes()"
       [type]="type()"
       [disabled]="disabled() || loading()"
     >
@@ -53,4 +38,6 @@ export class AppButton {
   readonly type = input<ButtonType>('button')
   readonly disabled = input(false)
   readonly loading = input(false)
+
+  protected readonly classes = computed(() => `${baseClasses} ${variantClasses[this.variant()]}`)
 }
