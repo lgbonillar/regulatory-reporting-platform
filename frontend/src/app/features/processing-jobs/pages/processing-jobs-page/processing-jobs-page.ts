@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common'
 import { HttpErrorResponse } from '@angular/common/http'
 import { Component, computed, inject, OnInit, signal } from '@angular/core'
 
@@ -7,10 +6,10 @@ import { AppAlert } from '../../../../shared/components/app-alert/app-alert'
 import { AppButton } from '../../../../shared/components/app-button/app-button'
 import { AppPanel } from '../../../../shared/components/app-panel/app-panel'
 import { AppTextInput } from '../../../../shared/components/app-text-input/app-text-input'
-import { FileDownloadLink } from '../../../../shared/components/file-download-link/file-download-link'
 import { PageHeader } from '../../../../shared/components/page-header/page-header'
 import { PageState } from '../../../../shared/components/page-state/page-state'
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
+import { ProcessingJobDetailsPanel } from '../../components/processing-jobs-details-panel/processing-jobs-details-panel'
 import { ProcessingJobsList } from '../../components/processing-jobs-list/processing-jobs-list'
 import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../../models/processing-job.model'
 import { ProcessingJobService } from '../../services/processing-job.service'
@@ -20,7 +19,7 @@ const FIRST_FILE_INDEX = 0
 
 @Component({
   selector: 'app-processing-jobs-page',
-  imports: [ AppAlert, AppButton, AppPanel, AppTextInput, DatePipe, FileDownloadLink, StatusBadge, PageHeader, PageState, ProcessingJobsList ],
+  imports: [ AppAlert, AppButton, AppPanel, AppTextInput, StatusBadge, PageHeader, PageState, ProcessingJobDetailsPanel, ProcessingJobsList ],
   templateUrl: './processing-jobs-page.html'
 })
 export class ProcessingJobsPage implements OnInit {
