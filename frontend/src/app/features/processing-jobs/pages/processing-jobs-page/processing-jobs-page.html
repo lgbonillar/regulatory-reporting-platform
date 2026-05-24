@@ -4,25 +4,26 @@
       <app-text-input
         placeholder="Filter by username"
         [compact]="true"
-        [(value)]="filterUsername"
+        [(value)]="store.filterUsername"
       />
 
-      <app-button variant="primary" (click)="applyUsernameFilter()">
+      <app-button variant="primary" (click)="store.applyUsernameFilter()">
         Apply
       </app-button>
 
-      <app-button variant="secondary" (click)="loadMyJobs()">
+      <app-button variant="secondary" (click)="store.loadMyJobs()">
         Mine
       </app-button>
 
-      <app-button variant="secondary" (click)="clearFilter()">
+      <app-button variant="secondary" (click)="store.clearFilter()">
         All
       </app-button>
+
     </div>
   </app-page-header>
 
-  @if (errorMessage()) {
-    <app-alert type="error" [message]="errorMessage()!" />
+  @if (store.errorMessage()) {
+    <app-alert type="error" [message]="store.errorMessage()!" />
   }
 
   <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -32,24 +33,24 @@
           <h2 class="text-base font-semibold text-slate-950">Jobs</h2>
 
           <span class="text-sm text-slate-500">
-            {{ filteredJobs().length }} shown
+            {{ store.filteredJobs().length }} shown
           </span>
 
         </div>
 
         <app-processing-job-status-filter
-          [statuses]="statusOptions"
-          [selectedStatuses]="selectedStatuses()"
-          [selectedCount]="selectedStatusCount()"
-          [isOpen]="isStatusFilterOpen()"
-          (toggleRequested)="toggleStatusFilterPanel()"
-          (clearRequested)="clearStatusFilters()"
-          (statusChanged)="toggleStatusFilter($event.status, $event.checked)"
+          [statuses]="store.statusOptions"
+          [selectedStatuses]="store.selectedStatuses()"
+          [selectedCount]="store.selectedStatusCount()"
+          [isOpen]="store.isStatusFilterOpen()"
+          (toggleRequested)="store.toggleStatusFilterPanel()"
+          (clearRequested)="store.clearStatusFilters()"
+          (statusChanged)="store.toggleStatusFilter($event.status, $event.checked)"
         />
 
       </div>
 
-      @if (isLoading()) {
+      @if (store.isLoading()) {
 
         <div class="p-6">
           <app-page-state
@@ -59,12 +60,12 @@
           />
         </div>
 
-      } @else if (filteredJobs().length > 0) {
+      } @else if (store.filteredJobs().length > 0) {
 
         <app-processing-jobs-list
-          [jobs]="filteredJobs()"
-          [selectedJobId]="selectedJob()?.jobId ?? null"
-          (jobSelected)="selectJob($event)"
+          [jobs]="store.filteredJobs()"
+          [selectedJobId]="store.selectedJob()?.jobId ?? null"
+          (jobSelected)="store.selectJob($event)"
         />
 
       } @else {
@@ -81,13 +82,13 @@
     </app-panel>
 
     <app-processing-job-details-panel
-      [job]="selectedJob()"
-      [history]="selectedJobHistory()"
-      [isHistoryLoading]="isHistoryLoading()"
-      [historyErrorMessage]="historyErrorMessage()"
-      [isActionRunning]="isActionRunning()"
-      (startRequested)="startSelectedJob()"
-      (approveRequested)="approveSelectedJob()"
+      [job]="store.selectedJob()"
+      [history]="store.selectedJobHistory()"
+      [isHistoryLoading]="store.isHistoryLoading()"
+      [historyErrorMessage]="store.historyErrorMessage()"
+      [isActionRunning]="store.isActionRunning()"
+      (startRequested)="store.startSelectedJob()"
+      (approveRequested)="store.approveSelectedJob()"
       (rejectRequested)="rejectSelectedJob()"
       (revokeRequested)="revokeSelectedJob()"
     />
