@@ -3,7 +3,6 @@ import { Component, computed, input } from '@angular/core'
 import { FileStatus, ProcessingJobStatus } from '../../../core/regulatory.model'
 
 type StatusBadgeValue = FileStatus | ProcessingJobStatus
-type StatusBadgeVariant = 'file' | 'job'
 
 @Component({
   selector: 'app-status-badge',
@@ -18,7 +17,6 @@ type StatusBadgeVariant = 'file' | 'job'
 })
 export class StatusBadge {
   readonly status = input.required<StatusBadgeValue>()
-  readonly variant = input.required<StatusBadgeVariant>()
 
   protected readonly label = computed(() => {
     const status = this.status()

@@ -120,7 +120,7 @@
                       (change)="onStatusFilterChange($event, status)"
                     />
 
-                    <app-status-badge [status]="status" variant="job" />
+                    <app-status-badge [status]="status" />
                   </label>
                 }
               </fieldset>
@@ -163,7 +163,7 @@
                   <td class="px-6 py-4 text-slate-600">{{ job.uploadedBy }}</td>
 
                   <td class="px-6 py-4">
-                    <app-status-badge [status]="job.jobStatus" variant="job" />
+                    <app-status-badge [status]="job.jobStatus" />
                   </td>
 
                   <td class="px-6 py-4 text-slate-600">
@@ -201,7 +201,7 @@
               </div>
 
               <div class="flex flex-wrap items-center gap-2">
-                <app-status-badge [status]="job.jobStatus" variant="job" />
+                <app-status-badge [status]="job.jobStatus" />
 
                 <span class="text-sm text-slate-500">{{ job.uploadedBy }}</span>
               </div>
@@ -239,7 +239,7 @@
         </h2>
 
         <div class="mt-3 flex flex-wrap items-center gap-2">
-          <app-status-badge [status]="job.jobStatus" variant="job" />
+          <app-status-badge [status]="job.jobStatus" />
 
           <span class="text-xs text-slate-500">
             {{ job.jobId }}
@@ -316,14 +316,14 @@
         <div>
           <dt class="font-medium text-slate-500">Job Status</dt>
           <dd class="mt-1">
-            <app-status-badge [status]="job.jobStatus" variant="job" />
+            <app-status-badge [status]="job.jobStatus" />
           </dd>
         </div>
 
         <div>
           <dt class="font-medium text-slate-500">File status</dt>
           <dd class="mt-1">
-            <app-status-badge [status]="job.jobStatus" variant="job" />
+            <app-status-badge [status]="job.jobStatus" />
           </dd>
         </div>
 
@@ -447,12 +447,11 @@
               <li class="border-l-2 border-slate-200 pl-4">
                 <div class="flex flex-wrap items-center gap-2">
                   @if (history.previousStatus) {
-                    <app-status-badge [status]="job.jobStatus" variant="job" />
-
+                    <app-status-badge [status]="history.previousStatus" />
                     <span class="text-xs text-slate-400">to</span>
                   }
 
-                  <app-status-badge [status]="job.jobStatus" variant="job" />
+                  <app-status-badge [status]="history.newStatus" />
                 </div>
 
                 <p class="mt-2 text-sm text-slate-900">
