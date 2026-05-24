@@ -161,14 +161,14 @@
                 (fileSelected)="onReplacementFileSelected($event, file.fileId)"
               />
 
-              <button
-                class="inline-flex items-center justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-red-300"
-                type="button"
+              <app-button
+                variant="danger"
                 [disabled]="isFileActionRunning(file.fileId)"
                 (click)="deleteReportFile(file.fileId)"
               >
                 Delete
-              </button>
+              </app-button>
+              
             </div>
           </article>
         }
@@ -176,11 +176,13 @@
 
     } @else {
 
-      <app-page-state
-        type="empty"
-        title="No files uploaded"
-        message="Upload an Excel file to start a processing flow."
-      />
+      <div class="p-6">
+        <app-page-state
+          type="empty"
+          title="No files uploaded"
+          message="Upload an Excel file to start a processing flow."
+        />
+      </div>
       
     }
   </app-panel>
