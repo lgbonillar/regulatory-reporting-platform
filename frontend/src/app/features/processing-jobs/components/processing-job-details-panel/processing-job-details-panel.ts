@@ -7,10 +7,11 @@ import { FileDownloadLink } from '../../../../shared/components/file-download-li
 import { PageState } from '../../../../shared/components/page-state/page-state'
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
 import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../../models/processing-job.model'
+import { ProcessingJobHistoryList } from '../processing-job-history-list/processing-job-history-list'
 
 @Component({
   selector: 'app-processing-job-details-panel',
-  imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, PageState, StatusBadge ],
+  imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, PageState, ProcessingJobHistoryList, StatusBadge ],
   template: `
     <aside class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
       @if (job(); as selectedJob) {
@@ -26,7 +27,7 @@ import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../..
           <div class="mt-3 flex flex-wrap items-center gap-2">
             <app-status-badge [status]="selectedJob.jobStatus" />
 
-          <app-copyable-code [value]="selectedJob.jobId" [ariaLabel]="'Copy job ID'" />
+            <app-copyable-code [value]="selectedJob.jobId" [ariaLabel]="'Copy job ID'" />
           </div>
 
           <div class="mt-4 flex flex-wrap gap-2">
@@ -213,62 +214,11 @@ import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../..
           </div>
         </dl>
 
-        <section class="mt-6 border-t border-slate-200 pt-4">
-          <div class="flex items-center justify-between gap-3">
-            <h3 class="text-sm font-semibold text-slate-950">History</h3>
-          </div>
-
-          @if (isHistoryLoading()) {
-
-            <app-page-state
-              type="loading"
-              title="Loading history"
-              message="Please wait while the status history is loaded."
-            />
-
-          } @else if (historyErrorMessage()) {
-
-            <app-page-state
-              type="error"
-              title="History could not be loaded"
-              [message]="historyErrorMessage()"
-            />
-
-          } @else if (history().length > 0) {
-
-            <ol class="mt-4 space-y-4">
-              @for (history of history(); track history.id) {
-                <li class="border-l-2 border-slate-200 pl-4">
-                  <div class="flex flex-wrap items-center gap-2">
-                    @if (history.previousStatus) {
-                      <app-status-badge [status]="history.previousStatus" />
-                      <span class="text-xs text-slate-400">to</span>
-                    }
-
-                    <app-status-badge [status]="history.newStatus" />
-                  </div>
-
-                  <p class="mt-2 text-sm text-slate-900">
-                    {{ history.reason ?? 'No reason provided' }}
-                  </p>
-
-                  <p class="mt-1 text-xs text-slate-500">
-                    {{ getTransitionActorLabel(history) }} · {{ history.createdAt | date: 'medium' }}
-                  </p>
-                </li>
-              }
-            </ol>
-
-          } @else {
-
-            <app-page-state
-              type="empty"
-              title="No status history"
-              message="This job does not have status transitions yet."
-            />
-
-          }
-        </section>
+        <app-processing-job-history-list
+          [history]="history()"
+          [isLoading]="isHistoryLoading()"
+          [errorMessage]="historyErrorMessage()"
+        />
 
       } @else {
         <app-page-state
@@ -292,11 +242,4 @@ export class ProcessingJobDetailsPanel {
   readonly rejectRequested = output<void>()
   readonly revokeRequested = output<void>()
 
-  protected getTransitionActorLabel (history: ProcessingJobStatusHistoryResponse): string {
-    if (history.transitionSource === 'SYSTEM') {
-      return 'System'
-    }
-
-    return history.transitionedBy ?? 'Unknown user'
-  }
 }
