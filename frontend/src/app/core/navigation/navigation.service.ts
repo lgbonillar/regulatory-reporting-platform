@@ -1,6 +1,6 @@
-import { computed, inject, Injectable } from '@angular/core'
+import { computed, inject, Injectable, signal } from '@angular/core'
 import { NavigationEnd, Router } from '@angular/router'
-import { filter, startWith } from 'rxjs'
+import { filter } from 'rxjs'
 
 import { SessionService } from '../auth/session.service'
 import { NAVIGATION_ITEMS } from './navigation.config'
@@ -12,6 +12,8 @@ export class NavigationService {
   private readonly router = inject(Router)
   private readonly sessionService = inject(SessionService)
 
+  private readonly currentUrl = signal(this.router.url)
+
   readonly navigationItems = computed(() => {
     const currentRole = this.sessionService.currentUser().role
 
@@ -19,20 +21,16 @@ export class NavigationService {
   })
 
   readonly activePageTitle = computed(() => {
-    const currentUrl = this.router.url
-    const activeItem = NAVIGATION_ITEMS.find((item) => currentUrl.startsWith(item.route))
+    const activeItem = NAVIGATION_ITEMS.find((item) => this.currentUrl().startsWith(item.route))
 
     return activeItem?.pageTitle ?? 'Dashboard'
   })
 
   constructor () {
     this.router.events
-      .pipe(
-        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-        startWith(null)
-      )
-      .subscribe(() => {
-        this.activePageTitle()
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe((event) => {
+        this.currentUrl.set(event.urlAfterRedirects)
       })
   }
 }
