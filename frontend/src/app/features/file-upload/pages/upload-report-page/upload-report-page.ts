@@ -10,6 +10,7 @@ import { FilePickerButton } from '../../../../shared/components/file-picker-butt
 import { PageHeader } from '../../../../shared/components/page-header/page-header'
 import { PageState } from '../../../../shared/components/page-state/page-state'
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
+import { UploadedFilesList } from '../../../../shared/components/uploaded-files-list/uploaded-files-list'
 import { ReportFileUploadResponse, UploadedFileResponse } from '../../models/report-file-upload.model'
 import { ReportFileUploadService } from '../../services/report-file-upload.service'
 
@@ -19,7 +20,7 @@ const FIRST_FILE_INDEX = 0
 
 @Component({
   selector: 'app-upload-report-page',
-  imports: [ AppAlert, AppButton, AppPanel, DatePipe, FileDownloadLink, FilePickerButton, StatusBadge, PageHeader, PageState ],
+  imports: [ AppAlert, AppButton, AppPanel, DatePipe, FileDownloadLink, FilePickerButton, StatusBadge, PageHeader, PageState, UploadedFilesList ],
   templateUrl: './upload-report-page.html'
 })
 export class UploadReportPage implements OnInit {

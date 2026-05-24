@@ -68,65 +68,12 @@
     } @else if (hasFiles()) {
 
       <div class="hidden overflow-x-auto md:block">
-        <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-          <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
-            <tr>
-              <th class="px-6 py-3">File</th>
-              <th class="px-6 py-3">Status</th>
-              <th class="px-6 py-3">Uploaded</th>
-              <th class="px-6 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody class="divide-y divide-slate-200">
-            @for (file of files(); track file.fileId) {
-              <tr class="align-middle">
-                <td class="px-6 py-4">
-                  <div class="max-w-md">
-                    <app-file-download-link
-                      [fileId]="file.fileId"
-                      [filename]="file.originalFilename"
-                      [fileStatus]="file.fileStatus"
-                    />
-
-                    <p class="mt-1 break-all text-xs text-slate-500">
-                      {{ file.fileId }}
-                    </p>
-                  </div>
-                </td>
-
-                <td class="px-6 py-4">
-                  <app-status-badge [status]="file.fileStatus" />
-                </td>
-
-                <td class="px-6 py-4 text-slate-600">
-                  {{ file.uploadedAt | date: 'medium' }}
-                </td>
-
-                <td class="px-6 py-4">
-                  <div class="flex items-center justify-end gap-2">
-
-                    <app-file-picker-button
-                      label="Update"
-                      accept=".xlsx"
-                      [disabled]="isFileActionRunning(file.fileId)"
-                      (fileSelected)="onReplacementFileSelected($event, file.fileId)"
-                    />
-
-                    <app-button
-                      variant="danger"
-                      [disabled]="isFileActionRunning(file.fileId)"
-                      (click)="deleteReportFile(file.fileId)"
-                    >
-                      Delete
-                    </app-button>
-                    
-                  </div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+        <app-uploaded-files-list
+          [files]="files()"
+          [actionFileId]="actionFileId()"
+          (replacementSelected)="onReplacementFileSelected($event.event, $event.fileId)"
+          (deleteSelected)="deleteReportFile($event)"
+        />
       </div>
 
       <div class="divide-y divide-slate-200 md:hidden">
