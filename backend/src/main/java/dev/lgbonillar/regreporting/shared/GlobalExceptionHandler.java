@@ -7,8 +7,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.Instant;
-
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -18,12 +16,7 @@ public class GlobalExceptionHandler {
     ) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(new ApiErrorResponse(
-                        Instant.now(),
-                        HttpStatus.NOT_FOUND.value(),
-                        "Not Found",
-                        exception.getMessage()
-                ));
+                .body(ApiErrorResponse.of(exception.getMessage(), "RESOURCE_NOT_FOUND"));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -32,12 +25,7 @@ public class GlobalExceptionHandler {
     ) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(new ApiErrorResponse(
-                        Instant.now(),
-                        HttpStatus.BAD_REQUEST.value(),
-                        "Bad Request",
-                        exception.getMessage()
-                ));
+                .body(ApiErrorResponse.of(exception.getMessage(), "BAD_REQUEST"));
     }
 
     @ExceptionHandler(BusinessConflictException.class)
@@ -46,12 +34,7 @@ public class GlobalExceptionHandler {
     ) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(new ApiErrorResponse(
-                        Instant.now(),
-                        HttpStatus.CONFLICT.value(),
-                        "Conflict",
-                        exception.getMessage()
-                ));
+                .body(ApiErrorResponse.of(exception.getMessage(), "BUSINESS_CONFLICT"));
     }
 
     @ExceptionHandler(ForbiddenOperationException.class)
@@ -60,12 +43,7 @@ public class GlobalExceptionHandler {
     ) {
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
-                .body(new ApiErrorResponse(
-                        Instant.now(),
-                        HttpStatus.FORBIDDEN.value(),
-                        "Forbidden",
-                        exception.getMessage()
-                ));
+                .body(ApiErrorResponse.of(exception.getMessage(), "FORBIDDEN_OPERATION"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -81,12 +59,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(new ApiErrorResponse(
-                        Instant.now(),
-                        HttpStatus.BAD_REQUEST.value(),
-                        "Bad Request",
-                        message
-                ));
+                .body(ApiErrorResponse.of(message, "VALIDATION_ERROR"));
     }
 
 }

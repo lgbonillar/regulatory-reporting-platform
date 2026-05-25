@@ -1,5 +1,6 @@
 package dev.lgbonillar.regreporting.upload.controller;
 
+import dev.lgbonillar.regreporting.shared.ApiResponse;
 import dev.lgbonillar.regreporting.shared.ResourceNotFoundException;
 import dev.lgbonillar.regreporting.upload.application.FileStorageService;
 import dev.lgbonillar.regreporting.upload.application.ReportFileService;
@@ -36,30 +37,37 @@ public class ReportFileController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ANALYST', 'ADMINISTRATOR')")
-    public ResponseEntity<List<UploadedFileResponse>> listReportFiles(
+    public ResponseEntity<ApiResponse<List<UploadedFileResponse>>> listReportFiles(
             @RequestParam String username
     ) {
-        return ResponseEntity.ok(reportFileService.listUploadedFiles(username));
+        List<UploadedFileResponse> response = reportFileService.listUploadedFiles(username);
+
+        return ResponseEntity.ok(ApiResponse.successList(
+                "Report files retrieved successfully",
+                response
+        ));
     }
 
     @PutMapping(path = "/{fileId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ANALYST')")
-    public ResponseEntity<ReportFileUploadResponse> updateReportFile(
+    public ResponseEntity<ApiResponse<ReportFileUploadResponse>> updateReportFile(
             @PathVariable UUID fileId,
             @RequestParam("file") MultipartFile file
     ) {
-        return ResponseEntity.ok(reportFileService.updateReportFile(fileId, file));
+        ReportFileUploadResponse response = reportFileService.updateReportFile(fileId, file);
+
+        return ResponseEntity.ok(ApiResponse.success("Report file updated successfully", response));
     }
 
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ANALYST')")
-    public ResponseEntity<ReportFileUploadResponse> uploadReportFile(
+    public ResponseEntity<ApiResponse<ReportFileUploadResponse>> uploadReportFile(
             @RequestParam("file") MultipartFile file
     ) {
         ReportFileUploadResponse response = reportFileService.uploadReportFile(file);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success("Report file uploaded successfully", response));
     }
 
     @GetMapping("/{fileId}/download")

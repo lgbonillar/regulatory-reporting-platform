@@ -1,11 +1,19 @@
 package dev.lgbonillar.regreporting.shared;
 
-import java.time.Instant;
-
 public record ApiErrorResponse(
-        Instant timestamp,
-        int status,
-        String error,
-        String message
+        boolean success,
+        String message,
+        ApiError error,
+        ApiMetadata metadata
 ) {
+
+    public static ApiErrorResponse of(String message, String code) {
+        return new ApiErrorResponse(
+                false,
+                message,
+                new ApiError(code, null),
+                ApiMetadata.now()
+        );
+    }
+
 }

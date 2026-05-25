@@ -1,5 +1,6 @@
 package dev.lgbonillar.regreporting.users.controller;
 
+import dev.lgbonillar.regreporting.shared.ApiResponse;
 import dev.lgbonillar.regreporting.users.application.AuthService;
 import dev.lgbonillar.regreporting.users.application.CurrentUserProvider;
 import dev.lgbonillar.regreporting.users.dto.AuthResponse;
@@ -29,23 +30,27 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(
+    public ResponseEntity<ApiResponse<AuthResponse>> login(
             @Valid @RequestBody LoginRequest request,
             HttpServletRequest httpServletRequest
     ) {
-        return ResponseEntity.ok(authService.login(
+        AuthResponse response = authService.login(
                 request.username(),
                 request.password(),
                 httpServletRequest.getHeader(USER_AGENT_HEADER),
                 httpServletRequest.getRemoteAddr()
-        ));
+        );
+
+        return ResponseEntity.ok(ApiResponse.success("Login successful", response));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponse> refresh(
+    public ResponseEntity<ApiResponse<AuthResponse>> refresh(
             @Valid @RequestBody RefreshTokenRequest request
     ) {
-        return ResponseEntity.ok(authService.refresh(request.refreshToken()));
+        AuthResponse response = authService.refresh(request.refreshToken());
+
+        return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully", response));
     }
 
     @PostMapping("/logout")

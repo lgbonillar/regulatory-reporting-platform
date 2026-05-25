@@ -38,9 +38,11 @@ class ProcessingJobControllerTest {
         mockMvc.perform(get("/api/processing-jobs")
                         .param("username", "analyst01"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].originalFilename").value("report.xlsx"))
-                .andExpect(jsonPath("$[0].jobStatus").value("PENDING_EXECUTION"));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.metadata.count").value(1))
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].originalFilename").value("report.xlsx"))
+                .andExpect(jsonPath("$.data[0].jobStatus").value("PENDING_EXECUTION"));
 
         verify(processingJobService).listProcessingJobs("analyst01");
     }
@@ -53,8 +55,8 @@ class ProcessingJobControllerTest {
 
         mockMvc.perform(get("/api/processing-jobs/{jobId}", jobId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.originalFilename").value("report.xlsx"))
-                .andExpect(jsonPath("$.jobStatus").value("PENDING_EXECUTION"));
+                .andExpect(jsonPath("$.data.originalFilename").value("report.xlsx"))
+                .andExpect(jsonPath("$.data.jobStatus").value("PENDING_EXECUTION"));
 
         verify(processingJobService).getProcessingJob(jobId);
     }
@@ -67,7 +69,7 @@ class ProcessingJobControllerTest {
 
         mockMvc.perform(post("/api/processing-jobs/{jobId}/start", jobId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.jobStatus").value("PROCESSING"));
+                .andExpect(jsonPath("$.data.jobStatus").value("PROCESSING"));
 
         verify(processingJobService).startProcessing(jobId);
     }
@@ -87,7 +89,7 @@ class ProcessingJobControllerTest {
                                   }
                                   """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.jobStatus").value("PROCESSING_FAILED"));
+                .andExpect(jsonPath("$.data.jobStatus").value("PROCESSING_FAILED"));
 
         verify(processingJobService).failProcessing(jobId, "invalid layout");
     }
@@ -100,7 +102,7 @@ class ProcessingJobControllerTest {
 
         mockMvc.perform(post("/api/processing-jobs/{jobId}/approve", jobId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.jobStatus").value("APPROVED"));
+                .andExpect(jsonPath("$.data.jobStatus").value("APPROVED"));
 
         verify(processingJobService).approve(jobId);
     }
@@ -120,7 +122,7 @@ class ProcessingJobControllerTest {
                                   }
                                   """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.jobStatus").value("REJECTED"));
+                .andExpect(jsonPath("$.data.jobStatus").value("REJECTED"));
 
         verify(processingJobService).reject(jobId, "totals do not match");
     }
@@ -142,9 +144,11 @@ class ProcessingJobControllerTest {
 
         mockMvc.perform(get("/api/processing-jobs/{jobId}/history", jobId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].previousStatus").value("PENDING_EXECUTION"))
-                .andExpect(jsonPath("$[0].newStatus").value("PROCESSING"));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.metadata.count").value(1))
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].previousStatus").value("PENDING_EXECUTION"))
+                .andExpect(jsonPath("$.data[0].newStatus").value("PROCESSING"));
 
         verify(processingJobService).getProcessingJobHistory(jobId);
     }

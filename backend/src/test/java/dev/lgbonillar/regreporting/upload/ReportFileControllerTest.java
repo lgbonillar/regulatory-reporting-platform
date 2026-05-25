@@ -53,9 +53,11 @@ class ReportFileControllerTest {
         mockMvc.perform(get("/api/report-files")
                         .param("username", "analyst01"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].originalFilename").value("report.xlsx"))
-                .andExpect(jsonPath("$[0].fileStatus").value("STORED"));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.metadata.count").value(1))
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].originalFilename").value("report.xlsx"))
+                .andExpect(jsonPath("$.data[0].fileStatus").value("STORED"));
 
         verify(reportFileService).listUploadedFiles("analyst01");
     }
@@ -71,9 +73,9 @@ class ReportFileControllerTest {
         mockMvc.perform(multipart("/api/report-files")
                         .file(file))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.originalFilename").value("report.xlsx"))
-                .andExpect(jsonPath("$.fileStatus").value("STORED"))
-                .andExpect(jsonPath("$.jobStatus").value("PENDING_EXECUTION"));
+                .andExpect(jsonPath("$.data.originalFilename").value("report.xlsx"))
+                .andExpect(jsonPath("$.data.fileStatus").value("STORED"))
+                .andExpect(jsonPath("$.data.jobStatus").value("PENDING_EXECUTION"));
 
         verify(reportFileService).uploadReportFile(org.mockito.ArgumentMatchers.any());
     }
@@ -96,8 +98,8 @@ class ReportFileControllerTest {
                             return request;
                         }))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.originalFilename").value("report.xlsx"))
-                .andExpect(jsonPath("$.fileStatus").value("STORED"));
+                .andExpect(jsonPath("$.data.originalFilename").value("report.xlsx"))
+                .andExpect(jsonPath("$.data.fileStatus").value("STORED"));
 
         verify(reportFileService).updateReportFile(
                 org.mockito.ArgumentMatchers.eq(fileId),

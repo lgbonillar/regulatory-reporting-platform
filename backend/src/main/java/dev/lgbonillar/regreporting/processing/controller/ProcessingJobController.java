@@ -5,6 +5,7 @@ import dev.lgbonillar.regreporting.processing.dto.ProcessingJobFailureRequest;
 import dev.lgbonillar.regreporting.processing.dto.ProcessingJobReasonRequest;
 import dev.lgbonillar.regreporting.processing.dto.ProcessingJobResponse;
 import dev.lgbonillar.regreporting.processing.dto.ProcessingJobStatusHistoryResponse;
+import dev.lgbonillar.regreporting.shared.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,85 +26,132 @@ public class ProcessingJobController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ANALYST', 'ADMINISTRATOR')")
-    public ResponseEntity<List<ProcessingJobResponse>> listProcessingJobs(
+    public ResponseEntity<ApiResponse<List<ProcessingJobResponse>>> listProcessingJobs(
             @RequestParam(required = false) String username
     ) {
-        return ResponseEntity.ok(processingJobService.listProcessingJobs(username));
+        List<ProcessingJobResponse> response = processingJobService.listProcessingJobs(username);
+
+        return ResponseEntity.ok(ApiResponse.successList(
+                "Processing jobs retrieved successfully",
+                response
+        ));
     }
 
     @GetMapping("/{jobId}")
     @PreAuthorize("hasAnyRole('ANALYST', 'ADMINISTRATOR')")
-    public ResponseEntity<ProcessingJobResponse> getProcessingJob(
+    public ResponseEntity<ApiResponse<ProcessingJobResponse>> getProcessingJob(
             @PathVariable UUID jobId
     ) {
-        return ResponseEntity.ok(processingJobService.getProcessingJob(jobId));
+        ProcessingJobResponse response = processingJobService.getProcessingJob(jobId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Processing job retrieved successfully",
+                response
+        ));
     }
 
     @PostMapping("/{jobId}/start")
     @PreAuthorize("hasRole('ANALYST')")
-    public ResponseEntity<ProcessingJobResponse> startProcessing(
+    public ResponseEntity<ApiResponse<ProcessingJobResponse>> startProcessing(
             @PathVariable UUID jobId
     ) {
-        return ResponseEntity.ok(processingJobService.startProcessing(jobId));
+        ProcessingJobResponse response = processingJobService.startProcessing(jobId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Processing job started successfully",
+                response
+        ));
     }
 
     @PostMapping("/{jobId}/complete")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
-    public ResponseEntity<ProcessingJobResponse> completeProcessing(
+    public ResponseEntity<ApiResponse<ProcessingJobResponse>> completeProcessing(
             @PathVariable UUID jobId
     ) {
-        return ResponseEntity.ok(processingJobService.completeProcessing(jobId));
+        ProcessingJobResponse response = processingJobService.completeProcessing(jobId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Processing job completed successfully",
+                response
+        ));
     }
 
     @PostMapping("/{jobId}/fail")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
-    public ResponseEntity<ProcessingJobResponse> failProcessing(
+    public ResponseEntity<ApiResponse<ProcessingJobResponse>> failProcessing(
             @PathVariable UUID jobId,
             @Valid @RequestBody ProcessingJobFailureRequest request
     ) {
-        return ResponseEntity.ok(
-                processingJobService.failProcessing(jobId, request.reason())
+        ProcessingJobResponse response = processingJobService.failProcessing(
+                jobId,
+                request.reason()
         );
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Processing job failed successfully",
+                response
+        ));
     }
 
     @PostMapping("/{jobId}/approve")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
-    public ResponseEntity<ProcessingJobResponse> approve(
+    public ResponseEntity<ApiResponse<ProcessingJobResponse>> approve(
             @PathVariable UUID jobId
     ) {
-        return ResponseEntity.ok(processingJobService.approve(jobId));
+        ProcessingJobResponse response = processingJobService.approve(jobId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Processing job approved successfully",
+                response
+        ));
     }
 
     @PostMapping("/{jobId}/reject")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
-    public ResponseEntity<ProcessingJobResponse> reject(
+    public ResponseEntity<ApiResponse<ProcessingJobResponse>> reject(
             @PathVariable UUID jobId,
             @Valid @RequestBody ProcessingJobReasonRequest request
     ) {
-        return ResponseEntity.ok(
-                processingJobService.reject(jobId, request.reason())
+        ProcessingJobResponse response = processingJobService.reject(
+                jobId,
+                request.reason()
         );
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Processing job rejected successfully",
+                response
+        ));
     }
 
     @PostMapping("/{jobId}/revoke")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
-    public ResponseEntity<ProcessingJobResponse> revoke(
+    public ResponseEntity<ApiResponse<ProcessingJobResponse>> revoke(
             @PathVariable UUID jobId,
             @Valid @RequestBody ProcessingJobReasonRequest request
     ) {
-        return ResponseEntity.ok(
-                processingJobService.revoke(jobId, request.reason())
+        ProcessingJobResponse response = processingJobService.revoke(
+                jobId,
+                request.reason()
         );
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Processing job revoked successfully",
+                response
+        ));
     }
 
     @GetMapping("/{jobId}/history")
     @PreAuthorize("hasAnyRole('ANALYST', 'ADMINISTRATOR')")
-    public ResponseEntity<List<ProcessingJobStatusHistoryResponse>> getProcessingJobHistory(
+    public ResponseEntity<ApiResponse<List<ProcessingJobStatusHistoryResponse>>> getProcessingJobHistory(
             @PathVariable UUID jobId
     ) {
-        return ResponseEntity.ok(
-                processingJobService.getProcessingJobHistory(jobId)
-        );
+        List<ProcessingJobStatusHistoryResponse> response =
+                processingJobService.getProcessingJobHistory(jobId);
+
+        return ResponseEntity.ok(ApiResponse.successList(
+                "Processing job history retrieved successfully",
+                response
+        ));
     }
 
 }
