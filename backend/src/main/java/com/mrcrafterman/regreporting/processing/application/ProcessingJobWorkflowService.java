@@ -4,8 +4,10 @@ import com.mrcrafterman.regreporting.processing.domain.ProcessingJob;
 import com.mrcrafterman.regreporting.processing.domain.ProcessingJobStatus;
 import com.mrcrafterman.regreporting.processing.domain.ProcessingJobTransitionSource;
 import com.mrcrafterman.regreporting.processing.dto.ProcessingJobResponse;
+import com.mrcrafterman.regreporting.shared.ForbiddenOperationException;
 import com.mrcrafterman.regreporting.users.application.CurrentUserProvider;
 import com.mrcrafterman.regreporting.users.domain.User;
+import com.mrcrafterman.regreporting.users.domain.UserRole;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,18 +35,21 @@ public class ProcessingJobWorkflowService {
         ProcessingJob job = processingJobQueryService.getJob(jobId);
         job.getUploadedFile().ensureCanBeProcessed();
 
-        User administrator = currentUserProvider.getCurrentAdministrator();
+        User currentUser = currentUserProvider.getCurrentUser();
+        requireRole(currentUser, UserRole.ANALYST, "start processing");
+        requireOwnsJob(currentUser, job);
+
         ProcessingJobStatus previousStatus = job.getStatus();
 
-        job.startProcessing(administrator);
+        job.startProcessing(currentUser);
 
         processingJobHistoryService.recordTransition(
                 job,
                 previousStatus,
                 job.getStatus(),
                 ProcessingJobTransitionSource.USER,
-                administrator,
-                "Administrator started processing"
+                currentUser,
+                "Analyst started processing"
         );
 
         return processingJobQueryService.toProcessingJobResponse(job);
@@ -95,7 +100,9 @@ public class ProcessingJobWorkflowService {
         ProcessingJob job = processingJobQueryService.getJob(jobId);
         job.getUploadedFile().ensureCanBeProcessed();
 
-        User administrator = currentUserProvider.getCurrentAdministrator();
+        User administrator = currentUserProvider.getCurrentUser();
+        requireRole(administrator, UserRole.ADMINISTRATOR, "approve processing jobs");
+
         ProcessingJobStatus previousStatus = job.getStatus();
 
         job.approve(administrator);
@@ -115,7 +122,11 @@ public class ProcessingJobWorkflowService {
     @Transactional
     public ProcessingJobResponse reject(UUID jobId, String reason) {
         ProcessingJob job = processingJobQueryService.getJob(jobId);
-        User administrator = currentUserProvider.getCurrentAdministrator();
+        job.getUploadedFile().ensureCanBeProcessed();
+
+        User administrator = currentUserProvider.getCurrentUser();
+        requireRole(administrator, UserRole.ADMINISTRATOR, "reject processing jobs");
+
         ProcessingJobStatus previousStatus = job.getStatus();
 
         job.reject(administrator, reason);
@@ -135,7 +146,11 @@ public class ProcessingJobWorkflowService {
     @Transactional
     public ProcessingJobResponse revoke(UUID jobId, String reason) {
         ProcessingJob job = processingJobQueryService.getJob(jobId);
-        User administrator = currentUserProvider.getCurrentAdministrator();
+        job.getUploadedFile().ensureCanBeProcessed();
+
+        User administrator = currentUserProvider.getCurrentUser();
+        requireRole(administrator, UserRole.ADMINISTRATOR, "revoke processing jobs");
+
         ProcessingJobStatus previousStatus = job.getStatus();
 
         job.revoke(administrator, reason);
@@ -150,6 +165,26 @@ public class ProcessingJobWorkflowService {
         );
 
         return processingJobQueryService.toProcessingJobResponse(job);
+    }
+
+    private void requireRole(User user, UserRole role, String action) {
+        if (!user.hasRole(role)) {
+            throw new ForbiddenOperationException(
+                    "You are not allowed to " + action
+            );
+        }
+    }
+
+    private void requireOwnsJob(User user, ProcessingJob job) {
+        String uploadedBy = job.getUploadedFile()
+                .getUploadedBy()
+                .getUsername();
+
+        if (!uploadedBy.equals(user.getUsername())) {
+            throw new ForbiddenOperationException(
+                    "You can only start processing jobs uploaded by your user"
+            );
+        }
     }
 
 }

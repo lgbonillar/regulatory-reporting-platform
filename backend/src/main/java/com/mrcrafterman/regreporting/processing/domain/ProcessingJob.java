@@ -94,12 +94,12 @@ public class ProcessingJob {
         return this.status == ProcessingJobStatus.PENDING_EXECUTION;
     }
 
-    public void startProcessing(User administrator) {
-        requireAdministrator(administrator);
+    public void startProcessing(User triggeredBy) {
+        requireUser(triggeredBy, "User is required to start processing");
         requireStatus(ProcessingJobStatus.PENDING_EXECUTION, "start processing");
 
         this.status = ProcessingJobStatus.PROCESSING;
-        this.triggeredBy = administrator;
+        this.triggeredBy = triggeredBy;
         this.triggeredAt = LocalDateTime.now();
         this.message = "Processing started";
         this.updatedAt = LocalDateTime.now();
@@ -127,7 +127,7 @@ public class ProcessingJob {
     }
 
     public void approve(User administrator) {
-        requireAdministrator(administrator);
+        requireUser(administrator, "Administrator is required");
         requireStatus(ProcessingJobStatus.AWAITING_APPROVAL, "approve");
 
         this.status = ProcessingJobStatus.APPROVED;
@@ -138,7 +138,7 @@ public class ProcessingJob {
     }
 
     public void reject(User administrator, String reason) {
-        requireAdministrator(administrator);
+        requireUser(administrator, "Administrator is required");
         requireStatus(ProcessingJobStatus.AWAITING_APPROVAL, "reject");
         requireReason(reason, "Rejection reason is required");
 
@@ -151,7 +151,7 @@ public class ProcessingJob {
     }
 
     public void revoke(User administrator, String reason) {
-        requireAdministrator(administrator);
+        requireUser(administrator, "Administrator is required");
         requireStatus(ProcessingJobStatus.APPROVED, "revoke");
         requireReason(reason, "Revocation reason is required");
 
@@ -171,9 +171,9 @@ public class ProcessingJob {
         }
     }
 
-    private void requireAdministrator(User administrator) {
-        if (administrator == null) {
-            throw new IllegalArgumentException("Administrator is required");
+    private void requireUser(User user, String message) {
+        if (user == null) {
+            throw new IllegalArgumentException(message);
         }
     }
 

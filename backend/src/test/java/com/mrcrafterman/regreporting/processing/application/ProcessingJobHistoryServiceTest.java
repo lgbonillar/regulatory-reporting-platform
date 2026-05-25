@@ -5,7 +5,6 @@ import com.mrcrafterman.regreporting.processing.domain.ProcessingJobStatus;
 import com.mrcrafterman.regreporting.processing.domain.ProcessingJobStatusHistory;
 import com.mrcrafterman.regreporting.processing.domain.ProcessingJobTransitionSource;
 import com.mrcrafterman.regreporting.processing.dto.ProcessingJobStatusHistoryResponse;
-import com.mrcrafterman.regreporting.processing.infrastructure.ProcessingJobRepository;
 import com.mrcrafterman.regreporting.processing.infrastructure.ProcessingJobStatusHistoryRepository;
 import com.mrcrafterman.regreporting.shared.ResourceNotFoundException;
 import com.mrcrafterman.regreporting.upload.domain.UploadedFile;
@@ -32,7 +31,7 @@ import static org.mockito.Mockito.when;
 class ProcessingJobHistoryServiceTest {
 
     @Mock
-    private ProcessingJobRepository processingJobRepository;
+    private ProcessingJobQueryService processingJobQueryService;
 
     @Mock
     private ProcessingJobStatusHistoryRepository processingJobStatusHistoryRepository;
@@ -44,7 +43,8 @@ class ProcessingJobHistoryServiceTest {
     void getProcessingJobHistoryThrowsResourceNotFoundWhenJobDoesNotExist() {
         UUID jobId = UUID.randomUUID();
 
-        when(processingJobRepository.existsById(jobId)).thenReturn(false);
+        when(processingJobQueryService.getJob(jobId))
+                .thenThrow(new ResourceNotFoundException("Processing job not found"));
 
         assertThatThrownBy(() -> processingJobHistoryService.getProcessingJobHistory(jobId))
                 .isInstanceOf(ResourceNotFoundException.class)
@@ -77,7 +77,7 @@ class ProcessingJobHistoryServiceTest {
                 "Automatic processing completed successfully"
         );
 
-        when(processingJobRepository.existsById(jobId)).thenReturn(true);
+        when(processingJobQueryService.getJob(jobId)).thenReturn(job);
         when(processingJobStatusHistoryRepository.findByProcessingJobIdOrderByCreatedAtAsc(jobId))
                 .thenReturn(List.of(started, completed));
 
@@ -101,6 +101,8 @@ class ProcessingJobHistoryServiceTest {
 
         assertThat(result.getLast().transitionSource()).isEqualTo(ProcessingJobTransitionSource.SYSTEM.name());
         assertThat(result.getLast().transitionedBy()).isNull();
+
+        verify(processingJobQueryService).requireCanView(job);
     }
 
     @Test

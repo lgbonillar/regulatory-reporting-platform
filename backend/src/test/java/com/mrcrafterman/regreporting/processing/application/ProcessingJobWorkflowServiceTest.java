@@ -7,8 +7,11 @@ import com.mrcrafterman.regreporting.processing.domain.ProcessingJobTransitionSo
 import com.mrcrafterman.regreporting.upload.domain.UploadedFile;
 import com.mrcrafterman.regreporting.upload.domain.UploadedFileStatus;
 import com.mrcrafterman.regreporting.processing.dto.ProcessingJobResponse;
+import com.mrcrafterman.regreporting.shared.ForbiddenOperationException;
 import com.mrcrafterman.regreporting.users.application.CurrentUserProvider;
+import com.mrcrafterman.regreporting.users.domain.Role;
 import com.mrcrafterman.regreporting.users.domain.User;
+import com.mrcrafterman.regreporting.users.domain.UserRole;
 import com.mrcrafterman.regreporting.users.domain.UserStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,10 +46,10 @@ class ProcessingJobWorkflowServiceTest {
     void startProcessingMovesJobToProcessingAndRecordsUserTransition() {
         UUID jobId = UUID.randomUUID();
         ProcessingJob job = pendingJob(UploadedFileStatus.STORED);
-        User admin = administrator();
+        User analyst = analyst();
 
         when(processingJobQueryService.getJob(jobId)).thenReturn(job);
-        when(currentUserProvider.getCurrentAdministrator()).thenReturn(admin);
+        when(currentUserProvider.getCurrentUser()).thenReturn(analyst);
         when(processingJobQueryService.toProcessingJobResponse(job))
                 .thenAnswer(invocation -> response(invocation.getArgument(0)));
 
@@ -54,15 +57,15 @@ class ProcessingJobWorkflowServiceTest {
 
         assertThat(result.jobStatus()).isEqualTo(ProcessingJobStatus.PROCESSING.name());
         assertThat(job.getStatus()).isEqualTo(ProcessingJobStatus.PROCESSING);
-        assertThat(job.getTriggeredBy()).isSameAs(admin);
+        assertThat(job.getTriggeredBy()).isSameAs(analyst);
 
         verify(processingJobHistoryService).recordTransition(
                 job,
                 ProcessingJobStatus.PENDING_EXECUTION,
                 ProcessingJobStatus.PROCESSING,
                 ProcessingJobTransitionSource.USER,
-                admin,
-                "Administrator started processing"
+                analyst,
+                "Analyst started processing"
         );
     }
 
@@ -79,6 +82,38 @@ class ProcessingJobWorkflowServiceTest {
 
         assertThat(job.getStatus()).isEqualTo(ProcessingJobStatus.PENDING_EXECUTION);
         verifyNoInteractions(currentUserProvider);
+        verifyNoInteractions(processingJobHistoryService);
+    }
+
+    @Test
+    void startProcessingFailsWhenCurrentUserIsNotAnalyst() {
+        UUID jobId = UUID.randomUUID();
+        ProcessingJob job = pendingJob(UploadedFileStatus.STORED);
+
+        when(processingJobQueryService.getJob(jobId)).thenReturn(job);
+        when(currentUserProvider.getCurrentUser()).thenReturn(administrator());
+
+        assertThatThrownBy(() -> processingJobWorkflowService.startProcessing(jobId))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You are not allowed to start processing");
+
+        assertThat(job.getStatus()).isEqualTo(ProcessingJobStatus.PENDING_EXECUTION);
+        verifyNoInteractions(processingJobHistoryService);
+    }
+
+    @Test
+    void startProcessingFailsWhenAnalystDoesNotOwnJob() {
+        UUID jobId = UUID.randomUUID();
+        ProcessingJob job = new ProcessingJob(uploadedFile(UploadedFileStatus.STORED, "otherAnalyst"), "File uploaded");
+
+        when(processingJobQueryService.getJob(jobId)).thenReturn(job);
+        when(currentUserProvider.getCurrentUser()).thenReturn(analyst());
+
+        assertThatThrownBy(() -> processingJobWorkflowService.startProcessing(jobId))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You can only start processing jobs uploaded by your user");
+
+        assertThat(job.getStatus()).isEqualTo(ProcessingJobStatus.PENDING_EXECUTION);
         verifyNoInteractions(processingJobHistoryService);
     }
 
@@ -113,7 +148,7 @@ class ProcessingJobWorkflowServiceTest {
         User admin = administrator();
 
         when(processingJobQueryService.getJob(jobId)).thenReturn(job);
-        when(currentUserProvider.getCurrentAdministrator()).thenReturn(admin);
+        when(currentUserProvider.getCurrentUser()).thenReturn(admin);
         when(processingJobQueryService.toProcessingJobResponse(job))
                 .thenAnswer(invocation -> response(invocation.getArgument(0)));
 
@@ -133,6 +168,22 @@ class ProcessingJobWorkflowServiceTest {
         );
     }
 
+    @Test
+    void approveFailsWhenCurrentUserIsNotAdministrator() {
+        UUID jobId = UUID.randomUUID();
+        ProcessingJob job = awaitingApprovalJob();
+
+        when(processingJobQueryService.getJob(jobId)).thenReturn(job);
+        when(currentUserProvider.getCurrentUser()).thenReturn(analyst());
+
+        assertThatThrownBy(() -> processingJobWorkflowService.approve(jobId))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You are not allowed to approve processing jobs");
+
+        assertThat(job.getStatus()).isEqualTo(ProcessingJobStatus.AWAITING_APPROVAL);
+        verifyNoInteractions(processingJobHistoryService);
+    }
+
     private ProcessingJob pendingJob(UploadedFileStatus fileStatus) {
         return new ProcessingJob(uploadedFile(fileStatus), "File uploaded");
     }
@@ -150,6 +201,10 @@ class ProcessingJobWorkflowServiceTest {
     }
 
     private UploadedFile uploadedFile(UploadedFileStatus status) {
+        return uploadedFile(status, "analyst01");
+    }
+
+    private UploadedFile uploadedFile(UploadedFileStatus status, String username) {
         return new UploadedFile(
                 "report.xlsx",
                 "stored-report.xlsx",
@@ -158,18 +213,30 @@ class ProcessingJobWorkflowServiceTest {
                 1024L,
                 "checksum",
                 status,
-                analyst()
+                analyst(username)
         );
     }
 
     private User analyst() {
-        return new User("analyst01", "analyst01@example.com", "Analyst 01", null, false,
+        return analyst("analyst01");
+    }
+
+    private User analyst(String username) {
+        User user = new User(username, username + "@example.com", "Analyst", null, false,
                 UserStatus.ACTIVE);
+        user.getRoles().add(role(UserRole.ANALYST));
+        return user;
     }
 
     private User administrator() {
-        return new User("admin01", "admin01@example.com", "Admin 01", null, false,
+        User user = new User("admin01", "admin01@example.com", "Admin 01", null, false,
                 UserStatus.ACTIVE);
+        user.getRoles().add(role(UserRole.ADMINISTRATOR));
+        return user;
+    }
+
+    private Role role(UserRole userRole) {
+        return new Role(userRole.name(), userRole.name(), null);
     }
 
     private ProcessingJobResponse response(ProcessingJob job) {

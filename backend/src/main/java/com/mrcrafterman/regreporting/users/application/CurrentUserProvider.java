@@ -20,11 +20,4 @@ public class CurrentUserProvider {
                 ));
     }
 
-    public User getCurrentAdministrator() {
-        return userRepository.findByUsername("admin01")
-                .orElseThrow(() -> new IllegalStateException(
-                        "Current development administrator not found"
-                ));
-    }
-
 }

@@ -1,10 +1,14 @@
 package com.mrcrafterman.regreporting.processing.application;
 
-import com.mrcrafterman.regreporting.shared.ResourceNotFoundException;
 import com.mrcrafterman.regreporting.processing.domain.ProcessingJob;
-import com.mrcrafterman.regreporting.upload.domain.UploadedFile;
 import com.mrcrafterman.regreporting.processing.dto.ProcessingJobResponse;
 import com.mrcrafterman.regreporting.processing.infrastructure.ProcessingJobRepository;
+import com.mrcrafterman.regreporting.shared.ForbiddenOperationException;
+import com.mrcrafterman.regreporting.shared.ResourceNotFoundException;
+import com.mrcrafterman.regreporting.upload.domain.UploadedFile;
+import com.mrcrafterman.regreporting.users.application.CurrentUserProvider;
+import com.mrcrafterman.regreporting.users.domain.User;
+import com.mrcrafterman.regreporting.users.domain.UserRole;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,13 +19,29 @@ import java.util.UUID;
 public class ProcessingJobQueryService {
 
     private final ProcessingJobRepository processingJobRepository;
+    private final CurrentUserProvider currentUserProvider;
 
-    public ProcessingJobQueryService(ProcessingJobRepository processingJobRepository) {
+    public ProcessingJobQueryService(
+            ProcessingJobRepository processingJobRepository,
+            CurrentUserProvider currentUserProvider
+    ) {
         this.processingJobRepository = processingJobRepository;
+        this.currentUserProvider = currentUserProvider;
     }
 
     @Transactional(readOnly = true)
     public List<ProcessingJobResponse> listProcessingJobs(String username) {
+        User currentUser = currentUserProvider.getCurrentUser();
+
+        if (currentUser.hasRole(UserRole.ANALYST)) {
+            return processingJobRepository.findAllByUsername(currentUser.getUsername())
+                    .stream()
+                    .map(this::toProcessingJobResponse)
+                    .toList();
+        }
+
+        requireRole(currentUser, UserRole.ADMINISTRATOR, "list processing jobs");
+
         List<ProcessingJob> processingJobs = username == null || username.isBlank()
                 ? processingJobRepository.findAllWithUploadedFile()
                 : processingJobRepository.findAllByUsername(username);
@@ -34,6 +54,7 @@ public class ProcessingJobQueryService {
     @Transactional(readOnly = true)
     public ProcessingJobResponse getProcessingJob(UUID jobId) {
         ProcessingJob processingJob = getJob(jobId);
+        requireCanView(processingJob);
 
         return toProcessingJobResponse(processingJob);
     }
@@ -43,6 +64,26 @@ public class ProcessingJobQueryService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Processing job not found"
                 ));
+    }
+
+    public void requireCanView(ProcessingJob processingJob) {
+        User currentUser = currentUserProvider.getCurrentUser();
+
+        if (currentUser.hasRole(UserRole.ADMINISTRATOR)) {
+            return;
+        }
+
+        if (currentUser.hasRole(UserRole.ANALYST) &&
+                processingJob.getUploadedFile()
+                        .getUploadedBy()
+                        .getUsername()
+                        .equals(currentUser.getUsername())) {
+            return;
+        }
+
+        throw new ForbiddenOperationException(
+                "You are not allowed to view this processing job"
+        );
     }
 
     public ProcessingJobResponse toProcessingJobResponse(ProcessingJob processingJob) {
@@ -79,6 +120,14 @@ public class ProcessingJobQueryService {
                 processingJob.getCreatedAt(),
                 processingJob.getUpdatedAt()
         );
+    }
+
+    private void requireRole(User user, UserRole role, String action) {
+        if (!user.hasRole(role)) {
+            throw new ForbiddenOperationException(
+                    "You are not allowed to " + action
+            );
+        }
     }
 
 }

@@ -4,10 +4,14 @@ import com.mrcrafterman.regreporting.processing.domain.ProcessingJob;
 import com.mrcrafterman.regreporting.processing.domain.ProcessingJobStatus;
 import com.mrcrafterman.regreporting.processing.dto.ProcessingJobResponse;
 import com.mrcrafterman.regreporting.processing.infrastructure.ProcessingJobRepository;
+import com.mrcrafterman.regreporting.shared.ForbiddenOperationException;
 import com.mrcrafterman.regreporting.shared.ResourceNotFoundException;
 import com.mrcrafterman.regreporting.upload.domain.UploadedFile;
 import com.mrcrafterman.regreporting.upload.domain.UploadedFileStatus;
+import com.mrcrafterman.regreporting.users.application.CurrentUserProvider;
+import com.mrcrafterman.regreporting.users.domain.Role;
 import com.mrcrafterman.regreporting.users.domain.User;
+import com.mrcrafterman.regreporting.users.domain.UserRole;
 import com.mrcrafterman.regreporting.users.domain.UserStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,13 +34,17 @@ class ProcessingJobQueryServiceTest {
     @Mock
     private ProcessingJobRepository processingJobRepository;
 
+    @Mock
+    private CurrentUserProvider currentUserProvider;
+
     @InjectMocks
     private ProcessingJobQueryService processingJobQueryService;
 
     @Test
-    void listProcessingJobsWithoutUsernameFindsAllJobs() {
+    void listProcessingJobsAsAdministratorWithoutUsernameFindsAllJobs() {
         ProcessingJob job = pendingJob();
 
+        when(currentUserProvider.getCurrentUser()).thenReturn(administrator());
         when(processingJobRepository.findAllWithUploadedFile()).thenReturn(List.of(job));
 
         List<ProcessingJobResponse> result = processingJobQueryService.listProcessingJobs(null);
@@ -49,9 +57,10 @@ class ProcessingJobQueryServiceTest {
     }
 
     @Test
-    void listProcessingJobsWithBlankUsernameFindsAllJobs() {
+    void listProcessingJobsAsAdministratorWithBlankUsernameFindsAllJobs() {
         ProcessingJob job = pendingJob();
 
+        when(currentUserProvider.getCurrentUser()).thenReturn(administrator());
         when(processingJobRepository.findAllWithUploadedFile()).thenReturn(List.of(job));
 
         List<ProcessingJobResponse> result = processingJobQueryService.listProcessingJobs(" ");
@@ -62,9 +71,10 @@ class ProcessingJobQueryServiceTest {
     }
 
     @Test
-    void listProcessingJobsWithUsernameFiltersByUsername() {
+    void listProcessingJobsAsAdministratorWithUsernameFiltersByUsername() {
         ProcessingJob job = pendingJob();
 
+        when(currentUserProvider.getCurrentUser()).thenReturn(administrator());
         when(processingJobRepository.findAllByUsername("analyst01")).thenReturn(List.of(job));
 
         List<ProcessingJobResponse> result =
@@ -77,11 +87,27 @@ class ProcessingJobQueryServiceTest {
     }
 
     @Test
-    void getProcessingJobReturnsMappedResponse() {
+    void listProcessingJobsAsAnalystIgnoresUsernameAndFindsOwnJobs() {
+        ProcessingJob job = pendingJob();
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(analyst());
+        when(processingJobRepository.findAllByUsername("analyst01")).thenReturn(List.of(job));
+
+        List<ProcessingJobResponse> result =
+                processingJobQueryService.listProcessingJobs("otherUser");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().uploadedBy()).isEqualTo("analyst01");
+
+        verify(processingJobRepository).findAllByUsername("analyst01");
+    }
+
+    @Test
+    void getProcessingJobAsAdministratorReturnsMappedResponse() {
         UUID jobId = UUID.randomUUID();
         ProcessingJob job = awaitingApprovalJob();
 
-
+        when(currentUserProvider.getCurrentUser()).thenReturn(administrator());
         when(processingJobRepository.findByIdWithUploadedFile(jobId)).thenReturn(Optional.of(job));
 
         ProcessingJobResponse result = processingJobQueryService.getProcessingJob(jobId);
@@ -92,6 +118,19 @@ class ProcessingJobQueryServiceTest {
         assertThat(result.uploadedBy()).isEqualTo("analyst01");
         assertThat(result.triggeredBy()).isEqualTo("admin01");
         assertThat(result.processingCompletedAt()).isNotNull();
+    }
+
+    @Test
+    void getProcessingJobAsAnalystFailsWhenJobBelongsToAnotherUser() {
+        UUID jobId = UUID.randomUUID();
+        ProcessingJob job = new ProcessingJob(uploadedFile("otherAnalyst"), "File uploaded");
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(analyst());
+        when(processingJobRepository.findByIdWithUploadedFile(jobId)).thenReturn(Optional.of(job));
+
+        assertThatThrownBy(() -> processingJobQueryService.getProcessingJob(jobId))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You are not allowed to view this processing job");
     }
 
     @Test
@@ -118,6 +157,10 @@ class ProcessingJobQueryServiceTest {
     }
 
     private UploadedFile storedFile() {
+        return uploadedFile("analyst01");
+    }
+
+    private UploadedFile uploadedFile(String username) {
         return new UploadedFile(
                 "report.xlsx",
                 "stored-report.xlsx",
@@ -126,18 +169,30 @@ class ProcessingJobQueryServiceTest {
                 1024L,
                 "checksum",
                 UploadedFileStatus.STORED,
-                analyst()
+                analyst(username)
         );
     }
 
     private User analyst() {
-        return new User("analyst01", "analyst01@example.com", "Analyst 01", null, false,
+        return analyst("analyst01");
+    }
+
+    private User analyst(String username) {
+        User user = new User(username, username + "@example.com", "Analyst 01", null, false,
                 UserStatus.ACTIVE);
+        user.getRoles().add(role(UserRole.ANALYST));
+        return user;
     }
 
     private User administrator() {
-        return new User("admin01", "admin01@example.com", "Admin 01", null, false,
+        User user = new User("admin01", "admin01@example.com", "Admin 01", null, false,
                 UserStatus.ACTIVE);
+        user.getRoles().add(role(UserRole.ADMINISTRATOR));
+        return user;
+    }
+
+    private Role role(UserRole userRole) {
+        return new Role(userRole.name(), userRole.name(), null);
     }
 
 }

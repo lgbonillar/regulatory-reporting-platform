@@ -54,6 +54,20 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(ForbiddenOperationException.class)
+    public ResponseEntity<ApiErrorResponse> handleForbiddenOperationException(
+            ForbiddenOperationException exception
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(new ApiErrorResponse(
+                        Instant.now(),
+                        HttpStatus.FORBIDDEN.value(),
+                        "Forbidden",
+                        exception.getMessage()
+                ));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValidException(
             MethodArgumentNotValidException exception

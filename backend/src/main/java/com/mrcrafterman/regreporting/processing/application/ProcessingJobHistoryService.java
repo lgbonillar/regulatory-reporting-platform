@@ -1,12 +1,10 @@
 package com.mrcrafterman.regreporting.processing.application;
 
-import com.mrcrafterman.regreporting.shared.ResourceNotFoundException;
 import com.mrcrafterman.regreporting.processing.domain.ProcessingJob;
 import com.mrcrafterman.regreporting.processing.domain.ProcessingJobStatus;
 import com.mrcrafterman.regreporting.processing.domain.ProcessingJobStatusHistory;
 import com.mrcrafterman.regreporting.processing.domain.ProcessingJobTransitionSource;
 import com.mrcrafterman.regreporting.processing.dto.ProcessingJobStatusHistoryResponse;
-import com.mrcrafterman.regreporting.processing.infrastructure.ProcessingJobRepository;
 import com.mrcrafterman.regreporting.processing.infrastructure.ProcessingJobStatusHistoryRepository;
 import com.mrcrafterman.regreporting.users.domain.User;
 import org.springframework.stereotype.Service;
@@ -18,22 +16,21 @@ import java.util.UUID;
 @Service
 public class ProcessingJobHistoryService {
 
-    private final ProcessingJobRepository processingJobRepository;
+    private final ProcessingJobQueryService processingJobQueryService;
     private final ProcessingJobStatusHistoryRepository processingJobStatusHistoryRepository;
 
     public ProcessingJobHistoryService(
-            ProcessingJobRepository processingJobRepository,
+            ProcessingJobQueryService processingJobQueryService,
             ProcessingJobStatusHistoryRepository processingJobStatusHistoryRepository
     ) {
-        this.processingJobRepository = processingJobRepository;
+        this.processingJobQueryService = processingJobQueryService;
         this.processingJobStatusHistoryRepository = processingJobStatusHistoryRepository;
     }
 
     @Transactional(readOnly = true)
     public List<ProcessingJobStatusHistoryResponse> getProcessingJobHistory(UUID jobId) {
-        if (!processingJobRepository.existsById(jobId)) {
-            throw new ResourceNotFoundException("Processing job not found");
-        }
+        ProcessingJob processingJob = processingJobQueryService.getJob(jobId);
+        processingJobQueryService.requireCanView(processingJob);
 
         return processingJobStatusHistoryRepository
                 .findByProcessingJobIdOrderByCreatedAtAsc(jobId)

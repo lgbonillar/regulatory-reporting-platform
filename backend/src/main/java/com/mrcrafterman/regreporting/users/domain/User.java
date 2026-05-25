@@ -73,4 +73,9 @@ public class User {
         this.status = status;
     }
 
+    public boolean hasRole(UserRole role) {
+        return roles.stream()
+                .anyMatch(userRole -> userRole.getCode().equals(role.name()));
+    }
+
 }
