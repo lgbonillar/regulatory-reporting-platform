@@ -24,6 +24,10 @@
         <app-processing-job-details-panel
           [job]="store.job()"
           [isActionRunning]="store.isActionRunning()"
+          [canStartProcessing]="store.canStartProcessing()"
+          [canApprove]="store.canApprove()"
+          [canReject]="store.canReject()"
+          [canRevoke]="store.canRevoke()"
           (startRequested)="store.startSelectedJob()"
           (approveRequested)="store.approveSelectedJob()"
           (rejectRequested)="requestReject()"

@@ -27,7 +27,7 @@ export class ProcessingJobsPage implements OnInit {
   private readonly router = inject(Router)
 
   ngOnInit (): void {
-    this.store.loadJobs()
+    this.store.loadInitialJobs()
   }
 
   protected openJobDetails (job: ProcessingJobResponse): void {

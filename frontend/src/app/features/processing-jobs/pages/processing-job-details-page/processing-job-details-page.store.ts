@@ -2,6 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core'
 import { ActivatedRoute } from '@angular/router'
 import { Observable } from 'rxjs'
 
+import { SessionService } from '../../../../core/auth/session.service'
 import { resolveHttpErrorMessage } from '../../../../shared/utils/http-error-message'
 import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../../models/processing-job.model'
 import { ProcessingJobService } from '../../services/processing-job.service'
@@ -9,6 +10,7 @@ import { ProcessingJobService } from '../../services/processing-job.service'
 @Injectable()
 export class ProcessingJobDetailsPageStore {
   private readonly route = inject(ActivatedRoute)
+  private readonly sessionService = inject(SessionService)
   private readonly processingJobService = inject(ProcessingJobService)
 
   readonly job = signal<ProcessingJobResponse | null>(null)
@@ -20,6 +22,25 @@ export class ProcessingJobDetailsPageStore {
   readonly isActionRunning = signal(false)
 
   readonly jobId = computed(() => this.route.snapshot.paramMap.get('jobId'))
+  readonly currentUser = this.sessionService.currentUser
+  readonly canStartProcessing = computed(() => {
+    const selectedJob = this.job()
+    const currentUser = this.currentUser()
+
+    return selectedJob?.jobStatus === 'PENDING_EXECUTION' &&
+      selectedJob.fileStatus === 'STORED' &&
+      currentUser.role === 'ANALYST' &&
+      selectedJob.uploadedBy === currentUser.username
+  })
+  readonly canApprove = computed(() =>
+    this.currentUser().role === 'ADMINISTRATOR' &&
+    this.job()?.jobStatus === 'AWAITING_APPROVAL'
+  )
+  readonly canReject = computed(() => this.canApprove())
+  readonly canRevoke = computed(() =>
+    this.currentUser().role === 'ADMINISTRATOR' &&
+    this.job()?.jobStatus === 'APPROVED'
+  )
 
   loadJob (): void {
     const jobId = this.jobId()
@@ -34,6 +55,13 @@ export class ProcessingJobDetailsPageStore {
 
     this.processingJobService.getProcessingJob(jobId).subscribe({
       next: (job) => {
+        if (!this.canViewJob(job)) {
+          this.job.set(null)
+          this.history.set([])
+          this.errorMessage.set('You can only view processing jobs assigned to your user.')
+          return
+        }
+
         this.job.set(job)
         this.loadHistory(job.jobId)
       },
@@ -49,7 +77,7 @@ export class ProcessingJobDetailsPageStore {
   startSelectedJob (): void {
     const selectedJob = this.job()
 
-    if (!selectedJob) {
+    if (!selectedJob || !this.canStartProcessing()) {
       return
     }
 
@@ -59,7 +87,7 @@ export class ProcessingJobDetailsPageStore {
   approveSelectedJob (): void {
     const selectedJob = this.job()
 
-    if (!selectedJob) {
+    if (!selectedJob || !this.canApprove()) {
       return
     }
 
@@ -69,7 +97,7 @@ export class ProcessingJobDetailsPageStore {
   rejectSelectedJob (reason: string): void {
     const selectedJob = this.job()
 
-    if (!selectedJob) {
+    if (!selectedJob || !this.canReject()) {
       return
     }
 
@@ -79,7 +107,7 @@ export class ProcessingJobDetailsPageStore {
   revokeSelectedJob (reason: string): void {
     const selectedJob = this.job()
 
-    if (!selectedJob) {
+    if (!selectedJob || !this.canRevoke()) {
       return
     }
 
@@ -121,5 +149,11 @@ export class ProcessingJobDetailsPageStore {
         this.isHistoryLoading.set(false)
       }
     })
+  }
+
+  private canViewJob (job: ProcessingJobResponse): boolean {
+    const currentUser = this.currentUser()
+
+    return currentUser.role !== 'ANALYST' || job.uploadedBy === currentUser.username
   }
 }

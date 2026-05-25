@@ -1,19 +1,19 @@
 import { computed, inject, Injectable, signal } from '@angular/core'
 
+import { SessionService } from '../../../../core/auth/session.service'
 import { ProcessingJobStatus } from '../../../../core/regulatory.model'
 import { resolveHttpErrorMessage } from '../../../../shared/utils/http-error-message'
 import { ProcessingJobResponse } from '../../models/processing-job.model'
 import { ProcessingJobService } from '../../services/processing-job.service'
 
-const CURRENT_USERNAME = 'analyst01'
 const EMPTY_SELECTION_COUNT = 0
 
 @Injectable()
 export class ProcessingJobsPageStore {
 
+  private readonly sessionService = inject(SessionService)
   private readonly processingJobService = inject(ProcessingJobService)
 
-  private readonly currentUsername = CURRENT_USERNAME
   private readonly jobs = signal<ProcessingJobResponse[]>([])
 
   readonly selectedStatuses = signal<Set<ProcessingJobStatus>>(new Set())
@@ -26,6 +26,8 @@ export class ProcessingJobsPageStore {
   readonly filterCreatedDate = signal('')
 
   readonly selectedStatusCount = computed(() => this.selectedStatuses().size)
+  readonly currentUser = this.sessionService.currentUser
+  readonly canFilterByUsername = computed(() => this.currentUser().role === 'ADMINISTRATOR')
 
   readonly statusOptions: readonly ProcessingJobStatus[] = [
     'PENDING_EXECUTION',
@@ -57,9 +59,20 @@ export class ProcessingJobsPageStore {
     })
   })
 
+  loadInitialJobs (): void {
+    if (this.canFilterByUsername()) {
+      this.loadJobs()
+      return
+    }
+
+    this.loadMyJobs()
+  }
+
   loadMyJobs (): void {
-    this.filterUsername.set(this.currentUsername)
-    this.loadJobs(this.currentUsername)
+    const username = this.currentUser().username
+
+    this.filterUsername.set(username)
+    this.loadJobs(username)
   }
 
   loadJobs (username?: string): void {
@@ -85,6 +98,11 @@ export class ProcessingJobsPageStore {
   }
 
   applyUsernameFilter (): void {
+    if (!this.canFilterByUsername()) {
+      this.loadMyJobs()
+      return
+    }
+
     const username = this.filterUsername().trim()
 
     if (!username) {
@@ -96,6 +114,11 @@ export class ProcessingJobsPageStore {
   }
 
   clearFilter (): void {
+    if (!this.canFilterByUsername()) {
+      this.loadMyJobs()
+      return
+    }
+
     this.filterUsername.set('')
     this.loadJobs()
   }

@@ -34,7 +34,7 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
           </div>
 
           <div class="mt-4 flex flex-wrap gap-2">
-            @if (selectedJob.jobStatus === 'PENDING_EXECUTION') {
+            @if (canStartProcessing()) {
               <app-button
                 variant="primary"
                 [disabled]="isActionRunning()"
@@ -45,7 +45,7 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
               </app-button>
             }
 
-            @if (selectedJob.jobStatus === 'AWAITING_APPROVAL') {
+            @if (canApprove()) {
               <app-button
                 variant="success"
                 [disabled]="isActionRunning()"
@@ -54,7 +54,9 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
               >
                 Approve
               </app-button>
+            }
 
+            @if (canReject()) {
               <app-button
                 variant="warning"
                 [disabled]="isActionRunning()"
@@ -65,7 +67,7 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
               </app-button>
             }
 
-            @if (selectedJob.jobStatus === 'APPROVED') {
+            @if (canRevoke()) {
               <app-button
                 variant="secondary"
                 [disabled]="isActionRunning()"
@@ -231,6 +233,10 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
 export class ProcessingJobDetailsPanel {
   readonly job = input<ProcessingJobResponse | null>(null)
   readonly isActionRunning = input(false)
+  readonly canStartProcessing = input(false)
+  readonly canApprove = input(false)
+  readonly canReject = input(false)
+  readonly canRevoke = input(false)
 
   readonly startRequested = output<void>()
   readonly approveRequested = output<void>()
