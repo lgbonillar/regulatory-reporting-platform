@@ -1,6 +1,6 @@
 <section class="flex h-full min-h-0 w-full flex-col gap-6">
   <app-page-header eyebrow="Processing job" title="Job details">
-    <a routerLink="/processes" class="text-sm font-medium text-slate-600 hover:text-slate-900">
+    <a routerLink="/processing-jobs" class="text-sm font-medium text-slate-600 hover:text-slate-900">
       Back to processes
     </a>
   </app-page-header>
@@ -21,6 +21,10 @@
         <app-processing-job-details-panel
           [job]="store.job()"
           [isActionRunning]="store.isActionRunning()"
+          (startRequested)="store.startSelectedJob()"
+          (approveRequested)="store.approveSelectedJob()"
+          (rejectRequested)="requestReject()"
+          (revokeRequested)="requestRevoke()"
         />
       </div>
 
@@ -33,4 +37,32 @@
       </div>
     </section>
   }
+
+  <app-confirmation-dialog
+    [isOpen]="pendingConfirmation() === 'reject'"
+    title="Reject process"
+    message="This will reject the processed result. Add the reason so the decision is traceable."
+    confirmLabel="Reject"
+    confirmVariant="warning"
+    [requiresReason]="true"
+    reasonLabel="Rejection reason"
+    reasonPlaceholder="Explain why this process is being rejected."
+    [isSubmitting]="store.isActionRunning()"
+    (cancelRequested)="closeConfirmation()"
+    (confirmRequested)="confirmAction($event)"
+  />
+
+  <app-confirmation-dialog
+    [isOpen]="pendingConfirmation() === 'revoke'"
+    title="Revoke approval"
+    message="This will invalidate a previous approval. Add the reason so the decision is traceable."
+    confirmLabel="Revoke"
+    confirmVariant="secondary"
+    [requiresReason]="true"
+    reasonLabel="Revocation reason"
+    reasonPlaceholder="Explain why this approval is being revoked."
+    [isSubmitting]="store.isActionRunning()"
+    (cancelRequested)="closeConfirmation()"
+    (confirmRequested)="confirmAction($event)"
+  />
 </section>

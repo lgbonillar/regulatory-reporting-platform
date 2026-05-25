@@ -67,7 +67,6 @@
 
             <app-processing-jobs-list
               [jobs]="store.filteredJobs()"
-              [selectedJobId]="store.selectedJob()?.jobId ?? null"
               (jobSelected)="openJobDetails($event)"
             />
 

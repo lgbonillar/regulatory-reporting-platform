@@ -1,5 +1,6 @@
 import { computed, inject, Injectable, signal } from '@angular/core'
 import { ActivatedRoute } from '@angular/router'
+import { Observable } from 'rxjs'
 
 import { resolveHttpErrorMessage } from '../../../../shared/utils/http-error-message'
 import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../../models/processing-job.model'
@@ -41,6 +42,65 @@ export class ProcessingJobDetailsPageStore {
       },
       complete: () => {
         this.isLoading.set(false)
+      }
+    })
+  }
+
+  startSelectedJob (): void {
+    const selectedJob = this.job()
+
+    if (!selectedJob) {
+      return
+    }
+
+    this.runJobAction(this.processingJobService.startProcessing(selectedJob.jobId))
+  }
+
+  approveSelectedJob (): void {
+    const selectedJob = this.job()
+
+    if (!selectedJob) {
+      return
+    }
+
+    this.runJobAction(this.processingJobService.approve(selectedJob.jobId))
+  }
+
+  rejectSelectedJob (reason: string): void {
+    const selectedJob = this.job()
+
+    if (!selectedJob) {
+      return
+    }
+
+    this.runJobAction(this.processingJobService.reject(selectedJob.jobId, reason))
+  }
+
+  revokeSelectedJob (reason: string): void {
+    const selectedJob = this.job()
+
+    if (!selectedJob) {
+      return
+    }
+
+    this.runJobAction(this.processingJobService.revoke(selectedJob.jobId, reason))
+  }
+
+  private runJobAction (request: Observable<ProcessingJobResponse>): void {
+    this.isActionRunning.set(true)
+    this.errorMessage.set(null)
+
+    request.subscribe({
+      next: (updatedJob) => {
+        this.job.set(updatedJob)
+        this.loadHistory(updatedJob.jobId)
+      },
+      error: (error: unknown) => {
+        this.errorMessage.set(resolveHttpErrorMessage(error))
+        this.isActionRunning.set(false)
+      },
+      complete: () => {
+        this.isActionRunning.set(false)
       }
     })
   }

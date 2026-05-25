@@ -26,13 +26,7 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
 
         <tbody class="divide-y divide-slate-200">
           @for (job of jobs(); track job.jobId) {
-            <tr
-              class="align-middle transition"
-              [class.bg-sky-50]="selectedJobId() === job.jobId"
-              [class.ring-1]="selectedJobId() === job.jobId"
-              [class.ring-inset]="selectedJobId() === job.jobId"
-              [class.ring-sky-200]="selectedJobId() === job.jobId"
-            >
+            <tr class="align-middle transition hover:bg-slate-50">
               <td class="px-6 py-4">
                 <app-file-download-link
                   [fileId]="job.fileId"
@@ -56,7 +50,7 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
 
               <td class="px-6 py-4 text-right">
                 <a
-                  [routerLink]="['/processes', job.jobId]"
+                  [routerLink]="['/processing-jobs', job.jobId]"
                   class="inline-flex ..."
                 >
                   Details
@@ -70,10 +64,7 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
 
     <div class="divide-y divide-slate-200 lg:hidden">
       @for (job of jobs(); track job.jobId) {
-        <article
-          class="flex flex-col gap-3 px-4 py-4 transition"
-          [class.bg-sky-50]="selectedJobId() === job.jobId"
-        >
+        <article class="flex flex-col gap-3 px-4 py-4 transition hover:bg-slate-50">
           <div>
             <app-file-download-link
               [fileId]="job.fileId"
@@ -104,6 +95,5 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
 })
 export class ProcessingJobsList {
   readonly jobs = input.required<ProcessingJobResponse[]>()
-  readonly selectedJobId = input<string | null>(null)
   readonly jobSelected = output<ProcessingJobResponse>()
 }

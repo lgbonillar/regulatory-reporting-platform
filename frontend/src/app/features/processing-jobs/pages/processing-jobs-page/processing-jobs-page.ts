@@ -31,7 +31,7 @@ export class ProcessingJobsPage implements OnInit {
   }
 
   protected openJobDetails (job: ProcessingJobResponse): void {
-    void this.router.navigate([ '/processes', job.jobId ])
+    void this.router.navigate([ '/processing-jobs', job.jobId ])
   }
 
 }
