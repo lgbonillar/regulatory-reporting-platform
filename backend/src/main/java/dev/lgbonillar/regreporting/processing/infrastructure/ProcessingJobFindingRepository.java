@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface ProcessingJobFindingRepository extends JpaRepository<ProcessingJobFinding, UUID> {
 
     List<ProcessingJobFinding> findAllByProcessingJobIdOrderByCreatedAtAsc(UUID processingJobId);
+
+    void deleteAllByProcessingJobId(UUID processingJobId);
 }

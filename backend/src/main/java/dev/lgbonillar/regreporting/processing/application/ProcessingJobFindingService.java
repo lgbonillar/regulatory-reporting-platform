@@ -4,6 +4,7 @@ import dev.lgbonillar.regreporting.processing.domain.ProcessingJob;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingJobFinding;
 import dev.lgbonillar.regreporting.processing.dto.ProcessingJobFindingResponse;
 import dev.lgbonillar.regreporting.processing.infrastructure.ProcessingJobFindingRepository;
+import dev.lgbonillar.regreporting.processing.processor.ProcessingFindingCommand;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,33 @@ public class ProcessingJobFindingService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional
+    public void replaceProcessingJobFindings(
+            ProcessingJob processingJob,
+            List<ProcessingFindingCommand> findings
+    ) {
+        processingJobFindingRepository.deleteAllByProcessingJobId(processingJob.getId());
+
+        List<ProcessingJobFinding> entities = findings.stream()
+                .map(finding -> new ProcessingJobFinding(
+                        processingJob,
+                        finding.severity(),
+                        finding.scope(),
+                        finding.code(),
+                        finding.message(),
+                        finding.sheetName(),
+                        finding.rowNumber(),
+                        finding.columnName(),
+                        finding.fieldName(),
+                        finding.rejectedValue(),
+                        finding.expectedValue(),
+                        finding.actualValue()
+                ))
+                .toList();
+
+        processingJobFindingRepository.saveAll(entities);
     }
 
     private ProcessingJobFindingResponse toResponse(ProcessingJobFinding finding) {

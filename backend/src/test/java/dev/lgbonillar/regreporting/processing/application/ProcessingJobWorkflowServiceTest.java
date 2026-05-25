@@ -4,6 +4,9 @@ import dev.lgbonillar.regreporting.shared.BusinessConflictException;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingJob;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingJobStatus;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingJobTransitionSource;
+import dev.lgbonillar.regreporting.processing.processor.ProcessingResult;
+import dev.lgbonillar.regreporting.processing.processor.RegulatoryReportProcessor;
+import dev.lgbonillar.regreporting.processing.processor.RegulatoryReportProcessorRegistry;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileStatus;
 import dev.lgbonillar.regreporting.processing.dto.ProcessingJobResponse;
@@ -19,6 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,21 +46,37 @@ class ProcessingJobWorkflowServiceTest {
     @InjectMocks
     private ProcessingJobWorkflowService processingJobWorkflowService;
 
+    @Mock
+    private ProcessingJobFindingService processingJobFindingService;
+
+    @Mock
+    private RegulatoryReportProcessorRegistry regulatoryReportProcessorRegistry;
+
+    @Mock
+    private RegulatoryReportProcessor regulatoryReportProcessor;
+
     @Test
-    void startProcessingMovesJobToProcessingAndRecordsUserTransition() {
+    void startProcessingRunsProcessorAndMovesJobToAwaitingApproval() {
         UUID jobId = UUID.randomUUID();
         ProcessingJob job = pendingJob(UploadedFileStatus.STORED);
         User analyst = analyst();
 
         when(processingJobQueryService.getJob(jobId)).thenReturn(job);
         when(currentUserProvider.getCurrentUser()).thenReturn(analyst);
+        when(regulatoryReportProcessorRegistry.getDefaultProcessor()).thenReturn(regulatoryReportProcessor);
+        when(regulatoryReportProcessor.process(job)).thenReturn(
+                ProcessingResult.successful(
+                        "DEMO_REGULATORY_REPORT",
+                        "Demo regulatory report processed successfully"
+                )
+        );
         when(processingJobQueryService.toProcessingJobResponse(job))
                 .thenAnswer(invocation -> response(invocation.getArgument(0)));
 
         ProcessingJobResponse result = processingJobWorkflowService.startProcessing(jobId);
 
-        assertThat(result.jobStatus()).isEqualTo(ProcessingJobStatus.PROCESSING.name());
-        assertThat(job.getStatus()).isEqualTo(ProcessingJobStatus.PROCESSING);
+        assertThat(result.jobStatus()).isEqualTo(ProcessingJobStatus.AWAITING_APPROVAL.name());
+        assertThat(job.getStatus()).isEqualTo(ProcessingJobStatus.AWAITING_APPROVAL);
         assertThat(job.getTriggeredBy()).isSameAs(analyst);
 
         verify(processingJobHistoryService).recordTransition(
@@ -66,6 +86,19 @@ class ProcessingJobWorkflowServiceTest {
                 ProcessingJobTransitionSource.USER,
                 analyst,
                 "Analyst started processing"
+        );
+
+        verify(regulatoryReportProcessorRegistry).getDefaultProcessor();
+        verify(regulatoryReportProcessor).process(job);
+        verify(processingJobFindingService).replaceProcessingJobFindings(job, List.of());
+
+        verify(processingJobHistoryService).recordTransition(
+                job,
+                ProcessingJobStatus.PROCESSING,
+                ProcessingJobStatus.AWAITING_APPROVAL,
+                ProcessingJobTransitionSource.SYSTEM,
+                null,
+                "Demo regulatory report processed successfully"
         );
     }
 

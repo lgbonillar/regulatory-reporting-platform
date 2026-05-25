@@ -4,6 +4,9 @@ import dev.lgbonillar.regreporting.processing.domain.ProcessingJob;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingJobStatus;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingJobTransitionSource;
 import dev.lgbonillar.regreporting.processing.dto.ProcessingJobResponse;
+import dev.lgbonillar.regreporting.processing.processor.ProcessingResult;
+import dev.lgbonillar.regreporting.processing.processor.RegulatoryReportProcessor;
+import dev.lgbonillar.regreporting.processing.processor.RegulatoryReportProcessorRegistry;
 import dev.lgbonillar.regreporting.shared.ForbiddenOperationException;
 import dev.lgbonillar.regreporting.users.application.CurrentUserProvider;
 import dev.lgbonillar.regreporting.users.domain.User;
@@ -19,15 +22,21 @@ public class ProcessingJobWorkflowService {
     private final ProcessingJobQueryService processingJobQueryService;
     private final ProcessingJobHistoryService processingJobHistoryService;
     private final CurrentUserProvider currentUserProvider;
+    private final ProcessingJobFindingService processingJobFindingService;
+    private final RegulatoryReportProcessorRegistry regulatoryReportProcessorRegistry;
 
     public ProcessingJobWorkflowService(
             ProcessingJobQueryService processingJobQueryService,
             ProcessingJobHistoryService processingJobHistoryService,
-            CurrentUserProvider currentUserProvider
+            CurrentUserProvider currentUserProvider,
+            ProcessingJobFindingService processingJobFindingService,
+            RegulatoryReportProcessorRegistry regulatoryReportProcessorRegistry
     ) {
         this.processingJobQueryService = processingJobQueryService;
         this.processingJobHistoryService = processingJobHistoryService;
         this.currentUserProvider = currentUserProvider;
+        this.processingJobFindingService = processingJobFindingService;
+        this.regulatoryReportProcessorRegistry = regulatoryReportProcessorRegistry;
     }
 
     @Transactional
@@ -50,6 +59,31 @@ public class ProcessingJobWorkflowService {
                 ProcessingJobTransitionSource.USER,
                 currentUser,
                 "Analyst started processing"
+        );
+
+        RegulatoryReportProcessor processor = regulatoryReportProcessorRegistry.getDefaultProcessor();
+        ProcessingResult result = processor.process(job);
+
+        processingJobFindingService.replaceProcessingJobFindings(
+                job,
+                result.findings()
+        );
+
+        ProcessingJobStatus processingStatus = job.getStatus();
+
+        if (result.hasErrors()) {
+            job.markProcessingFailed(result.message());
+        } else {
+            job.markProcessingCompleted();
+        }
+
+        processingJobHistoryService.recordTransition(
+                job,
+                processingStatus,
+                job.getStatus(),
+                ProcessingJobTransitionSource.SYSTEM,
+                null,
+                result.message()
         );
 
         return processingJobQueryService.toProcessingJobResponse(job);
