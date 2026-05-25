@@ -12,9 +12,9 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
   selector: 'app-processing-job-details-panel',
   imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, PageState, StatusBadge ],
   template: `
-    <aside class="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+    <aside class="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       @if (job(); as selectedJob) {
-        <div class="border-b border-slate-200 pb-4">
+        <div class="shrink-0 border-b border-slate-200 bg-white p-4 sm:p-6">
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Selected process
           </p>
@@ -74,7 +74,7 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
           </div>
         </div>
 
-        <dl class="mt-4 grid gap-4 text-sm">
+        <dl class="grid min-h-0 flex-1 gap-4 overflow-auto p-4 text-sm sm:p-6">
           <div>
             <dt class="font-medium text-slate-500">Job ID</dt>
             <dd class="mt-1">
@@ -213,11 +213,13 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
           </div>
         </dl>
       } @else {
-        <app-page-state
-          type="empty"
-          title="No process selected"
-          message="Select a processing job to view its details."
-        />
+        <div class="p-6">
+          <app-page-state
+            type="empty"
+            title="No process selected"
+            message="Select a processing job to view its details."
+          />
+        </div>
       }
     </aside>
   `

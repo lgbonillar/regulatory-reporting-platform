@@ -10,9 +10,12 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
 
 @Component({
   selector: 'app-uploaded-files-list',
+  host: {
+    class: 'block h-full min-h-0'
+  },
   imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, FilePickerButton, StatusBadge ],
   template: `
-    <div class="hidden overflow-x-auto md:block">
+    <div class="hidden h-full min-h-0 overflow-auto md:block">
       <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
         <thead class="sticky top-0 z-10 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
           <tr>
@@ -72,7 +75,7 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
       </table>
     </div>
 
-    <div class="divide-y divide-slate-200 md:hidden">
+    <div class="h-full min-h-0 divide-y divide-slate-200 overflow-auto md:hidden">
       @for (file of files(); track file.fileId) {
         <article class="flex flex-col gap-4 px-4 py-4">
           <div>

@@ -10,9 +10,12 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
 
 @Component({
   selector: 'app-processing-jobs-list',
+  host: {
+    class: 'block h-full min-h-0'
+  },
   imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, RouterLink, StatusBadge ],
   template: `
-    <div class="hidden overflow-x-auto lg:block">
+    <div class="hidden h-full min-h-0 overflow-auto lg:block">
       <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
         <thead class="sticky top-0 z-10 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
           <tr>
@@ -62,7 +65,7 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
       </table>
     </div>
 
-    <div class="divide-y divide-slate-200 lg:hidden">
+    <div class="h-full min-h-0 divide-y divide-slate-200 overflow-auto lg:hidden">
       @for (job of jobs(); track job.jobId) {
         <article class="flex flex-col gap-3 px-4 py-4 transition hover:bg-slate-50">
           <div>

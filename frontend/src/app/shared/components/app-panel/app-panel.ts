@@ -12,7 +12,7 @@ type PanelPadding = 'none' | 'normal'
   template: `
     <section
       class="rounded-lg border border-slate-200 bg-white shadow-sm"
-      [class.h-full]="fullHeight()"u
+      [class.h-full]="fullHeight()"
       [class.min-h-0]="fullHeight()"
       [class.overflow-hidden]="fullHeight()"
       [class.p-4]="padding() === 'normal'"

@@ -9,63 +9,65 @@ import { ProcessingJobStatusHistoryResponse } from '../../models/processing-job.
   selector: 'app-processing-job-history-list',
   imports: [ DatePipe, PageState, StatusBadge ],
   template: `
-    <section class="mt-6 border-t border-slate-200 pt-4">
-      <div class="flex items-center justify-between gap-3">
+    <section class="flex h-full min-h-0 flex-col">
+      <div class="shrink-0 border-b border-slate-200 bg-white p-4 sm:p-6">
         <h3 class="text-sm font-semibold text-slate-950">History</h3>
       </div>
 
-      @if (isLoading()) {
+      <div class="min-h-0 flex-1 overflow-auto p-4 sm:p-6">
+        @if (isLoading()) {
 
-        <app-page-state
-          type="loading"
-          title="Loading history"
-          message="Please wait while the status history is loaded."
-        />
+          <app-page-state
+            type="loading"
+            title="Loading history"
+            message="Please wait while the status history is loaded."
+          />
 
-      } @else if (errorMessage()) {
+        } @else if (errorMessage()) {
 
-        <app-page-state
-          type="error"
-          title="History could not be loaded"
-          [message]="errorMessage()"
-        />
+          <app-page-state
+            type="error"
+            title="History could not be loaded"
+            [message]="errorMessage()"
+          />
 
-      } @else if (history().length > 0) {
+        } @else if (history().length > 0) {
 
-        <ol class="mt-4 space-y-4">
-          @for (historyItem of history(); track historyItem.id) {
+          <ol class="space-y-4">
+            @for (historyItem of history(); track historyItem.id) {
 
-            <li class="border-l-2 border-slate-200 pl-4">
-              <div class="flex flex-wrap items-center gap-2">
-                @if (historyItem.previousStatus) {
-                  <app-status-badge [status]="historyItem.previousStatus" />
-                  <span class="text-xs text-slate-400">to</span>
-                }
+              <li class="border-l-2 border-slate-200 pl-4">
+                <div class="flex flex-wrap items-center gap-2">
+                  @if (historyItem.previousStatus) {
+                    <app-status-badge [status]="historyItem.previousStatus" />
+                    <span class="text-xs text-slate-400">to</span>
+                  }
 
-                <app-status-badge [status]="historyItem.newStatus" />
-              </div>
+                  <app-status-badge [status]="historyItem.newStatus" />
+                </div>
 
-              <p class="mt-2 text-sm text-slate-900">
-                {{ historyItem.reason ?? 'No reason provided' }}
-              </p>
+                <p class="mt-2 text-sm text-slate-900">
+                  {{ historyItem.reason ?? 'No reason provided' }}
+                </p>
 
-              <p class="mt-1 text-xs text-slate-500">
-                {{ getTransitionActorLabel(historyItem) }} · {{ historyItem.createdAt | date: 'medium' }}
-              </p>
-            </li>
+                <p class="mt-1 text-xs text-slate-500">
+                  {{ getTransitionActorLabel(historyItem) }} · {{ historyItem.createdAt | date: 'medium' }}
+                </p>
+              </li>
 
-          }
-        </ol>
+            }
+          </ol>
 
-      } @else {
+        } @else {
 
-        <app-page-state
-          type="empty"
-          title="No status history"
-          message="This job does not have status transitions yet."
-        />
+          <app-page-state
+            type="empty"
+            title="No status history"
+            message="This job does not have status transitions yet."
+          />
 
-      }
+        }
+      </div>
     </section>
   `
 })
