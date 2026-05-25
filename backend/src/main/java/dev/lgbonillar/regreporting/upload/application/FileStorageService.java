@@ -139,4 +139,20 @@ public class FileStorageService {
         return new FileSystemResource(filePath);
     }
 
+    public Path resolvePath(String relativeStoragePath) {
+        Path filePath = uploadRoot
+                .resolve(relativeStoragePath)
+                .normalize();
+
+        if (!filePath.startsWith(uploadRoot)) {
+            throw new ResourceNotFoundException("Invalid storage path");
+        }
+
+        if (!Files.exists(filePath) || !Files.isRegularFile(filePath)) {
+            throw new ResourceNotFoundException("Uploaded file not found");
+        }
+
+        return filePath;
+    }
+
 }
