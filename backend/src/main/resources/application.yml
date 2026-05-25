@@ -3,9 +3,9 @@ spring:
     name: regulatory-reporting-api
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/regulatory_reporting
-    username: regreporting
-    password: regreporting
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/regulatory_reporting}
+    username: ${DB_USERNAME:regreporting}
+    password: ${DB_PASSWORD:regreporting}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -24,6 +24,13 @@ app:
   storage:
     upload-dir: ${APP_STORAGE_UPLOAD_DIR:storage/uploads}
     max-file-size-bytes: 10485760
+
+  security:
+    jwt:
+      secret: ${APP_JWT_SECRET:dev-only-change-this-secret-dev-only-change-this-secret}
+      issuer: regulatory-reporting-api
+      access-token-expiration-minutes: 15
+      refresh-token-expiration-days: 7
 
 server:
   port: 8080
