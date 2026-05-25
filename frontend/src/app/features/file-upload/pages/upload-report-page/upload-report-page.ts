@@ -13,6 +13,9 @@ const FIRST_FILE_INDEX = 0
 
 @Component({
   selector: 'app-upload-report-page',
+  host: {
+    class: 'block h-full min-h-0'
+  },
   imports: [ AppAlert, AppPanel, ConfirmationDialog, PageHeader, PageState, ReportFileUploadControl, UploadedFilesList ],
   providers: [ UploadReportPageStore ],
   templateUrl: './upload-report-page.html'

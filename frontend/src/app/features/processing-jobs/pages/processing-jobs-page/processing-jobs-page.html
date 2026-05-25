@@ -1,4 +1,4 @@
-<section class="flex w-full flex-col gap-6">
+<section class="flex h-full min-h-0 w-full flex-col gap-6">
   <app-page-header eyebrow="Processing jobs" title="Job monitor">
     <div class="flex flex-col gap-2 sm:flex-row">
       <app-text-input
@@ -26,87 +26,66 @@
     <app-alert type="error" [message]="store.errorMessage()!" />
   }
 
-  <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-    <app-panel>
-      <div class="relative flex items-center justify-between border-b border-slate-200 px-4 py-4 sm:px-6">
-        <div class="flex items-center gap-3">
-          <h2 class="text-base font-semibold text-slate-950">Jobs</h2>
+  <section class="min-h-0 flex-1">
+    <app-panel [fullHeight]="true">
+      <div class="flex h-full min-h-0 flex-col">
+        <div class="relative flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-4 sm:px-6">
+          <div class="flex items-center gap-3">
+            <h2 class="text-base font-semibold text-slate-950">Jobs</h2>
 
-          <span class="text-sm text-slate-500">
-            {{ store.filteredJobs().length }} shown
-          </span>
+            <span class="text-sm text-slate-500">
+              {{ store.filteredJobs().length }} shown
+            </span>
+
+          </div>
+
+          <app-processing-job-status-filter
+            [statuses]="store.statusOptions"
+            [selectedStatuses]="store.selectedStatuses()"
+            [selectedCount]="store.selectedStatusCount()"
+            [isOpen]="store.isStatusFilterOpen()"
+            (toggleRequested)="store.toggleStatusFilterPanel()"
+            (closeRequested)="store.closeStatusFilterPanel()"
+            (clearRequested)="store.clearStatusFilters()"
+            (statusChanged)="store.toggleStatusFilter($event.status, $event.checked)"
+          />
 
         </div>
 
-        <app-processing-job-status-filter
-          [statuses]="store.statusOptions"
-          [selectedStatuses]="store.selectedStatuses()"
-          [selectedCount]="store.selectedStatusCount()"
-          [isOpen]="store.isStatusFilterOpen()"
-          (toggleRequested)="store.toggleStatusFilterPanel()"
-          (closeRequested)="store.closeStatusFilterPanel()"
-          (clearRequested)="store.clearStatusFilters()"
-          (statusChanged)="store.toggleStatusFilter($event.status, $event.checked)"
-        />
+        <div class="min-h-0 flex-1 overflow-auto">
+          @if (store.isLoading()) {
 
+            <div class="p-6">
+              <app-page-state
+                type="loading"
+                title="Loading jobs"
+                message="Please wait while processing jobs are loaded."
+              />
+            </div>
+
+          } @else if (store.filteredJobs().length > 0) {
+
+            <app-processing-jobs-list
+              [jobs]="store.filteredJobs()"
+              [selectedJobId]="store.selectedJob()?.jobId ?? null"
+              (jobSelected)="openJobDetails($event)"
+            />
+
+          } @else {
+
+            <div class="p-6">
+              <app-page-state
+                type="empty"
+                title="No processing jobs found"
+                message="Try changing the filters or loading all jobs."
+              />
+            </div>
+
+          }
+        </div>
       </div>
-
-      @if (store.isLoading()) {
-
-        <div class="p-6">
-          <app-page-state
-            type="loading"
-            title="Loading jobs"
-            message="Please wait while processing jobs are loaded."
-          />
-        </div>
-
-      } @else if (store.filteredJobs().length > 0) {
-
-        <app-processing-jobs-list
-          [jobs]="store.filteredJobs()"
-          [selectedJobId]="store.selectedJob()?.jobId ?? null"
-          (jobSelected)="store.selectJob($event)"
-        />
-
-      } @else {
-
-        <div class="p-6">
-          <app-page-state
-            type="empty"
-            title="No processing jobs found"
-            message="Try changing the filters or loading all jobs."
-          />
-        </div>
-
-      }
     </app-panel>
 
-    <app-processing-job-details-panel
-      [job]="store.selectedJob()"
-      [history]="store.selectedJobHistory()"
-      [isHistoryLoading]="store.isHistoryLoading()"
-      [historyErrorMessage]="store.historyErrorMessage()"
-      [isActionRunning]="store.isActionRunning()"
-      (startRequested)="store.startSelectedJob()"
-      (approveRequested)="store.approveSelectedJob()"
-      (rejectRequested)="rejectSelectedJob()"
-      (revokeRequested)="revokeSelectedJob()"
-    />
   </section>
-
-  <app-confirmation-dialog
-    [isOpen]="isConfirmationOpen()"
-    [title]="confirmationTitle()"
-    [message]="confirmationMessage()"
-    [confirmLabel]="confirmationLabel()"
-    confirmVariant="danger"
-    [requiresReason]="true"
-    reasonLabel="Reason"
-    reasonPlaceholder="Write a clear reason for this decision."
-    [isSubmitting]="store.isActionRunning()"
-    (cancelRequested)="cancelConfirmation()"
-    (confirmRequested)="confirmAction($event)"
-  />
 
 </section>

@@ -6,14 +6,13 @@ import { CopyableCode } from '../../../../shared/components/copyable-code/copyab
 import { FileDownloadLink } from '../../../../shared/components/file-download-link/file-download-link'
 import { PageState } from '../../../../shared/components/page-state/page-state'
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
-import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../../models/processing-job.model'
-import { ProcessingJobHistoryList } from '../processing-job-history-list/processing-job-history-list'
+import { ProcessingJobResponse } from '../../models/processing-job.model'
 
 @Component({
   selector: 'app-processing-job-details-panel',
-  imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, PageState, ProcessingJobHistoryList, StatusBadge ],
+  imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, PageState, StatusBadge ],
   template: `
-    <aside class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+    <aside class="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
       @if (job(); as selectedJob) {
         <div class="border-b border-slate-200 pb-4">
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -213,13 +212,6 @@ import { ProcessingJobHistoryList } from '../processing-job-history-list/process
             </dd>
           </div>
         </dl>
-
-        <app-processing-job-history-list
-          [history]="history()"
-          [isLoading]="isHistoryLoading()"
-          [errorMessage]="historyErrorMessage()"
-        />
-
       } @else {
         <app-page-state
           type="empty"
@@ -232,9 +224,6 @@ import { ProcessingJobHistoryList } from '../processing-job-history-list/process
 })
 export class ProcessingJobDetailsPanel {
   readonly job = input<ProcessingJobResponse | null>(null)
-  readonly history = input<ProcessingJobStatusHistoryResponse[]>([])
-  readonly isHistoryLoading = input(false)
-  readonly historyErrorMessage = input<string | null>(null)
   readonly isActionRunning = input(false)
 
   readonly startRequested = output<void>()

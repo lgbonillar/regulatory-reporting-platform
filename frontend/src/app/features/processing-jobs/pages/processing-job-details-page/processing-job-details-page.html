@@ -1,0 +1,36 @@
+<section class="flex h-full min-h-0 w-full flex-col gap-6">
+  <app-page-header eyebrow="Processing job" title="Job details">
+    <a routerLink="/processes" class="text-sm font-medium text-slate-600 hover:text-slate-900">
+      Back to processes
+    </a>
+  </app-page-header>
+
+  @if (store.errorMessage()) {
+    <app-alert type="error" [message]="store.errorMessage()!" />
+  }
+
+  @if (store.isLoading()) {
+    <app-page-state
+      type="loading"
+      title="Loading job"
+      message="Please wait while the processing job is loaded."
+    />
+  } @else {
+    <section class="grid min-h-0 flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div class="min-h-0">
+        <app-processing-job-details-panel
+          [job]="store.job()"
+          [isActionRunning]="store.isActionRunning()"
+        />
+      </div>
+
+      <div class="min-h-0 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+        <app-processing-job-history-list
+          [history]="store.history()"
+          [isLoading]="store.isHistoryLoading()"
+          [errorMessage]="store.historyErrorMessage()"
+        />
+      </div>
+    </section>
+  }
+</section>

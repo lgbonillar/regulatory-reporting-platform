@@ -14,7 +14,7 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
   template: `
     <div class="hidden overflow-x-auto md:block">
       <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-        <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+        <thead class="sticky top-0 z-10 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
           <tr>
             <th class="px-6 py-3">File</th>
             <th class="px-6 py-3">Status</th>

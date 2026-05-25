@@ -1,4 +1,4 @@
-<section class="flex w-full flex-col gap-6">
+<section class="flex h-full min-h-0 w-full flex-col gap-6">
   <app-page-header eyebrow="Report files" title="Uploaded Excel files">
     <p class="text-sm text-slate-500">
       User:
@@ -23,45 +23,51 @@
     <app-alert type="success" [message]="store.successMessage()!" />
   }
 
-  <app-panel>
-    <div class="flex flex-col gap-2 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-      <div>
-        <h2 class="text-base font-semibold text-slate-950">Files</h2>
-        <p class="text-sm text-slate-500">Stored reports for {{ store.username() }}</p>
+  <div class="min-h-0 flex-1">
+    <app-panel [fullHeight]="true">
+      <div class="flex h-full min-h-0 flex-col">
+        <div class="flex shrink-0 flex-col gap-2 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div>
+            <h2 class="text-base font-semibold text-slate-950">Files</h2>
+            <p class="text-sm text-slate-500">Stored reports for {{ store.username() }}</p>
+          </div>
+        </div>
+
+        <div class="min-h-0 flex-1 overflow-auto">
+          @if (store.isLoadingFiles()) {
+
+            <div class="p-6">
+              <app-page-state
+                type="loading"
+                title="Loading files"
+                message="Please wait while the report files are loaded."
+              />
+            </div>
+
+          } @else if (store.hasFiles()) {
+
+            <app-uploaded-files-list
+              [files]="store.files()"
+              [actionFileId]="store.actionFileId()"
+              (replacementSelected)="onReplacementFileSelected($event.event, $event.fileId)"
+              (deleteSelected)="requestDeleteReportFile($event)"
+            />
+
+          } @else {
+
+            <div class="p-6">
+              <app-page-state
+                type="empty"
+                title="No files uploaded"
+                message="Upload an Excel file to start a processing flow."
+              />
+            </div>
+
+          }
+        </div>
       </div>
-    </div>
-
-    @if (store.isLoadingFiles()) {
-
-      <div class="p-6">
-        <app-page-state
-          type="loading"
-          title="Loading files"
-          message="Please wait while the report files are loaded."
-        />
-      </div>
-
-    } @else if (store.hasFiles()) {
-
-      <app-uploaded-files-list
-        [files]="store.files()"
-        [actionFileId]="store.actionFileId()"
-        (replacementSelected)="onReplacementFileSelected($event.event, $event.fileId)"
-        (deleteSelected)="requestDeleteReportFile($event)"
-      />
-
-    } @else {
-
-      <div class="p-6">
-        <app-page-state
-          type="empty"
-          title="No files uploaded"
-          message="Upload an Excel file to start a processing flow."
-        />
-      </div>
-      
-    }
-  </app-panel>
+    </app-panel>
+  </div>
 
   <app-confirmation-dialog
     [isOpen]="pendingDeleteFileId() !== null"

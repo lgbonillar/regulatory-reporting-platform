@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common'
 import { Component, input, output } from '@angular/core'
+import { RouterLink } from '@angular/router'
 
 import { AppButton } from '../../../../shared/components/app-button/app-button'
 import { CopyableCode } from '../../../../shared/components/copyable-code/copyable-code'
@@ -9,11 +10,11 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
 
 @Component({
   selector: 'app-processing-jobs-list',
-  imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, StatusBadge ],
+  imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, RouterLink, StatusBadge ],
   template: `
     <div class="hidden overflow-x-auto lg:block">
       <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-        <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+        <thead class="sticky top-0 z-10 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
           <tr>
             <th class="px-6 py-3">File</th>
             <th class="px-6 py-3">User</th>
@@ -54,9 +55,12 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
               </td>
 
               <td class="px-6 py-4 text-right">
-                <app-button variant="secondary" (click)="jobSelected.emit(job)">
-                  {{ selectedJobId() === job.jobId ? 'Selected' : 'Details' }}
-                </app-button>
+                <a
+                  [routerLink]="['/processes', job.jobId]"
+                  class="inline-flex ..."
+                >
+                  Details
+                </a>
               </td>
             </tr>
           }
