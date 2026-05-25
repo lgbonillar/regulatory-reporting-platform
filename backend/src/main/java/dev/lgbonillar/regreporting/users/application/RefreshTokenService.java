@@ -15,7 +15,7 @@ import java.util.Base64;
 @Service
 public class RefreshTokenService {
 
-    private static final int REFRESH_TOKEN_BYTE_SIZE = 64;
+    private static final int REFRESH_TOKEN_BYTE_SIZE = 48;
 
     private final AuthSessionRepository authSessionRepository;
     private final PasswordEncoder passwordEncoder;
@@ -38,7 +38,10 @@ public class RefreshTokenService {
             String ipAddress
     ) {
         authSessionRepository.findByUserAndRevokedAtIsNull(user)
-                .ifPresent(session -> session.revoke(user, "Replaced by new login"));
+                .ifPresent(session -> {
+                    session.revoke(user, "Replaced by new login");
+                    authSessionRepository.saveAndFlush(session);
+                });
 
         String refreshToken = generateRefreshToken();
         AuthSession session = new AuthSession(

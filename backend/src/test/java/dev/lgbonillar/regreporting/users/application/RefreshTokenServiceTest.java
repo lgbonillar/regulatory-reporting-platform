@@ -56,6 +56,7 @@ class RefreshTokenServiceTest {
         assertThat(existingSession.getRevokedAt()).isNotNull();
         assertThat(existingSession.getRevokedBy()).isSameAs(user);
         assertThat(existingSession.getRevokeReason()).isEqualTo("Replaced by new login");
+        verify(authSessionRepository).saveAndFlush(existingSession);
 
         ArgumentCaptor<AuthSession> captor = ArgumentCaptor.forClass(AuthSession.class);
         verify(authSessionRepository).save(captor.capture());
