@@ -1,6 +1,6 @@
 import { Component, input, model } from '@angular/core'
 
-type TextInputType = 'text' | 'email' | 'password' | 'search'
+type TextInputType = 'text' | 'email' | 'password' | 'search' | 'date'
 
 @Component({
   selector: 'app-text-input',
@@ -10,6 +10,7 @@ type TextInputType = 'text' | 'email' | 'password' | 'search'
       [class.sm:w-64]="compact()"
       [type]="type()"
       [placeholder]="placeholder()"
+      [attr.aria-label]="ariaLabel()"
       [disabled]="disabled()"
       [value]="value()"
       (input)="value.set($any($event.target).value)"
@@ -20,6 +21,7 @@ export class AppTextInput {
   readonly value = model('')
   readonly type = input<TextInputType>('text')
   readonly placeholder = input('')
+  readonly ariaLabel = input<string | null>(null)
   readonly disabled = input(false)
   readonly compact = input(false)
 }

@@ -21,6 +21,9 @@ export class ProcessingJobsPageStore {
   readonly errorMessage = signal<string | null>(null)
   readonly isLoading = signal(false)
   readonly filterUsername = signal('')
+  readonly filterFilename = signal('')
+  readonly filterUploadedBy = signal('')
+  readonly filterCreatedDate = signal('')
 
   readonly selectedStatusCount = computed(() => this.selectedStatuses().size)
 
@@ -36,12 +39,22 @@ export class ProcessingJobsPageStore {
 
   readonly filteredJobs = computed(() => {
     const selectedStatuses = this.selectedStatuses()
+    const filename = this.normalizeFilter(this.filterFilename())
+    const uploadedBy = this.normalizeFilter(this.filterUploadedBy())
+    const createdDate = this.filterCreatedDate().trim()
 
-    if (selectedStatuses.size === EMPTY_SELECTION_COUNT) {
-      return this.jobs()
-    }
+    return this.jobs().filter((job) => {
+      const matchesStatus = selectedStatuses.size === EMPTY_SELECTION_COUNT ||
+        selectedStatuses.has(job.jobStatus)
+      const matchesFilename = !filename ||
+        this.normalizeFilter(job.originalFilename).includes(filename)
+      const matchesUploadedBy = !uploadedBy ||
+        this.normalizeFilter(job.uploadedBy).includes(uploadedBy)
+      const matchesCreatedDate = !createdDate ||
+        job.createdAt.startsWith(createdDate)
 
-    return this.jobs().filter((job) => selectedStatuses.has(job.jobStatus))
+      return matchesStatus && matchesFilename && matchesUploadedBy && matchesCreatedDate
+    })
   })
 
   loadMyJobs (): void {
@@ -109,6 +122,17 @@ export class ProcessingJobsPageStore {
 
   clearStatusFilters (): void {
     this.selectedStatuses.set(new Set())
+  }
+
+  clearTableFilters (): void {
+    this.filterFilename.set('')
+    this.filterUploadedBy.set('')
+    this.filterCreatedDate.set('')
+    this.clearStatusFilters()
+  }
+
+  private normalizeFilter (value: string): string {
+    return value.trim().toLowerCase()
   }
 
 }

@@ -29,26 +29,77 @@
   <section class="min-h-0 flex-1">
     <app-panel [fullHeight]="true">
       <div class="flex h-full min-h-0 flex-col">
-        <div class="relative flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-4 sm:px-6">
-          <div class="flex items-center gap-3">
-            <h2 class="text-base font-semibold text-slate-950">Jobs</h2>
+        <div class="relative flex shrink-0 flex-col gap-4 border-b border-slate-200 px-4 py-4 sm:px-6">
+          <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex items-center gap-3">
+              <h2 class="text-base font-semibold text-slate-950">Jobs</h2>
 
-            <span class="text-sm text-slate-500">
-              {{ store.filteredJobs().length }} shown
-            </span>
+              <span class="text-sm text-slate-500">
+                {{ store.filteredJobs().length }} shown
+              </span>
+            </div>
 
+            <div class="flex flex-wrap gap-2">
+              <app-button variant="secondary" [disabled]="true">
+                Export PDF
+              </app-button>
+
+              <app-button variant="secondary" [disabled]="true">
+                Export Excel
+              </app-button>
+            </div>
           </div>
 
-          <app-processing-job-status-filter
-            [statuses]="store.statusOptions"
-            [selectedStatuses]="store.selectedStatuses()"
-            [selectedCount]="store.selectedStatusCount()"
-            [isOpen]="store.isStatusFilterOpen()"
-            (toggleRequested)="store.toggleStatusFilterPanel()"
-            (closeRequested)="store.closeStatusFilterPanel()"
-            (clearRequested)="store.clearStatusFilters()"
-            (statusChanged)="store.toggleStatusFilter($event.status, $event.checked)"
-          />
+          <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_minmax(10rem,12rem)_auto] lg:items-end">
+            <div class="grid gap-1">
+              <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">File</span>
+              <app-text-input
+                placeholder="Filter by file"
+                ariaLabel="Filter jobs by file name"
+                [compact]="false"
+                [(value)]="store.filterFilename"
+              />
+            </div>
+
+            <div class="grid gap-1">
+              <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">User</span>
+              <app-text-input
+                placeholder="Filter by user"
+                ariaLabel="Filter jobs by uploaded user"
+                [compact]="false"
+                [(value)]="store.filterUploadedBy"
+              />
+            </div>
+
+            <div class="grid gap-1">
+              <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Status</span>
+              <app-processing-job-status-filter
+                [statuses]="store.statusOptions"
+                [selectedStatuses]="store.selectedStatuses()"
+                [selectedCount]="store.selectedStatusCount()"
+                [isOpen]="store.isStatusFilterOpen()"
+                (toggleRequested)="store.toggleStatusFilterPanel()"
+                (closeRequested)="store.closeStatusFilterPanel()"
+                (clearRequested)="store.clearStatusFilters()"
+                (statusChanged)="store.toggleStatusFilter($event.status, $event.checked)"
+              />
+            </div>
+
+            <div class="grid gap-1">
+              <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Created</span>
+              <app-text-input
+                type="date"
+                ariaLabel="Filter jobs by creation date"
+                [compact]="false"
+                [(value)]="store.filterCreatedDate"
+              />
+            </div>
+
+            <app-button variant="secondary" (click)="store.clearTableFilters()">
+              Clear filters
+            </app-button>
+
+          </div>
 
         </div>
 
