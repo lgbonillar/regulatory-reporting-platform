@@ -19,8 +19,12 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
             Selected process
           </p>
 
-          <h2 class="mt-1 break-words text-base font-semibold text-slate-950">
-            {{ selectedJob.originalFilename }}
+          <h2 class="mt-1 text-base font-semibold text-slate-950">
+            <app-file-download-link
+              [fileId]="selectedJob.fileId"
+              [filename]="selectedJob.originalFilename"
+              [fileStatus]="selectedJob.fileStatus"
+            />
           </h2>
 
           <div class="mt-3 flex flex-wrap items-center gap-2">
