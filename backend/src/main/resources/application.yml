@@ -32,5 +32,13 @@ app:
       access-token-expiration-minutes: 15
       refresh-token-expiration-days: 7
 
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
 server:
   port: 8080
