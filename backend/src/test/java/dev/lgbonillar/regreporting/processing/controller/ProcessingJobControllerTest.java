@@ -1,6 +1,7 @@
 package dev.lgbonillar.regreporting.processing.controller;
 
 import dev.lgbonillar.regreporting.processing.application.ProcessingJobService;
+import dev.lgbonillar.regreporting.processing.dto.ProcessingJobFindingResponse;
 import dev.lgbonillar.regreporting.processing.dto.ProcessingJobResponse;
 import dev.lgbonillar.regreporting.processing.dto.ProcessingJobStatusHistoryResponse;
 import org.junit.jupiter.api.Test;
@@ -151,6 +152,39 @@ class ProcessingJobControllerTest {
                 .andExpect(jsonPath("$.data[0].newStatus").value("PROCESSING"));
 
         verify(processingJobService).getProcessingJobHistory(jobId);
+    }
+
+    @Test
+    void getProcessingJobFindingsReturnsFindings() throws Exception {
+        UUID jobId = UUID.randomUUID();
+        ProcessingJobFindingResponse finding = new ProcessingJobFindingResponse(
+                UUID.randomUUID(),
+                "ERROR",
+                "ROW_DATA",
+                "INVALID_DATA_TYPE",
+                "Amount must be numeric",
+                "Clients",
+                14,
+                "amount",
+                "amount",
+                "ABC",
+                "numeric",
+                "ABC",
+                null
+        );
+
+        when(processingJobService.getProcessingJobFindings(jobId)).thenReturn(List.of(finding));
+
+        mockMvc.perform(get("/api/processing-jobs/{jobId}/findings", jobId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.metadata.count").value(1))
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].severity").value("ERROR"))
+                .andExpect(jsonPath("$.data[0].scope").value("ROW_DATA"))
+                .andExpect(jsonPath("$.data[0].code").value("INVALID_DATA_TYPE"));
+
+        verify(processingJobService).getProcessingJobFindings(jobId);
     }
 
     private ProcessingJobResponse response() {

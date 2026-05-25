@@ -1,5 +1,6 @@
 package dev.lgbonillar.regreporting.processing.application;
 
+import dev.lgbonillar.regreporting.processing.dto.ProcessingJobFindingResponse;
 import dev.lgbonillar.regreporting.processing.dto.ProcessingJobResponse;
 import dev.lgbonillar.regreporting.processing.dto.ProcessingJobStatusHistoryResponse;
 import org.springframework.stereotype.Service;
@@ -13,15 +14,18 @@ public class ProcessingJobService {
     private final ProcessingJobQueryService processingJobQueryService;
     private final ProcessingJobWorkflowService processingJobWorkflowService;
     private final ProcessingJobHistoryService processingJobHistoryService;
+    private final ProcessingJobFindingService processingJobFindingService;
 
     public ProcessingJobService(
             ProcessingJobQueryService processingJobQueryService,
             ProcessingJobWorkflowService processingJobWorkflowService,
-            ProcessingJobHistoryService processingJobHistoryService
+            ProcessingJobHistoryService processingJobHistoryService,
+            ProcessingJobFindingService processingJobFindingService
     ) {
         this.processingJobQueryService = processingJobQueryService;
         this.processingJobWorkflowService = processingJobWorkflowService;
         this.processingJobHistoryService = processingJobHistoryService;
+        this.processingJobFindingService = processingJobFindingService;
     }
 
     public List<ProcessingJobResponse> listProcessingJobs(String username) {
@@ -58,6 +62,10 @@ public class ProcessingJobService {
 
     public List<ProcessingJobStatusHistoryResponse> getProcessingJobHistory(UUID jobId) {
         return processingJobHistoryService.getProcessingJobHistory(jobId);
+    }
+
+    public List<ProcessingJobFindingResponse> getProcessingJobFindings(UUID jobId) {
+        return processingJobFindingService.getProcessingJobFindings(jobId);
     }
 
 }

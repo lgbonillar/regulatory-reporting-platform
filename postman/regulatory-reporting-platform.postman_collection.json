@@ -765,6 +765,50 @@
           }
         },
         {
+          "name": "Get processing job findings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const envelope = pm.response.json();",
+                  "const response = envelope.data;",
+                  "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('returns success envelope', () => {",
+                  "  pm.expect(envelope.success).to.eql(true);",
+                  "  pm.expect(envelope.message).to.be.a('string').and.not.empty;",
+                  "  pm.expect(envelope.metadata.timestamp).to.be.a('string').and.not.empty;",
+                  "  pm.expect(envelope.metadata.count).to.eql(response.length);",
+                  "});",
+                  "pm.test('returns findings list', () => pm.expect(response).to.be.an('array'));",
+                  "pm.test('finding items have expected shape', () => {",
+                  "  response.forEach(finding => {",
+                  "    pm.expect(finding.id).to.be.a('string').and.not.empty;",
+                  "    pm.expect(finding.severity).to.be.oneOf(['ERROR', 'WARNING', 'INFO']);",
+                  "    pm.expect(finding.scope).to.be.oneOf(['FILE_STRUCTURE', 'SHEET_STRUCTURE', 'COLUMN_STRUCTURE', 'ROW_DATA', 'BUSINESS_RULE', 'CROSS_FILE_VALIDATION', 'SYSTEM']);",
+                  "    pm.expect(finding.code).to.be.a('string').and.not.empty;",
+                  "    pm.expect(finding.message).to.be.a('string').and.not.empty;",
+                  "    pm.expect(finding.createdAt).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "});",
+                  "pm.test('demo failed job includes at least one error finding', () => {",
+                  "  if (pm.collectionVariables.get('findingsJobId') === '50000000-0000-0000-0000-000000000003') {",
+                  "    pm.expect(response.some(finding => finding.severity === 'ERROR')).to.eql(true);",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/processing-jobs/{{findingsJobId}}/findings"
+          },
+          "response": []
+        },
+        {
           "name": "Start pending job",
           "request": {
             "method": "POST",
@@ -1152,6 +1196,10 @@
     {
       "key": "revokedJobId",
       "value": "50000000-0000-0000-0000-000000000007"
+    },
+    {
+      "key": "findingsJobId",
+      "value": "50000000-0000-0000-0000-000000000003"
     }
   ]
 }

@@ -1,10 +1,7 @@
 package dev.lgbonillar.regreporting.processing.controller;
 
 import dev.lgbonillar.regreporting.processing.application.ProcessingJobService;
-import dev.lgbonillar.regreporting.processing.dto.ProcessingJobFailureRequest;
-import dev.lgbonillar.regreporting.processing.dto.ProcessingJobReasonRequest;
-import dev.lgbonillar.regreporting.processing.dto.ProcessingJobResponse;
-import dev.lgbonillar.regreporting.processing.dto.ProcessingJobStatusHistoryResponse;
+import dev.lgbonillar.regreporting.processing.dto.*;
 import dev.lgbonillar.regreporting.shared.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -351,6 +348,44 @@ public class ProcessingJobController {
 
         return ResponseEntity.ok(ApiResponse.successList(
                 "Processing job history retrieved successfully",
+                response
+        ));
+    }
+
+    @GetMapping("/{jobId}/findings")
+    @PreAuthorize("hasAnyRole('ANALYST', 'ADMINISTRATOR')")
+    @Operation(
+            summary = "Get processing job findings",
+            description = """
+                  Returns validation and business findings detected while processing a regulatory report.
+                  Findings can represent Excel structure problems, invalid row data, business rule
+                  violations or cross-file validation mismatches.
+                  """,
+            responses = {
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "200",
+                            description = "Processing job findings retrieved successfully",
+                            content = @Content(schema = @Schema(implementation = ProcessingJobFindingResponse.class))
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "403",
+                            description = "User is not allowed to view this processing job findings"
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "404",
+                            description = "Processing job not found"
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponse<List<ProcessingJobFindingResponse>>> getProcessingJobFindings(
+            @Parameter(description = "Processing job identifier")
+            @PathVariable UUID jobId
+    ) {
+        List<ProcessingJobFindingResponse> response =
+                processingJobService.getProcessingJobFindings(jobId);
+
+        return ResponseEntity.ok(ApiResponse.successList(
+                "Processing job findings retrieved successfully",
                 response
         ));
     }

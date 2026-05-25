@@ -67,6 +67,13 @@ WHERE processing_job_id IN (
     WHERE id::text LIKE '50000000-0000-0000-0000-000000000%'
 );
 
+DELETE FROM processing_job_findings
+WHERE processing_job_id IN (
+    SELECT id
+    FROM processing_jobs
+    WHERE id::text LIKE '50000000-0000-0000-0000-000000000%'
+);
+
 DELETE FROM processing_jobs
 WHERE id::text LIKE '50000000-0000-0000-0000-000000000%';
 
@@ -287,5 +294,182 @@ SELECT
 FROM processing_jobs
 WHERE revoked_by_user_id IS NOT NULL
   AND id::text LIKE '50000000-0000-0000-0000-000000000%';
+
+INSERT INTO processing_job_findings (
+    id,
+    processing_job_id,
+    severity,
+    scope,
+    code,
+    message,
+    sheet_name,
+    row_number,
+    column_name,
+    field_name,
+    rejected_value,
+    expected_value,
+    actual_value,
+    created_at
+) VALUES
+    (
+        '70000000-0000-0000-0000-000000000001',
+        '50000000-0000-0000-0000-000000000003',
+        'ERROR',
+        'FILE_STRUCTURE',
+        'MISSING_REQUIRED_COLUMN',
+        'Required column tax_identifier was not found',
+        'Clients',
+        NULL,
+        'tax_identifier',
+        'taxIdentifier',
+        NULL,
+        'Column tax_identifier must exist in sheet Clients',
+        NULL,
+        CURRENT_TIMESTAMP - INTERVAL '8 days 23 hours'
+    ),
+    (
+        '70000000-0000-0000-0000-000000000002',
+        '50000000-0000-0000-0000-000000000003',
+        'ERROR',
+        'COLUMN_STRUCTURE',
+        'MISSING_REQUIRED_COLUMN',
+        'Required column regulatory_period was not found',
+        'Summary',
+        NULL,
+        'regulatory_period',
+        'regulatoryPeriod',
+        NULL,
+        'Column regulatory_period must exist in sheet Summary',
+        NULL,
+        CURRENT_TIMESTAMP - INTERVAL '8 days 22 hours 59 minutes'
+    ),
+    (
+        '70000000-0000-0000-0000-000000000003',
+        '50000000-0000-0000-0000-000000000003',
+        'WARNING',
+        'ROW_DATA',
+        'UNKNOWN_COLUMN',
+        'Column comments is not part of the expected layout and will be ignored',
+        'Clients',
+        1,
+        'comments',
+        NULL,
+        'comments',
+        'Only configured report columns are expected',
+        'comments',
+        CURRENT_TIMESTAMP - INTERVAL '8 days 22 hours 58 minutes'
+    ),
+    (
+        '70000000-0000-0000-0000-000000000004',
+        '50000000-0000-0000-0000-000000000004',
+        'WARNING',
+        'ROW_DATA',
+        'OPTIONAL_VALUE_MISSING',
+        'Optional economic activity value is missing',
+        'Clients',
+        18,
+        'economic_activity',
+        'economicActivity',
+        NULL,
+        'Catalog value when available',
+        NULL,
+        CURRENT_TIMESTAMP - INTERVAL '7 days 22 hours'
+    ),
+    (
+        '70000000-0000-0000-0000-000000000005',
+        '50000000-0000-0000-0000-000000000004',
+        'INFO',
+        'FILE_STRUCTURE',
+        'LAYOUT_VERSION_DETECTED',
+        'Layout version 2026.01 was detected',
+        'Summary',
+        2,
+        'layout_version',
+        'layoutVersion',
+        NULL,
+        'Supported layout version',
+        '2026.01',
+        CURRENT_TIMESTAMP - INTERVAL '7 days 21 hours 59 minutes'
+    ),
+    (
+        '70000000-0000-0000-0000-000000000006',
+        '50000000-0000-0000-0000-000000000005',
+        'WARNING',
+        'BUSINESS_RULE',
+        'VALUE_OUT_OF_RANGE',
+        'Exposure value is unusually high and should be reviewed before final submission',
+        'Exposure',
+        42,
+        'exposure_amount',
+        'exposureAmount',
+        '987654321.00',
+        'Value within configured review threshold',
+        '987654321.00',
+        CURRENT_TIMESTAMP - INTERVAL '6 days 22 hours'
+    ),
+    (
+        '70000000-0000-0000-0000-000000000007',
+        '50000000-0000-0000-0000-000000000006',
+        'ERROR',
+        'CROSS_FILE_VALIDATION',
+        'TOTALS_DO_NOT_MATCH',
+        'Reported total does not match supporting detail file',
+        'Summary',
+        8,
+        'total_amount',
+        'totalAmount',
+        '1250000.00',
+        '1248500.00',
+        '1250000.00',
+        CURRENT_TIMESTAMP - INTERVAL '5 days 20 hours'
+    ),
+    (
+        '70000000-0000-0000-0000-000000000008',
+        '50000000-0000-0000-0000-000000000006',
+        'ERROR',
+        'BUSINESS_RULE',
+        'PERIOD_MISMATCH',
+        'The report period does not match the selected processing period',
+        'Summary',
+        3,
+        'period',
+        'period',
+        '2026-02',
+        '2026-01',
+        '2026-02',
+        CURRENT_TIMESTAMP - INTERVAL '5 days 19 hours 59 minutes'
+    ),
+    (
+        '70000000-0000-0000-0000-000000000009',
+        '50000000-0000-0000-0000-000000000007',
+        'WARNING',
+        'CROSS_FILE_VALIDATION',
+        'REFERENCE_NOT_FOUND',
+        'One counterparty reference was not found in the previous approved report',
+        'Counterparties',
+        77,
+        'counterparty_id',
+        'counterpartyId',
+        'CP-7788',
+        'Existing counterparty identifier',
+        'CP-7788',
+        CURRENT_TIMESTAMP - INTERVAL '4 days 20 hours'
+    ),
+    (
+        '70000000-0000-0000-0000-000000000010',
+        '50000000-0000-0000-0000-000000000008',
+        'INFO',
+        'SYSTEM',
+        'PROCESSING_COMPLETED',
+        'All configured validations completed successfully',
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        CURRENT_TIMESTAMP - INTERVAL '3 days 20 hours'
+    );
 
 COMMIT;
