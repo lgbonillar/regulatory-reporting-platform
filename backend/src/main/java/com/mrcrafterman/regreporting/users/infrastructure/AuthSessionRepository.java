@@ -13,4 +13,6 @@ public interface AuthSessionRepository extends JpaRepository<AuthSession, UUID> 
 
     Optional<AuthSession> findByUserAndRevokedAtIsNull(User user);
 
+    Optional<AuthSession> findByRefreshTokenHashAndRevokedAtIsNull(String refreshTokenHash);
+
 }
