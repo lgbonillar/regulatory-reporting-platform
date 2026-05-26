@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router'
 
 import { authGuard } from './core/auth/auth.guard'
+import { defaultRouteGuard } from './core/auth/default-route.guard'
 import { roleGuard } from './core/auth/role.guard'
 import { MainShell } from './layout/main-shell/main-shell'
 
@@ -17,7 +18,12 @@ export const routes: Routes = [
       {
         path: '',
         pathMatch: 'full',
-        redirectTo: 'report-files/upload'
+        canActivate: [ defaultRouteGuard ],
+        children: []
+      },
+      {
+        path: 'forbidden',
+        loadComponent: () => import('./features/forbidden/forbidden-page').then((page) => page.ForbiddenPage)
       },
       {
         path: 'report-files/upload',
@@ -32,5 +38,9 @@ export const routes: Routes = [
         loadChildren: () => import('./features/processing-jobs/processing-jobs.routes').then((routes) => routes.PROCESSING_JOBS_ROUTES)
       }
     ]
+  },
+  {
+    path: '**',
+    redirectTo: ''
   }
 ]

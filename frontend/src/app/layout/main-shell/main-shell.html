@@ -3,6 +3,7 @@
     [items]="navigationService.navigationItems()"
     [isCollapsed]="isSidebarCollapsed()"
     (toggleCollapsed)="toggleSidebar()"
+    (logoutRequested)="logout()"
   />
 
   @if (sessionService.currentUser(); as currentUser) {

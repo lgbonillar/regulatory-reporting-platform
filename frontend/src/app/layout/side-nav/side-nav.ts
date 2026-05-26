@@ -13,6 +13,7 @@ export class SideNav {
   readonly isCollapsed = input.required<boolean>()
 
   readonly toggleCollapsed = output<void>()
+  readonly logoutRequested = output<void>()
 
   protected getIconLabel (item: NavigationItem): string {
     const labels: Record<string, string> = {
