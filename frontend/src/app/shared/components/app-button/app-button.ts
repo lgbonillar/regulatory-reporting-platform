@@ -1,35 +1,25 @@
 import { Component, computed, input } from '@angular/core'
+import { ButtonModule } from 'primeng/button'
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'warning'
 type ButtonType = 'button' | 'submit' | 'reset'
-
-const baseClasses = [
-  'inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition',
-  'focus:outline-none focus:ring-2 focus:ring-offset-2'
-].join(' ')
-
-const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'border-slate-900 bg-slate-900 text-white hover:bg-slate-800 focus:ring-slate-500',
-  secondary: 'border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50 focus:ring-slate-400',
-  danger: 'border-rose-300 bg-white text-rose-700 hover:border-rose-400 hover:bg-rose-50 focus:ring-rose-400',
-  success: 'border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-600 focus:ring-emerald-500',
-  warning: 'border-amber-300 bg-white text-amber-700 hover:border-amber-400 hover:bg-amber-50 focus:ring-amber-400'
-}
+type PrimeButtonSeverity = 'secondary' | 'success' | 'info' | 'warn' | 'danger' | 'help' |
+'contrast'
 
 @Component({
   selector: 'app-button',
+  imports: [ ButtonModule ],
   template: `
-    <button
-      [class]="classes()"
+    <p-button
+      styleClass="cursor-pointer"
       [type]="type()"
+      [severity]="severity()"
+      [outlined]="outlined()"
+      [loading]="loading()"
       [disabled]="disabled() || loading()"
     >
-      @if (loading()) {
-        <span class="mr-2 size-3 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
-      }
-
       <ng-content />
-    </button>
+    </p-button>
   `
 })
 export class AppButton {
@@ -38,18 +28,22 @@ export class AppButton {
   readonly disabled = input(false)
   readonly loading = input(false)
 
-  protected readonly classes = computed(() => {
-    let stateClasses = 'cursor-pointer'
-
-    if (this.loading()) {
-      stateClasses = 'cursor-wait opacity-70'
+  protected readonly severity = computed<PrimeButtonSeverity | undefined>(() => {
+    switch (this.variant()) {
+    case 'primary':
+      return undefined
+    case 'secondary':
+      return 'secondary'
+    case 'danger':
+      return 'danger'
+    case 'success':
+      return 'success'
+    case 'warning':
+      return 'warn'
     }
-
-    if (this.disabled()) {
-      stateClasses = 'cursor-not-allowed opacity-60'
-    }
-
-    return `${baseClasses} ${variantClasses[this.variant()]} ${stateClasses}`
   })
 
+  protected readonly outlined = computed(() => {
+    return this.variant() === 'secondary' || this.variant() === 'danger' || this.variant() === 'warning'
+  })
 }

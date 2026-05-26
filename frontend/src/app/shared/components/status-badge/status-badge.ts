@@ -1,18 +1,21 @@
 import { Component, computed, input } from '@angular/core'
+import { TagModule } from 'primeng/tag'
 
 import { FileStatus, ProcessingJobStatus } from '../../../core/regulatory.model'
 
 type StatusBadgeValue = FileStatus | ProcessingJobStatus
+type TagSeverity = 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast'
 
 @Component({
   selector: 'app-status-badge',
+  imports: [ TagModule ],
   template: `
-    <span
-      class="inline-flex rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset"
-      [class]="classes()"
-    >
-      {{ label() }}
-    </span>
+    <p-tag
+      class="font-medium!"
+      [value]="label()"
+      [severity]="severity()"
+      [rounded]="true"
+    />
   `
 })
 export class StatusBadge {
@@ -38,23 +41,23 @@ export class StatusBadge {
     return labelsByStatus[status]
   })
 
-  protected readonly classes = computed(() => {
+  protected readonly severity = computed<TagSeverity>(() => {
     const status = this.status()
 
-    const classesByStatus: Record<StatusBadgeValue, string> = {
-      STORED: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-      MISSING: 'bg-amber-50 text-amber-700 ring-amber-200',
-      FAILED: 'bg-red-50 text-red-700 ring-red-200',
-      DELETED: 'bg-slate-100 text-slate-600 ring-slate-300',
-      PENDING_EXECUTION: 'bg-amber-50 text-amber-800 ring-amber-200',
-      PROCESSING: 'bg-sky-50 text-sky-800 ring-sky-200',
-      PROCESSING_FAILED: 'bg-red-50 text-red-800 ring-red-200',
-      AWAITING_APPROVAL: 'bg-violet-50 text-violet-800 ring-violet-200',
-      APPROVED: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
-      REJECTED: 'bg-rose-50 text-rose-800 ring-rose-200',
-      REVOKED: 'bg-slate-100 text-slate-700 ring-slate-300'
+    const severityByStatus: Record<StatusBadgeValue, TagSeverity> = {
+      STORED: 'success',
+      MISSING: 'warn',
+      FAILED: 'danger',
+      DELETED: 'secondary',
+      PENDING_EXECUTION: 'warn',
+      PROCESSING: 'info',
+      PROCESSING_FAILED: 'danger',
+      AWAITING_APPROVAL: 'contrast',
+      APPROVED: 'success',
+      REJECTED: 'danger',
+      REVOKED: 'secondary'
     }
 
-    return classesByStatus[status]
+    return severityByStatus[status]
   })
 }
