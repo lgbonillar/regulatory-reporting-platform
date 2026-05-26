@@ -1,18 +1,18 @@
 <header
-    class="fixed right-0 top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 shadow-sm transition-all duration-200"
-    [class.left-20]="isSidebarCollapsed()"
-    [class.left-72]="!isSidebarCollapsed()"
-  >
-    <div>
-      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        Regulatory reporting platform
-      </p>
-      <h1 class="text-lg font-semibold text-slate-950">
-        {{ activePageTitle() }}
-      </h1>
-    </div>
+  class="fixed right-0 top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 shadow-sm transition-all duration-200"
+  [class.left-20]="isSidebarCollapsed()"
+  [class.left-72]="!isSidebarCollapsed()"
+>
+  <div>
+    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+      Regulatory reporting platform
+    </p>
+    <h1 class="text-lg font-semibold text-slate-950">
+      {{ activePageTitle() }}
+    </h1>
+  </div>
 
-    <div class="flex items-center gap-3">
+  <div class="flex items-center gap-3">
     <div class="text-right">
       <p class="text-sm font-semibold text-slate-900">
         {{ currentUser().displayName }}
@@ -25,12 +25,12 @@
     <button
       class="flex size-9 cursor-pointer items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-300"
       type="button"
-      aria-label="Logout"
-      title="Logout"
+      aria-label="Log out"
+      pTooltip="Log out"
+      tooltipPosition="bottom"
       (click)="logoutRequested.emit()"
     >
       <i class="fa-solid fa-right-from-bracket text-sm" aria-hidden="true"></i>
     </button>
   </div>
-  </header>
-
+</header>

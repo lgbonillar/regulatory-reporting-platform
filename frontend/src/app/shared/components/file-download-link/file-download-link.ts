@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http'
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core'
+import { TooltipModule } from 'primeng/tooltip'
 
 import { environment } from '../../../../environments/environments.dev'
 import { FileStatus } from '../../../core/regulatory.model'
@@ -7,11 +8,14 @@ import { AppToastService } from '../../services/app-toast.service'
 
 @Component({
   selector: 'app-file-download-link',
+  imports: [ TooltipModule ],
   template: `
     @if (isDownloadable()) {
       <button
-        class="inline-flex max-w-full cursor-pointer items-start gap-1.5 text-left font-mediumtext-slate-950 underline decoration-slate-300 underline-offset-4 transition hover:text-emerald-700hover:decoration-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:cursor-wait disabled:text-slate-400 disabled:decoration-slate-200"
+        class="inline-flex max-w-full cursor-pointer items-start gap-1.5 text-left font-medium text-slate-950 underline decoration-slate-300 underline-offset-4 transition hover:text-emerald-700 hover:decoration-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:cursor-wait disabled:text-slate-400 disabled:decoration-slate-200"
         type="button"
+        pTooltip="Download file"
+        tooltipPosition="top"
         [disabled]="isDownloading()"
         [attr.aria-label]="'Download ' + filename()"
         (click)="downloadFile()"
@@ -27,7 +31,11 @@ import { AppToastService } from '../../services/app-toast.service'
         }
       </button>
     } @else {
-      <span class="wrap-break-words font-medium text-slate-500">
+      <span
+        class="wrap-break-words font-medium text-slate-500"
+        pTooltip="File is not available for download"
+        tooltipPosition="top"
+      >
         {{ filename() }}
       </span>
     }

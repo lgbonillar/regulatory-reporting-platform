@@ -1,14 +1,18 @@
 import { Component, inject, input } from '@angular/core'
+import { TooltipModule } from 'primeng/tooltip'
 
 import { AppToastService } from '../../services/app-toast.service'
 
 @Component({
   selector: 'app-copyable-code',
+  imports: [ TooltipModule ],
   template: `
     <span class="inline-flex max-w-full align-middle">
       <button
         class="file-text inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-left text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300"
         type="button"
+        pTooltip="Copy"
+        tooltipPosition="top"
         [attr.aria-label]="ariaLabel()"
         (click)="copyValue()"
       >

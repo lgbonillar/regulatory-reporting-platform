@@ -2,25 +2,25 @@ import { NavigationItem } from './navigation.model'
 
 export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
   {
-    label: 'Archivos',
+    label: 'Files',
     route: '/report-files/upload',
     icon: 'files',
     allowedRoles: [ 'ANALYST' ],
-    pageTitle: 'Archivos'
+    pageTitle: 'Files'
   },
   {
-    label: 'Procesos',
+    label: 'Processes',
     route: '/processing-jobs',
     icon: 'workflow',
     allowedRoles: [ 'ANALYST', 'ADMINISTRATOR' ],
-    pageTitle: 'Procesos'
+    pageTitle: 'Processes'
   },
   {
-    label: 'Eventos',
+    label: 'Events',
     route: '/events',
     icon: 'audit',
     allowedRoles: [ 'ADMINISTRATOR', 'AUDITOR' ],
-    pageTitle: 'Eventos',
+    pageTitle: 'Events',
     disabled: true
   }
 ]

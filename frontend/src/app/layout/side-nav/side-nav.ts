@@ -1,11 +1,12 @@
 import { Component, input, output } from '@angular/core'
 import { RouterLink, RouterLinkActive } from '@angular/router'
+import { TooltipModule } from 'primeng/tooltip'
 
 import { NavigationItem } from '../../core/navigation/navigation.model'
 
 @Component({
   selector: 'app-side-nav',
-  imports: [ RouterLink, RouterLinkActive ],
+  imports: [ RouterLink, RouterLinkActive, TooltipModule ],
   templateUrl: './side-nav.html'
 })
 export class SideNav {

@@ -20,8 +20,9 @@
   <button
     class="absolute -right-3 top-20 flex size-6 cursor-pointer items-center justify-center rounded-full border border-slate-700 bg-slate-950 text-xs text-slate-300 shadow-sm transition hover:bg-slate-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-slate-500"
     type="button"
-    [attr.aria-label]="isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
-    [attr.title]="isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+    [attr.aria-label]="isCollapsed() ? 'Expand menu' : 'Collapse menu'"
+    [pTooltip]="isCollapsed() ? 'Expand menu' : 'Collapse menu'"
+    tooltipPosition="right"
     (click)="toggleCollapsed.emit()"
   >
     @if (isCollapsed()) {
@@ -36,7 +37,9 @@
       @if (item.disabled) {
         <span
           class="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-500"
-          [attr.title]="isCollapsed() ? item.label : null"
+          [pTooltip]="item.label"
+          [tooltipDisabled]="!isCollapsed()"
+          tooltipPosition="right"
         >
           <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-slate-300">
             <i [class]="getIconClass(item)" aria-hidden="true"></i>
@@ -51,7 +54,9 @@
           class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 no-underline transition hover:bg-slate-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
           routerLinkActive="bg-slate-800 text-white"
           [routerLink]="item.route"
-          [attr.title]="isCollapsed() ? item.label : null"
+          [pTooltip]="item.label"
+          [tooltipDisabled]="!isCollapsed()"
+          tooltipPosition="right"
         >
           <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-slate-300">
             <i [class]="getIconClass(item)" aria-hidden="true"></i>
