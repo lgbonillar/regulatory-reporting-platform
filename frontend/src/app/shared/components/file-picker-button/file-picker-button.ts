@@ -1,4 +1,4 @@
-import { Component, ElementRef, input, output, viewChild } from '@angular/core'
+import { Component, computed, ElementRef, input, output, viewChild } from '@angular/core'
 import { ButtonModule } from 'primeng/button'
 import { TooltipModule } from 'primeng/tooltip'
 
@@ -10,8 +10,8 @@ import { TooltipModule } from 'primeng/tooltip'
         #fileInput
         class="hidden"
         type="file"
-        accept=".xlsx"
-        [disabled]="isUploading()"
+        [accept]="accept()"
+        [disabled]="isDisabled()"
         (change)="fileInputChanged($event)"
       />
 
@@ -21,9 +21,9 @@ import { TooltipModule } from 'primeng/tooltip'
         severity="secondary"
         [outlined]="true"
         [loading]="isUploading()"
-        [disabled]="isUploading()"
-        ariaLabel="Update file"
-        pTooltip="Update file"
+        [disabled]="isDisabled()"
+        [ariaLabel]="ariaLabel()"
+        [pTooltip]="tooltip()"
         tooltipPosition="top"
         showDelay="500"
         hideDelay="100"
@@ -42,8 +42,10 @@ export class FilePickerButton {
   readonly fileSelected = output<File>()
   readonly isUploading = input(false)
 
+  protected readonly isDisabled = computed(() => this.disabled() || this.isUploading())
+
   protected openFilePicker (): void {
-    if (this.isUploading()) return
+    if (this.isDisabled()) return
 
     this.fileInput().nativeElement.click()
   }

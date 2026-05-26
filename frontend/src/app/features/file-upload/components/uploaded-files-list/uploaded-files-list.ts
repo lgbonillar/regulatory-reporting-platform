@@ -164,7 +164,10 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
               <div class="flex items-center justify-end gap-2">
                 <app-file-picker-button
                   accept=".xlsx"
+                  tooltip="Update file"
+                  ariaLabel="Update file"
                   [disabled]="isActionRunning(file.fileId)"
+                  [isUploading]="isActionRunning(file.fileId)"
                   (fileSelected)="replacementSelected.emit({ file: $event, fileId: file.fileId })"
                 />
 
@@ -173,7 +176,7 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
                   icon="fa-regular fa-trash-can"
                   severity="danger"
                   [outlined]="true"
-                  [disabled]="isActionRunning(file.fileId)"
+                  [loading]="isActionRunning(file.fileId)"
                   pTooltip="Delete file"
                   tooltipPosition="top"
                   showDelay="500"
@@ -214,7 +217,10 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
           <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <app-file-picker-button
               accept=".xlsx"
+              tooltip="Update file"
+              ariaLabel="Update file"
               [disabled]="isActionRunning(file.fileId)"
+              [isUploading]="isActionRunning(file.fileId)"
               (fileSelected)="replacementSelected.emit({ file: $event, fileId: file.fileId })"
             />
 
@@ -223,7 +229,7 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
               icon="fa-regular fa-trash-can"
               severity="danger"
               [outlined]="true"
-              [disabled]="isActionRunning(file.fileId)"
+              [loading]="isActionRunning(file.fileId)"
               pTooltip="Delete file"
               tooltipPosition="top"
               showDelay="500"
