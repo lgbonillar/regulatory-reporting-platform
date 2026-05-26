@@ -16,6 +16,8 @@ import { AppToastService } from '../../services/app-toast.service'
         type="button"
         pTooltip="Download file"
         tooltipPosition="top"
+        showDelay="500"
+        hideDelay="100"
         [disabled]="isDownloading()"
         [attr.aria-label]="'Download ' + filename()"
         (click)="downloadFile()"
@@ -35,6 +37,8 @@ import { AppToastService } from '../../services/app-toast.service'
         class="wrap-break-words font-medium text-slate-500"
         pTooltip="File is not available for download"
         tooltipPosition="top"
+        showDelay="500"
+        hideDelay="100"
       >
         {{ filename() }}
       </span>

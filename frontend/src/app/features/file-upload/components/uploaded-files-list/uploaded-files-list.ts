@@ -1,8 +1,9 @@
 import { DatePipe } from '@angular/common'
 import { Component, input, output } from '@angular/core'
+import { ButtonModule } from 'primeng/button'
 import { TableModule } from 'primeng/table'
+import { TooltipModule } from 'primeng/tooltip'
 
-import { AppButton } from '../../../../shared/components/app-button/app-button'
 import { CopyableCode } from '../../../../shared/components/copyable-code/copyable-code'
 import { FileDownloadLink } from '../../../../shared/components/file-download-link/file-download-link'
 import { FilePickerButton } from '../../../../shared/components/file-picker-button/file-picker-button'
@@ -14,7 +15,7 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
   host: {
     class: 'block h-full min-h-0'
   },
-  imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, FilePickerButton, StatusBadge, TableModule ],
+  imports: [ ButtonModule, CopyableCode, DatePipe, FileDownloadLink, FilePickerButton, StatusBadge, TableModule, TooltipModule ],
   template: `
     <div class="hidden h-full min-h-0 md:block">
       <p-table
@@ -26,9 +27,24 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
       >
         <ng-template #header>
           <tr>
-            <th>File</th>
-            <th>Status</th>
-            <th>Uploaded</th>
+            <th>
+              <div class="flex items-center justify-between gap-2">
+                <span>File</span>
+                <p-columnFilter type="text" field="originalFilename" display="menu" />
+              </div>
+            </th>
+            <th>
+              <div class="flex items-center justify-between gap-2">
+                <span>Status</span>
+                <p-columnFilter type="text" field="fileStatus" display="menu" />
+              </div>
+            </th>
+            <th>
+              <div class="flex items-center justify-between gap-2">
+                <span>Uploaded</span>
+                <p-columnFilter type="text" field="uploadedAt" display="menu" />
+              </div>
+            </th>
             <th class="text-right">Actions</th>
           </tr>
         </ng-template>
@@ -60,19 +76,24 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
             <td>
               <div class="flex items-center justify-end gap-2">
                 <app-file-picker-button
-                  label="Update"
                   accept=".xlsx"
                   [disabled]="isActionRunning(file.fileId)"
-                  (fileSelected)="replacementSelected.emit({ event: $event, fileId: file.fileId })"
+                  (fileSelected)="replacementSelected.emit({ file: $event, fileId: file.fileId })"
                 />
 
-                <app-button
-                  variant="danger"
+                <p-button
+                  styleClass="cursor-pointer"
+                  icon="fa-regular fa-trash-can"
+                  severity="danger"
+                  [outlined]="true"
                   [disabled]="isActionRunning(file.fileId)"
+                  pTooltip="Delete file"
+                  tooltipPosition="top"
+                  showDelay="500"
+                  hideDelay="100"
+                  ariaLabel="Delete file"
                   (click)="deleteSelected.emit(file.fileId)"
-                >
-                  Delete
-                </app-button>
+                />
               </div>
             </td>
           </tr>
@@ -105,19 +126,24 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
 
           <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <app-file-picker-button
-              label="Update"
               accept=".xlsx"
               [disabled]="isActionRunning(file.fileId)"
-              (fileSelected)="replacementSelected.emit({ event: $event, fileId: file.fileId })"
+              (fileSelected)="replacementSelected.emit({ file: $event, fileId: file.fileId })"
             />
 
-            <app-button
-              variant="danger"
+            <p-button
+              styleClass="cursor-pointer"
+              icon="fa-regular fa-trash-can"
+              severity="danger"
+              [outlined]="true"
               [disabled]="isActionRunning(file.fileId)"
+              pTooltip="Delete file"
+              tooltipPosition="top"
+              showDelay="500"
+              hideDelay="100"
+              ariaLabel="Delete file"
               (click)="deleteSelected.emit(file.fileId)"
-            >
-              Delete
-            </app-button>
+            />
           </div>
         </article>
       }
@@ -127,7 +153,7 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
 export class UploadedFilesList {
   readonly files = input.required<UploadedFileResponse[]>()
   readonly actionFileId = input<string | null>(null)
-  readonly replacementSelected = output<{ event: { files?: File[] }, fileId: string }>()
+  readonly replacementSelected = output<{ file: File, fileId: string }>()
   readonly deleteSelected = output<string>()
 
   protected isActionRunning (fileId: string): boolean {

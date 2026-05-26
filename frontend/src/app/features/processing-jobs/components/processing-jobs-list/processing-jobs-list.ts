@@ -26,10 +26,30 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
       >
         <ng-template #header>
           <tr>
-            <th>File</th>
-            <th>User</th>
-            <th>Status</th>
-            <th>Created</th>
+            <th>
+              <div class="flex items-center justify-between gap-2">
+                <span>File</span>
+                <p-columnFilter type="text" field="originalFilename" display="menu" />
+              </div>
+            </th>
+            <th>
+              <div class="flex items-center justify-between gap-2">
+                <span>User</span>
+                <p-columnFilter type="text" field="uploadedBy" display="menu" />
+              </div>
+            </th>
+            <th>
+              <div class="flex items-center justify-between gap-2">
+                <span>Status</span>
+                <p-columnFilter type="text" field="jobStatus" display="menu" />
+              </div>
+            </th>
+            <th>
+              <div class="flex items-center justify-between gap-2">
+                <span>Created</span>
+                <p-columnFilter type="text" field="createdAt" display="menu" />
+              </div>
+            </th>
             <th class="text-right">Action</th>
           </tr>
         </ng-template>

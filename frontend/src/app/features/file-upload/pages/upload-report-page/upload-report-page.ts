@@ -1,10 +1,12 @@
 import { Component, inject, OnInit, signal } from '@angular/core'
 
 import { AppAlert } from '../../../../shared/components/app-alert/app-alert'
+import { AppBreadcrumb } from '../../../../shared/components/app-breadcrumb/app-breadcrumb'
 import { AppPanel } from '../../../../shared/components/app-panel/app-panel'
 import { ConfirmationDialog } from '../../../../shared/components/confirmation-dialog/confirmation-dialog'
 import { PageHeader } from '../../../../shared/components/page-header/page-header'
 import { PageState } from '../../../../shared/components/page-state/page-state'
+import { TableExportMenu } from '../../../../shared/components/table-export-menu/table-export-menu'
 import { ReportFileUploadControl } from '../../components/report-file-upload-control/report-file-upload-control'
 import { UploadedFilesList } from '../../components/uploaded-files-list/uploaded-files-list'
 import { UploadReportPageStore } from './upload-report-page.store'
@@ -14,7 +16,17 @@ import { UploadReportPageStore } from './upload-report-page.store'
   host: {
     class: 'block h-full min-h-0'
   },
-  imports: [ AppAlert, AppPanel, ConfirmationDialog, PageHeader, PageState, ReportFileUploadControl, UploadedFilesList ],
+  imports: [
+    AppAlert,
+    AppBreadcrumb,
+    AppPanel,
+    ConfirmationDialog,
+    PageHeader,
+    PageState,
+    ReportFileUploadControl,
+    TableExportMenu,
+    UploadedFilesList
+  ],
   providers: [ UploadReportPageStore ],
   templateUrl: './upload-report-page.html'
 })
@@ -26,17 +38,11 @@ export class UploadReportPage implements OnInit {
     this.store.loadReportFiles()
   }
 
-  protected onFileSelected (event: Event | { files?: File[] }): void {
-    const file = this.getSelectedFile(event)
-
-    this.store.setSelectedFile(file)
+  protected onFileSelected (file: File): void {
+    this.store.uploadFile(file)
   }
 
-  protected onReplacementFileSelected (event: Event | { files?: File[] }, fileId: string): void {
-    const file = this.getSelectedFile(event)
-
-    if (!file) return
-
+  protected onReplacementFileSelected (file: File, fileId: string): void {
     this.store.updateReportFile(fileId, file)
   }
 
@@ -57,17 +63,4 @@ export class UploadReportPage implements OnInit {
     this.pendingDeleteFileId.set(null)
   }
 
-  private getSelectedFile (event: Event | { files?: File[] }): File | null {
-    if (this.isPrimeFileUploadEvent(event)) {
-      return event.files?.[0] ?? null
-    }
-
-    const input = event.target as HTMLInputElement | null
-
-    return input?.files?.[0] ?? null
-  }
-
-  private isPrimeFileUploadEvent (event: Event | { files?: File[] }): event is { files?: File[] } {
-    return 'files' in event
-  }
 }

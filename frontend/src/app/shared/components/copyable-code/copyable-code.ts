@@ -13,6 +13,8 @@ import { AppToastService } from '../../services/app-toast.service'
         type="button"
         pTooltip="Copy"
         tooltipPosition="top"
+        showDelay="500"
+        hideDelay="100"
         [attr.aria-label]="ariaLabel()"
         (click)="copyValue()"
       >

@@ -2,12 +2,13 @@ import { Component, inject, OnInit } from '@angular/core'
 import { Router } from '@angular/router'
 
 import { AppAlert } from '../../../../shared/components/app-alert/app-alert'
+import { AppBreadcrumb } from '../../../../shared/components/app-breadcrumb/app-breadcrumb'
 import { AppButton } from '../../../../shared/components/app-button/app-button'
 import { AppPanel } from '../../../../shared/components/app-panel/app-panel'
 import { AppTextInput } from '../../../../shared/components/app-text-input/app-text-input'
 import { PageHeader } from '../../../../shared/components/page-header/page-header'
 import { PageState } from '../../../../shared/components/page-state/page-state'
-import { ProcessingJobStatusFilter } from '../../components/processing-job-status-filter/processing-job-status-filter'
+import { TableExportMenu } from '../../../../shared/components/table-export-menu/table-export-menu'
 import { ProcessingJobsList } from '../../components/processing-jobs-list/processing-jobs-list'
 import { ProcessingJobResponse } from '../../models/processing-job.model'
 import { ProcessingJobsPageStore } from './processing-jobs-page.store'
@@ -17,7 +18,7 @@ import { ProcessingJobsPageStore } from './processing-jobs-page.store'
   host: {
     class: 'block h-full min-h-0'
   },
-  imports: [ AppAlert, AppButton, AppPanel, AppTextInput, PageHeader, PageState, ProcessingJobsList, ProcessingJobStatusFilter ],
+  imports: [ AppAlert, AppBreadcrumb, AppButton, AppPanel, AppTextInput, PageHeader, PageState, ProcessingJobsList, TableExportMenu ],
   providers: [ ProcessingJobsPageStore ],
   templateUrl: './processing-jobs-page.html'
 })

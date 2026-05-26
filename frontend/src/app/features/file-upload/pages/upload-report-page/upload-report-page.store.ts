@@ -32,49 +32,13 @@ export class UploadReportPageStore {
 
   readonly hasFiles = computed(() => this.files().length > MINIMUM_FILES_SIZE)
 
-  setSelectedFile (file: File | null): void {
-    this.errorMessage.set(null)
-    this.uploadResult.set(null)
-    this.selectedFile.set(file)
-  }
-
-  uploadSelectedFile (): void {
-    const file = this.selectedFile()
-
-    if (!file) {
-      this.errorMessage.set('Select an Excel file before uploading.')
-      return
-    }
-
-    this.isUploading.set(true)
-    this.errorMessage.set(null)
-
-    this.reportFileUploadService.uploadReportFile(file).subscribe({
-      next: (response) => {
-        this.uploadResult.set(response)
-        this.selectedFile.set(null)
-        this.toast.success('File uploaded successfully')
-        this.loadReportFiles()
-      },
-      error: (error: unknown) => {
-        const message = resolveHttpErrorMessage(error)
-
-        this.errorMessage.set(message)
-        this.toast.error('Could not upload file', message)
-      },
-      complete: () => {
-        this.isUploading.set(false)
-      }
-    })
-  }
-
   updateReportFile (fileId: string, file: File): void {
     this.actionFileId.set(fileId)
     this.errorMessage.set(null)
 
     this.reportFileUploadService.updateReportFile(fileId, file).subscribe({
       next: () => {
-        this.toast.success('File updated successfully')
+        this.toast.success(`File ${file.name} updated`)
         this.loadReportFiles()
       },
       error: (error: unknown) => {
@@ -122,6 +86,30 @@ export class UploadReportPageStore {
       },
       complete: () => {
         this.isLoadingFiles.set(false)
+      }
+    })
+  }
+
+  uploadFile (file: File): void {
+    this.selectedFile.set(file)
+    this.isUploading.set(true)
+    this.errorMessage.set(null)
+
+    this.reportFileUploadService.uploadReportFile(file).subscribe({
+      next: (response) => {
+        this.uploadResult.set(response)
+        this.selectedFile.set(null)
+        this.toast.success(`File ${file.name} uploaded`)
+        this.loadReportFiles()
+      },
+      error: (error: unknown) => {
+        const message = resolveHttpErrorMessage(error)
+
+        this.errorMessage.set(message)
+        this.toast.error('Could not upload file', message)
+      },
+      complete: () => {
+        this.isUploading.set(false)
       }
     })
   }

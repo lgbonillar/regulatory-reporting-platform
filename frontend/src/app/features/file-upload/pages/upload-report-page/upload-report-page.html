@@ -1,19 +1,7 @@
-<section class="flex h-full min-h-0 w-full flex-col gap-6">
-  <app-page-header eyebrow="Report files" title="Uploaded Excel files">
-    <p class="text-sm text-slate-500">
-      User:
-      <span class="font-medium text-slate-800">{{ store.username() }}</span>
-    </p>
-  </app-page-header>
+<section class="flex h-full min-h-0 w-full flex-col gap-4">
+  <app-breadcrumb [items]="[{ label: 'report-files', route: '/report-files/upload' }]" />
 
-  <app-panel padding="normal">
-    <app-report-file-upload-control
-      [selectedFileSummary]="store.selectedFileSummary()"
-      [isUploading]="store.isUploading()"
-      (fileSelected)="onFileSelected($event)"
-      (uploadRequested)="store.uploadSelectedFile()"
-    />
-  </app-panel>
+  <app-page-header eyebrow="Report files" title="Uploaded Excel files" />
 
   @if (store.errorMessage()) {
     <app-alert type="error" [message]="store.errorMessage()!" />
@@ -22,10 +10,21 @@
   <div class="min-h-0 flex-1">
     <app-panel [fullHeight]="true">
       <div class="flex h-full min-h-0 flex-col">
-        <div class="flex shrink-0 flex-col gap-2 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div class="flex shrink-0 flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div>
             <h2 class="text-base font-semibold text-slate-950">Files</h2>
-            <p class="text-sm text-slate-500">Stored reports for {{ store.username() }}</p>
+            <p class="text-sm text-slate-500">Stored report files.</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <app-report-file-upload-control
+              [compact]="true"
+              [selectedFileSummary]="store.selectedFileSummary()"
+              [isUploading]="store.isUploading()"
+              (fileSelected)="onFileSelected($event)"
+            />
+
+            <app-table-export-menu />
           </div>
         </div>
 
@@ -45,7 +44,7 @@
             <app-uploaded-files-list
               [files]="store.files()"
               [actionFileId]="store.actionFileId()"
-              (replacementSelected)="onReplacementFileSelected($event.event, $event.fileId)"
+              (replacementSelected)="onReplacementFileSelected($event.file, $event.fileId)"
               (deleteSelected)="requestDeleteReportFile($event)"
             />
 

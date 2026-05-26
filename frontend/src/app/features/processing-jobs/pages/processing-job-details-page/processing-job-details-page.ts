@@ -1,7 +1,8 @@
-import { Component, inject, OnInit, signal } from '@angular/core'
+import { Component, computed, inject, OnInit, signal } from '@angular/core'
 import { RouterLink } from '@angular/router'
 
 import { AppAlert } from '../../../../shared/components/app-alert/app-alert'
+import { AppBreadcrumb, AppBreadcrumbItem } from '../../../../shared/components/app-breadcrumb/app-breadcrumb'
 import { ConfirmationDialog } from '../../../../shared/components/confirmation-dialog/confirmation-dialog'
 import { PageHeader } from '../../../../shared/components/page-header/page-header'
 import { PageState } from '../../../../shared/components/page-state/page-state'
@@ -16,6 +17,7 @@ import { ProcessingJobDetailsPageStore } from './processing-job-details-page.sto
   },
   imports: [
     AppAlert,
+    AppBreadcrumb,
     ConfirmationDialog,
     PageHeader,
     PageState,
@@ -29,6 +31,15 @@ import { ProcessingJobDetailsPageStore } from './processing-job-details-page.sto
 export class ProcessingJobDetailsPage implements OnInit {
   protected readonly store = inject(ProcessingJobDetailsPageStore)
   protected readonly pendingConfirmation = signal<'reject' | 'revoke' | null>(null)
+  protected readonly breadcrumbItems = computed<readonly AppBreadcrumbItem[]>(() => [
+    {
+      label: 'processing-jobs',
+      route: '/processing-jobs'
+    },
+    {
+      label: this.store.job()?.originalFilename ?? 'details'
+    }
+  ])
 
   ngOnInit (): void {
     this.store.loadJob()

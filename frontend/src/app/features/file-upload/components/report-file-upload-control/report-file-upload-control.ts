@@ -1,67 +1,96 @@
-import { Component, input, output } from '@angular/core'
+import { Component, ElementRef, input, output, viewChild } from '@angular/core'
+import { ButtonModule } from 'primeng/button'
 import { FileUploadModule } from 'primeng/fileupload'
-
-import { AppButton } from '../../../../shared/components/app-button/app-button'
+import { TooltipModule } from 'primeng/tooltip'
 
 @Component({
   selector: 'app-report-file-upload-control',
-  imports: [ AppButton, FileUploadModule ],
+  imports: [ ButtonModule, FileUploadModule, TooltipModule ],
   template: `
-    <div class="flex flex-col gap-4">
-      <div>
-        <p class="text-sm font-medium text-slate-700">Upload report file</p>
-        <p class="mt-1 text-sm text-slate-500">
-          Select an Excel file to create a processing flow.
-        </p>
-      </div>
+    @if (compact()) {
+      <input
+        #fileInput
+        class="hidden"
+        type="file"
+        accept=".xlsx"
+        [disabled]="isUploading()"
+        (change)="fileInputChanged($event)"
+      />
 
-      <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
-        <div class="flex flex-col gap-4">
-          <p-fileupload
-            mode="basic"
-            name="file"
-            accept=".xlsx"
-            chooseLabel="Choose Excel file"
-            chooseIcon="fa-solid fa-file-excel"
-            [auto]="false"
-            [customUpload]="true"
-            [disabled]="isUploading()"
-            (onSelect)="fileUploadSelected($event)"
-          />
+      <p-button
+        styleClass="cursor-pointer"
+        icon="fa-solid fa-upload"
+        severity="secondary"
+        [outlined]="true"
+        [loading]="isUploading()"
+        [disabled]="isUploading()"
+        ariaLabel="Upload file"
+        pTooltip="Upload file"
+        tooltipPosition="top"
+        showDelay="500"
+        hideDelay="100"
+        (click)="openFilePicker()"
+      />
+    } @else {
+      <div class="flex flex-col gap-4">
+        <div>
+          <p class="text-sm font-medium text-slate-700">Upload report file</p>
+          <p class="mt-1 text-sm text-slate-500">
+            Select an Excel file to create a processing flow.
+          </p>
+        </div>
 
-          @if (selectedFileSummary()) {
-            <p class="file-text truncate text-sm text-slate-700">
-              {{ selectedFileSummary() }}
-            </p>
-          } @else {
-            <p class="text-sm text-slate-500">
-              No file selected.
-            </p>
-          }
+        <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
+          <div class="flex flex-col gap-4">
+            <input
+              #fileInput
+              class="hidden"
+              type="file"
+              accept=".xlsx"
+              [disabled]="isUploading()"
+              (change)="fileInputChanged($event)"
+            />
 
-          <div class="flex justify-end">
-            <app-button
-              variant="primary"
+            <p-button
+              styleClass="cursor-pointer"
+              label="Choose Excel file"
+              icon="fa-solid fa-file-excel"
+              severity="secondary"
+              [outlined]="true"
               [loading]="isUploading()"
-              [disabled]="isUploading() || !selectedFileSummary()"
-              (click)="uploadRequested.emit()"
-            >
-              Upload
-            </app-button>
+              [disabled]="isUploading()"
+              ariaLabel="Choose Excel file"
+              (click)="openFilePicker()"
+            />
           </div>
         </div>
       </div>
-    </div>
+    }
   `
 })
 export class ReportFileUploadControl {
+  private readonly fileInput = viewChild.required<ElementRef<HTMLInputElement>>('fileInput')
+
+  readonly compact = input(false)
   readonly selectedFileSummary = input<string | null>(null)
   readonly isUploading = input(false)
 
-  readonly fileSelected = output<Event | { files?: File[] }>()
-  readonly uploadRequested = output<void>()
+  readonly fileSelected = output<File>()
 
-  protected fileUploadSelected (event: { files?: File[] }): void {
-    this.fileSelected.emit(event)
+  protected openFilePicker (): void {
+    if (this.isUploading()) return
+
+    this.fileInput().nativeElement.click()
+  }
+
+  protected fileInputChanged (event: Event): void {
+    const input = event.target as HTMLInputElement
+    const file = input.files?.[0]
+
+    input.value = ''
+
+    if (!file) return
+
+    this.fileSelected.emit(file)
   }
 }

@@ -1,4 +1,6 @@
-<section class="flex h-full min-h-0 w-full flex-col gap-6">
+<section class="flex h-full min-h-0 w-full flex-col gap-4">
+  <app-breadcrumb [items]="[{ label: 'processing-jobs', route: '/processing-jobs' }]" />
+
   <app-page-header eyebrow="Processing jobs" title="Job monitor">
     @if (store.canFilterByUsername()) {
       <div class="flex flex-col gap-2 sm:flex-row">
@@ -43,70 +45,11 @@
               <h2 class="text-base font-semibold text-slate-950">Jobs</h2>
 
               <span class="text-sm text-slate-500">
-                {{ store.filteredJobs().length }} shown
+                {{ store.jobs().length }} loaded
               </span>
             </div>
 
-            <div class="flex flex-wrap gap-2">
-              <app-button variant="secondary" [disabled]="true">
-                Export PDF
-              </app-button>
-
-              <app-button variant="secondary" [disabled]="true">
-                Export Excel
-              </app-button>
-            </div>
-          </div>
-
-          <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_minmax(10rem,12rem)_auto] lg:items-end">
-            <div class="grid gap-1">
-              <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">File</span>
-              <app-text-input
-                placeholder="Filter by file"
-                ariaLabel="Filter jobs by file name"
-                [compact]="false"
-                [(value)]="store.filterFilename"
-              />
-            </div>
-
-            <div class="grid gap-1">
-              <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">User</span>
-              <app-text-input
-                placeholder="Filter by user"
-                ariaLabel="Filter jobs by uploaded user"
-                [compact]="false"
-                [(value)]="store.filterUploadedBy"
-              />
-            </div>
-
-            <div class="grid gap-1">
-              <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Status</span>
-              <app-processing-job-status-filter
-                [statuses]="store.statusOptions"
-                [selectedStatuses]="store.selectedStatuses()"
-                [selectedCount]="store.selectedStatusCount()"
-                [isOpen]="store.isStatusFilterOpen()"
-                (toggleRequested)="store.toggleStatusFilterPanel()"
-                (closeRequested)="store.closeStatusFilterPanel()"
-                (clearRequested)="store.clearStatusFilters()"
-                (statusChanged)="store.toggleStatusFilter($event.status, $event.checked)"
-              />
-            </div>
-
-            <div class="grid gap-1">
-              <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Created</span>
-              <app-text-input
-                type="date"
-                ariaLabel="Filter jobs by creation date"
-                [compact]="false"
-                [(value)]="store.filterCreatedDate"
-              />
-            </div>
-
-            <app-button variant="secondary" (click)="store.clearTableFilters()">
-              Clear filters
-            </app-button>
-
+            <app-table-export-menu />
           </div>
 
         </div>
@@ -122,10 +65,10 @@
               />
             </div>
 
-          } @else if (store.filteredJobs().length > 0) {
+          } @else if (store.jobs().length > 0) {
 
             <app-processing-jobs-list
-              [jobs]="store.filteredJobs()"
+              [jobs]="store.jobs()"
               (jobSelected)="openJobDetails($event)"
             />
 
