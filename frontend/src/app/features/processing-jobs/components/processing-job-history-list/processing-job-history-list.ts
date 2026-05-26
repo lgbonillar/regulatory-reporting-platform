@@ -12,6 +12,7 @@ import { ProcessingJobStatusHistoryResponse } from '../../models/processing-job.
     <section class="flex h-full min-h-0 flex-col">
       <div class="shrink-0 border-b border-slate-200 bg-white p-4 sm:p-6">
         <h3 class="text-sm font-semibold text-slate-950">History</h3>
+        <p class="mt-1 text-sm text-slate-500">Status transitions for this processing job.</p>
       </div>
 
       <div class="min-h-0 flex-1 overflow-auto p-4 sm:p-6">
@@ -33,26 +34,28 @@ import { ProcessingJobStatusHistoryResponse } from '../../models/processing-job.
 
         } @else if (history().length > 0) {
 
-          <ol class="space-y-4">
+          <ol class="space-y-3">
             @for (historyItem of history(); track historyItem.id) {
 
-              <li class="border-l-2 border-slate-200 pl-4">
+              <li class="rounded-lg border border-slate-200 bg-slate-50 p-4">
                 <div class="flex flex-wrap items-center gap-2">
                   @if (historyItem.previousStatus) {
                     <app-status-badge [status]="historyItem.previousStatus" />
-                    <span class="text-xs text-slate-400">to</span>
+                    <span class="text-xs font-medium text-slate-400">to</span>
                   }
 
                   <app-status-badge [status]="historyItem.newStatus" />
                 </div>
 
-                <p class="mt-2 text-sm text-slate-900">
+                <p class="mt-3 text-sm text-slate-900">
                   {{ historyItem.reason ?? 'No reason provided' }}
                 </p>
 
-                <p class="mt-1 text-xs text-slate-500">
-                  {{ getTransitionActorLabel(historyItem) }} · {{ historyItem.createdAt | date: 'medium' }}
-                </p>
+                <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                  <span>{{ getTransitionActorLabel(historyItem) }}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{{ historyItem.createdAt | date: 'medium' }}</span>
+                </div>
               </li>
 
             }

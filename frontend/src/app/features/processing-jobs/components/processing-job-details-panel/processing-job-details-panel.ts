@@ -29,8 +29,7 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
 
           <div class="mt-3 flex flex-wrap items-center gap-2">
             <app-status-badge [status]="selectedJob.jobStatus" />
-
-            <app-copyable-code [value]="selectedJob.jobId" [ariaLabel]="'Copy job ID'" />
+            <app-status-badge [status]="selectedJob.fileStatus" />
           </div>
 
           <div class="mt-4 flex flex-wrap gap-2">
@@ -41,7 +40,10 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
                 [loading]="isActionRunning()"
                 (click)="startRequested.emit()"
               >
-                Start processing
+                <span class="inline-flex items-center gap-2">
+                  <i class="fa-solid fa-play" aria-hidden="true"></i>
+                  Start processing
+                </span>
               </app-button>
             }
 
