@@ -18,26 +18,28 @@
   </div>
 
   <button
-    class="mx-3 mt-4 cursor-pointer rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+    class="absolute -right-3 top-20 flex size-6 cursor-pointer items-center justify-center rounded-full border border-slate-700 bg-slate-950 text-xs text-slate-300 shadow-sm transition hover:bg-slate-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-slate-500"
     type="button"
+    [attr.aria-label]="isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+    [attr.title]="isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
     (click)="toggleCollapsed.emit()"
   >
     @if (isCollapsed()) {
-      →
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
     } @else {
-      Collapse
+      <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
     }
   </button>
 
-  <nav class="mt-4 flex flex-1 flex-col gap-1 px-3">
+  <nav class="mt-5 flex flex-1 flex-col gap-1 px-3">
     @for (item of items(); track item.route) {
       @if (item.disabled) {
         <span
           class="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-500"
           [attr.title]="isCollapsed() ? item.label : null"
         >
-          <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-xs font-semibold">
-            {{ getIconLabel(item) }}
+          <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-slate-300">
+            <i [class]="getIconClass(item)" aria-hidden="true"></i>
           </span>
 
           @if (!isCollapsed()) {
@@ -51,8 +53,8 @@
           [routerLink]="item.route"
           [attr.title]="isCollapsed() ? item.label : null"
         >
-          <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-xs font-semibold">
-            {{ getIconLabel(item) }}
+          <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-slate-300">
+            <i [class]="getIconClass(item)" aria-hidden="true"></i>
           </span>
 
           @if (!isCollapsed()) {
@@ -62,21 +64,4 @@
       }
     }
   </nav>
-
-  <div class="border-t border-slate-800 p-3">
-    <button
-      class="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-slate-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-      type="button"
-      [attr.title]="isCollapsed() ? 'Logout' : null"
-      (click)="logoutRequested.emit()"
-    >
-      <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-xs font-semibold">
-        <i class="fa-solid fa-right-from-bracket text-xs" aria-hidden="true"></i>
-      </span>
-
-      @if (!isCollapsed()) {
-        <span>Logout</span>
-      }
-    </button>
-  </div>
 </aside>

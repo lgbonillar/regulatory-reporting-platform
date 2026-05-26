@@ -15,13 +15,13 @@ export class SideNav {
   readonly toggleCollapsed = output<void>()
   readonly logoutRequested = output<void>()
 
-  protected getIconLabel (item: NavigationItem): string {
-    const labels: Record<string, string> = {
-      files: 'F',
-      workflow: 'P',
-      audit: 'E'
+  protected getIconClass (item: NavigationItem): string {
+    const icons: Record<string, string> = {
+      files: 'fa-regular fa-folder-open',
+      workflow: 'fa-solid fa-diagram-project',
+      audit: 'fa-solid fa-clock-rotate-left'
     }
 
-    return labels[item.icon] ?? '•'
+    return icons[item.icon] ?? 'fa-regular fa-circle'
   }
 }

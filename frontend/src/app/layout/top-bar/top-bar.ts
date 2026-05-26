@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core'
+import { Component, input, output } from '@angular/core'
 
 import { CurrentUser } from '../../core/auth/session.model'
 
@@ -11,5 +11,7 @@ export class TopBar {
   readonly activePageTitle = input.required<string>()
   readonly currentUser = input.required<CurrentUser>()
   readonly isSidebarCollapsed = input.required<boolean>()
+
+  readonly logoutRequested = output<void>()
 
 }
