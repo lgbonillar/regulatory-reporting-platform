@@ -193,7 +193,8 @@ class DemoRegulatoryReportProcessorTest {
                 new ExcelWorkbookRules(),
                 new ExcelSheetRules(cellReader),
                 new ExcelHeaderRules(cellReader),
-                cellReader
+                cellReader,
+                new ExcelCellRules()
         );
 
         return new DemoRegulatoryReportProcessor(fileStorageService, validator);

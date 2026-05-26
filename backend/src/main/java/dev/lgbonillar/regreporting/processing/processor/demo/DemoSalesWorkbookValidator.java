@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -24,19 +23,22 @@ public class DemoSalesWorkbookValidator {
     private final ExcelSheetRules sheetRules;
     private final ExcelHeaderRules headerRules;
     private final ExcelCellReader cellReader;
+    private final ExcelCellRules cellRules;
 
     public DemoSalesWorkbookValidator(
             ExcelRowRules rowRules,
             ExcelWorkbookRules workbookRules,
             ExcelSheetRules sheetRules,
             ExcelHeaderRules headerRules,
-            ExcelCellReader cellReader
+            ExcelCellReader cellReader,
+            ExcelCellRules cellRules
     ) {
         this.rowRules = rowRules;
         this.workbookRules = workbookRules;
         this.sheetRules = sheetRules;
         this.headerRules = headerRules;
         this.cellReader = cellReader;
+        this.cellRules = cellRules;
     }
 
     public List<ProcessingFindingCommand> validate(Workbook workbook) {
@@ -302,26 +304,10 @@ public class DemoSalesWorkbookValidator {
     }
 
     private BigDecimal getNumericValue(Row row, String header) {
-        Cell cell = row.getCell(DemoSalesReportLayout.columnIndex(header));
-
-        if (cell == null) {
-            throw new IllegalArgumentException("Cell is blank");
-        }
-
-        return switch (cell.getCellType()) {
-            case NUMERIC -> BigDecimal.valueOf(cell.getNumericCellValue());
-            case STRING -> parseBigDecimal(cell.getStringCellValue());
-            case FORMULA -> BigDecimal.valueOf(cell.getNumericCellValue());
-            default -> throw new IllegalArgumentException("Cell is not numeric");
-        };
-    }
-
-    private BigDecimal parseBigDecimal(String value) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("Value is blank");
-        }
-
-        return new BigDecimal(value.trim().replace(",", ""));
+        return cellRules.getNumericValue(
+                row,
+                DemoSalesReportLayout.columnIndex(header)
+        );
     }
 
     private boolean sameAmount(BigDecimal expected, BigDecimal actual) {
@@ -330,15 +316,9 @@ public class DemoSalesWorkbookValidator {
     }
 
     private LocalDate getDateValue(Row row, String header) {
-        Cell cell = row.getCell(DemoSalesReportLayout.columnIndex(header));
-
-        if (!DateUtil.isCellDateFormatted(cell)) {
-            throw new IllegalArgumentException("Cell is not a valid Excel date");
-        }
-
-        return cell.getDateCellValue()
-                .toInstant()
-                .atZone(ZoneId.systemDefault())
-                .toLocalDate();
+        return cellRules.getDateValue(
+                row,
+                DemoSalesReportLayout.columnIndex(header)
+        );
     }
 }
