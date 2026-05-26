@@ -27,7 +27,9 @@ export class ProcessingJobsPageStore {
 
   readonly selectedStatusCount = computed(() => this.selectedStatuses().size)
   readonly currentUser = this.sessionService.currentUser
-  readonly canFilterByUsername = computed(() => this.currentUser().role === 'ADMINISTRATOR')
+  readonly canFilterByUsername = computed(() =>
+    this.currentUser()?.role === 'ADMINISTRATOR'
+  )
 
   readonly statusOptions: readonly ProcessingJobStatus[] = [
     'PENDING_EXECUTION',
@@ -69,7 +71,12 @@ export class ProcessingJobsPageStore {
   }
 
   loadMyJobs (): void {
-    const username = this.currentUser().username
+    const username = this.currentUser()?.username
+
+    if (!username) {
+      this.errorMessage.set('Authenticated user is missing.')
+      return
+    }
 
     this.filterUsername.set(username)
     this.loadJobs(username)

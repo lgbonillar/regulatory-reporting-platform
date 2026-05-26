@@ -1,4 +1,4 @@
-export type UserRole = 'ANALYST' | 'ADMINISTRATOR' | 'AUDITOR'
+export type UserRole = 'ROOT' | 'ADMINISTRATOR' | 'ANALYST' | 'AUDITOR'
 
 export interface CurrentUser {
   username: string

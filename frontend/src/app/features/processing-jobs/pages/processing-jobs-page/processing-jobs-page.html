@@ -25,7 +25,7 @@
     } @else {
       <p class="text-sm text-slate-500">
         Showing processes for
-        <span class="font-medium text-slate-800">{{ store.currentUser().username }}</span>
+        <span class="font-medium text-slate-800">{{ store.currentUser()?.username }}</span>
       </p>
     }
   </app-page-header>

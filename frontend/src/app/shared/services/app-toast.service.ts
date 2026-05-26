@@ -3,6 +3,8 @@ import { MessageService } from 'primeng/api'
 
 type ToastSeverity = 'success' | 'info' | 'warn' | 'error'
 
+const DEFAULT_TOAST_LIFE_MS = 3500
+
 @Injectable({
   providedIn: 'root'
 })
@@ -30,7 +32,7 @@ export class AppToastService {
       severity,
       summary,
       detail,
-      life: 3500
+      life: DEFAULT_TOAST_LIFE_MS
     })
   }
 }

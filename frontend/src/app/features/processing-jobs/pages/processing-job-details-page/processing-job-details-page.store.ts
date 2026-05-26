@@ -32,16 +32,16 @@ export class ProcessingJobDetailsPageStore {
 
     return selectedJob?.jobStatus === 'PENDING_EXECUTION' &&
       selectedJob.fileStatus === 'STORED' &&
-      currentUser.role === 'ANALYST' &&
+      currentUser?.role === 'ANALYST' &&
       selectedJob.uploadedBy === currentUser.username
   })
   readonly canApprove = computed(() =>
-    this.currentUser().role === 'ADMINISTRATOR' &&
+    this.currentUser()?.role === 'ADMINISTRATOR' &&
     this.job()?.jobStatus === 'AWAITING_APPROVAL'
   )
   readonly canReject = computed(() => this.canApprove())
   readonly canRevoke = computed(() =>
-    this.currentUser().role === 'ADMINISTRATOR' &&
+    this.currentUser()?.role === 'ADMINISTRATOR' &&
     this.job()?.jobStatus === 'APPROVED'
   )
 
@@ -181,6 +181,8 @@ export class ProcessingJobDetailsPageStore {
   private canViewJob (job: ProcessingJobResponse): boolean {
     const currentUser = this.currentUser()
 
-    return currentUser.role !== 'ANALYST' || job.uploadedBy === currentUser.username
+    return !!currentUser && (
+      currentUser.role !== 'ANALYST' || job.uploadedBy === currentUser.username
+    )
   }
 }

@@ -15,7 +15,13 @@ export class NavigationService {
   private readonly currentUrl = signal(this.router.url)
 
   readonly navigationItems = computed(() => {
-    const currentRole = this.sessionService.currentUser().role
+    const currentUser = this.sessionService.currentUser()
+
+    if (!currentUser) {
+      return []
+    }
+
+    const currentRole = currentUser.role
 
     return NAVIGATION_ITEMS.filter((item) => item.allowedRoles.includes(currentRole))
   })

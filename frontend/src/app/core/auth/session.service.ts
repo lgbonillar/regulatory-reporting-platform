@@ -1,40 +1,60 @@
-import { Injectable, signal } from '@angular/core'
+import { computed, Injectable, signal } from '@angular/core'
 
+import { JwtAccessTokenPayload } from './auth.model'
 import { CurrentUser } from './session.model'
+
+const MILLISECONDS_PER_SECOND = 1000
 
 @Injectable({
   providedIn: 'root'
 })
 export class SessionService {
-
-  private readonly currentUserState = signal<CurrentUser>({
-    username: 'analyst01',
-    displayName: 'Analyst 01',
-    role: 'ANALYST'
-  })
+  private readonly currentUserState = signal<CurrentUser | null>(null)
 
   readonly currentUser = this.currentUserState.asReadonly()
+  readonly isAuthenticated = computed(() => this.currentUserState() !== null)
 
-  setMockRole (role: CurrentUser['role']): void {
-    const usersByRole: Record<CurrentUser['role'], CurrentUser> = {
-      ANALYST: {
-        username: 'analyst01',
-        displayName: 'Analyst 01',
-        role: 'ANALYST'
-      },
-      ADMINISTRATOR: {
-        username: 'admin01',
-        displayName: 'Admin 01',
-        role: 'ADMINISTRATOR'
-      },
-      AUDITOR: {
-        username: 'auditor01',
-        displayName: 'Auditor 01',
-        role: 'AUDITOR'
-      }
+  restoreFromAccessToken (accessToken: string | null): void {
+    if (!accessToken || this.isTokenExpired(accessToken)) {
+      this.clear()
+      return
     }
 
-    this.currentUserState.set(usersByRole[role])
+    const payload = this.decodeAccessToken(accessToken)
+
+    this.currentUserState.set({
+      username: payload.username,
+      displayName: payload.username,
+      role: payload.role
+    })
   }
 
+  setAuthenticatedUser (accessToken: string): void {
+    const payload = this.decodeAccessToken(accessToken)
+
+    this.currentUserState.set({
+      username: payload.username,
+      displayName: payload.username,
+      role: payload.role
+    })
+  }
+
+  clear (): void {
+    this.currentUserState.set(null)
+  }
+
+  private decodeAccessToken (accessToken: string): JwtAccessTokenPayload {
+    const [ , payload ] = accessToken.split('.')
+    const normalizedPayload = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const decodedPayload = atob(normalizedPayload)
+
+    return JSON.parse(decodedPayload) as JwtAccessTokenPayload
+  }
+
+  private isTokenExpired (accessToken: string): boolean {
+    const payload = this.decodeAccessToken(accessToken)
+    const nowInSeconds = Math.floor(Date.now() / MILLISECONDS_PER_SECOND)
+
+    return payload.exp <= nowInSeconds
+  }
 }

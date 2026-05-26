@@ -5,12 +5,13 @@
     (toggleCollapsed)="toggleSidebar()"
   />
 
-  <app-top-bar
-    [activePageTitle]="navigationService.activePageTitle()"
-    [currentUser]="sessionService.currentUser()"
-    [isSidebarCollapsed]="isSidebarCollapsed()"
-    (mockRoleChanged)="setMockRole($event)"
-  />
+  @if (sessionService.currentUser(); as currentUser) {
+    <app-top-bar
+      [activePageTitle]="navigationService.activePageTitle()"
+      [currentUser]="currentUser"
+      [isSidebarCollapsed]="isSidebarCollapsed()"
+    />
+  }
 
   <main
     class="box-border h-full overflow-hidden pt-16 transition-all duration-200"
