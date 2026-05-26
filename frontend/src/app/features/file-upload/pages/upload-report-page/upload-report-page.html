@@ -19,10 +19,6 @@
     <app-alert type="error" [message]="store.errorMessage()!" />
   }
 
-  @if (store.successMessage()) {
-    <app-alert type="success" [message]="store.successMessage()!" />
-  }
-
   <div class="min-h-0 flex-1">
     <app-panel [fullHeight]="true">
       <div class="flex h-full min-h-0 flex-col">

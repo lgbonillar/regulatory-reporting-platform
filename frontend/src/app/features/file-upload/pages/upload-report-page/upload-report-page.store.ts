@@ -1,5 +1,6 @@
 import { computed, inject, Injectable, signal } from '@angular/core'
 
+import { AppToastService } from '../../../../shared/services/app-toast.service'
 import { resolveHttpErrorMessage } from '../../../../shared/utils/http-error-message'
 import { ReportFileUploadResponse, UploadedFileResponse } from '../../models/report-file-upload.model'
 import { ReportFileUploadService } from '../../services/report-file-upload.service'
@@ -10,13 +11,13 @@ const MINIMUM_FILES_SIZE = 0
 @Injectable()
 export class UploadReportPageStore {
   private readonly reportFileUploadService = inject(ReportFileUploadService)
+  private readonly toast = inject(AppToastService)
 
   readonly username = signal(CURRENT_USERNAME)
   readonly files = signal<UploadedFileResponse[]>([])
   readonly selectedFile = signal<File | null>(null)
   readonly uploadResult = signal<ReportFileUploadResponse | null>(null)
   readonly errorMessage = signal<string | null>(null)
-  readonly successMessage = signal<string | null>(null)
   readonly isLoadingFiles = signal(false)
   readonly isUploading = signal(false)
   readonly actionFileId = signal<string | null>(null)
@@ -33,7 +34,6 @@ export class UploadReportPageStore {
 
   setSelectedFile (file: File | null): void {
     this.errorMessage.set(null)
-    this.successMessage.set(null)
     this.uploadResult.set(null)
     this.selectedFile.set(file)
   }
@@ -48,17 +48,19 @@ export class UploadReportPageStore {
 
     this.isUploading.set(true)
     this.errorMessage.set(null)
-    this.successMessage.set(null)
 
     this.reportFileUploadService.uploadReportFile(file).subscribe({
       next: (response) => {
         this.uploadResult.set(response)
         this.selectedFile.set(null)
-        this.successMessage.set('File uploaded successfully.')
+        this.toast.success('File uploaded successfully')
         this.loadReportFiles()
       },
       error: (error: unknown) => {
-        this.errorMessage.set(resolveHttpErrorMessage(error))
+        const message = resolveHttpErrorMessage(error)
+
+        this.errorMessage.set(message)
+        this.toast.error('Could not upload file', message)
       },
       complete: () => {
         this.isUploading.set(false)
@@ -69,15 +71,17 @@ export class UploadReportPageStore {
   updateReportFile (fileId: string, file: File): void {
     this.actionFileId.set(fileId)
     this.errorMessage.set(null)
-    this.successMessage.set(null)
 
     this.reportFileUploadService.updateReportFile(fileId, file).subscribe({
       next: () => {
-        this.successMessage.set('File updated successfully.')
+        this.toast.success('File updated successfully')
         this.loadReportFiles()
       },
       error: (error: unknown) => {
-        this.errorMessage.set(resolveHttpErrorMessage(error))
+        const message = resolveHttpErrorMessage(error)
+
+        this.errorMessage.set(message)
+        this.toast.error('Could not update file', message)
       },
       complete: () => {
         this.actionFileId.set(null)
@@ -88,15 +92,17 @@ export class UploadReportPageStore {
   deleteReportFile (fileId: string): void {
     this.actionFileId.set(fileId)
     this.errorMessage.set(null)
-    this.successMessage.set(null)
 
     this.reportFileUploadService.deleteReportFile(fileId).subscribe({
       next: () => {
-        this.successMessage.set('File deleted successfully.')
+        this.toast.success('File deleted successfully')
         this.loadReportFiles()
       },
       error: (error: unknown) => {
-        this.errorMessage.set(resolveHttpErrorMessage(error))
+        const message = resolveHttpErrorMessage(error)
+
+        this.errorMessage.set(message)
+        this.toast.error('Could not delete file', message)
       },
       complete: () => {
         this.actionFileId.set(null)

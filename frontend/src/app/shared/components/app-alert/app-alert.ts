@@ -1,31 +1,29 @@
-import { Component, input } from '@angular/core'
+import { Component, computed, input } from '@angular/core'
+import { MessageModule } from 'primeng/message'
 
-type AlertType = 'success' | 'error' | 'info' | 'warning'
+type AlertType = 'success' | 'info' | 'warn' | 'error'
+
+type MessageSeverity = 'success' | 'info' | 'warn' | 'error'
 
 @Component({
   selector: 'app-alert',
+  imports: [ MessageModule ],
   template: `
-    <div
-      class="rounded-md border px-4 py-3 text-sm"
-      [class.border-emerald-200]="type() === 'success'"
-      [class.bg-emerald-50]="type() === 'success'"
-      [class.text-emerald-700]="type() === 'success'"
-      [class.border-red-200]="type() === 'error'"
-      [class.bg-red-50]="type() === 'error'"
-      [class.text-red-700]="type() === 'error'"
-      [class.border-sky-200]="type() === 'info'"
-      [class.bg-sky-50]="type() === 'info'"
-      [class.text-sky-700]="type() === 'info'"
-      [class.border-amber-200]="type() === 'warning'"
-      [class.bg-amber-50]="type() === 'warning'"
-      [class.text-amber-700]="type() === 'warning'"
-      role="status"
+    <p-message
+      styleClass="w-full"
+      [severity]="severity()"
     >
       {{ message() }}
-    </div>
+    </p-message>
   `
 })
 export class AppAlert {
-  readonly type = input.required<AlertType>()
+  readonly type = input<AlertType>('info')
   readonly message = input.required<string>()
+
+  protected readonly severity = computed<MessageSeverity>(() => {
+    if (this.type() === 'warn') return 'warn'
+
+    return this.type()
+  })
 }

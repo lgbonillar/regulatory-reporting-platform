@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common'
 import { Component, input, output } from '@angular/core'
+import { TableModule } from 'primeng/table'
 
 import { AppButton } from '../../../../shared/components/app-button/app-button'
 import { CopyableCode } from '../../../../shared/components/copyable-code/copyable-code'
@@ -13,66 +14,70 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
   host: {
     class: 'block h-full min-h-0'
   },
-  imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, FilePickerButton, StatusBadge ],
+  imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, FilePickerButton, StatusBadge, TableModule ],
   template: `
-    <div class="hidden h-full min-h-0 overflow-auto md:block">
-      <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-        <thead class="sticky top-0 z-10 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+    <div class="hidden h-full min-h-0 md:block">
+      <p-table
+        class="h-full! text-sm!"
+        [value]="files()"
+        [scrollable]="true"
+        scrollHeight="flex"
+        dataKey="fileId"
+      >
+        <ng-template #header>
           <tr>
-            <th class="px-6 py-3">File</th>
-            <th class="px-6 py-3">Status</th>
-            <th class="px-6 py-3">Uploaded</th>
-            <th class="px-6 py-3 text-right">Actions</th>
+            <th>File</th>
+            <th>Status</th>
+            <th>Uploaded</th>
+            <th class="text-right">Actions</th>
           </tr>
-        </thead>
+        </ng-template>
 
-        <tbody class="divide-y divide-slate-200">
-          @for (file of files(); track file.fileId) {
-            <tr class="align-middle">
-              <td class="px-6 py-4">
-                <div class="max-w-md">
-                  <app-file-download-link
-                    [fileId]="file.fileId"
-                    [filename]="file.originalFilename"
-                    [fileStatus]="file.fileStatus"
-                  />
+        <ng-template #body let-file>
+          <tr>
+            <td>
+              <div class="max-w-md">
+                <app-file-download-link
+                  [fileId]="file.fileId"
+                  [filename]="file.originalFilename"
+                  [fileStatus]="file.fileStatus"
+                />
 
-                  <div class="mt-1">
-                    <app-copyable-code [value]="file.fileId" [ariaLabel]="'Copy file ID'" />
-                  </div>
+                <div class="mt-1">
+                  <app-copyable-code [value]="file.fileId" [ariaLabel]="'Copy file ID'" />
                 </div>
-              </td>
+              </div>
+            </td>
 
-              <td class="px-6 py-4">
-                <app-status-badge [status]="file.fileStatus" />
-              </td>
+            <td>
+              <app-status-badge [status]="file.fileStatus" />
+            </td>
 
-              <td class="px-6 py-4 text-slate-600">
-                {{ file.uploadedAt | date: 'medium' }}
-              </td>
+            <td class="text-slate-600">
+              {{ file.uploadedAt | date: 'medium' }}
+            </td>
 
-              <td class="px-6 py-4">
-                <div class="flex items-center justify-end gap-2">
-                  <app-file-picker-button
-                    label="Update"
-                    accept=".xlsx"
-                    [disabled]="isActionRunning(file.fileId)"
-                    (fileSelected)="replacementSelected.emit({ event: $event, fileId: file.fileId })"
-                  />
+            <td>
+              <div class="flex items-center justify-end gap-2">
+                <app-file-picker-button
+                  label="Update"
+                  accept=".xlsx"
+                  [disabled]="isActionRunning(file.fileId)"
+                  (fileSelected)="replacementSelected.emit({ event: $event, fileId: file.fileId })"
+                />
 
-                  <app-button
-                    variant="danger"
-                    [disabled]="isActionRunning(file.fileId)"
-                    (click)="deleteSelected.emit(file.fileId)"
-                  >
-                    Delete
-                  </app-button>
-                </div>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+                <app-button
+                  variant="danger"
+                  [disabled]="isActionRunning(file.fileId)"
+                  (click)="deleteSelected.emit(file.fileId)"
+                >
+                  Delete
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
     </div>
 
     <div class="h-full min-h-0 divide-y divide-slate-200 overflow-auto md:hidden">
@@ -122,7 +127,7 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
 export class UploadedFilesList {
   readonly files = input.required<UploadedFileResponse[]>()
   readonly actionFileId = input<string | null>(null)
-  readonly replacementSelected = output<{ event: Event, fileId: string }>()
+  readonly replacementSelected = output<{ event: { files?: File[] }, fileId: string }>()
   readonly deleteSelected = output<string>()
 
   protected isActionRunning (fileId: string): boolean {

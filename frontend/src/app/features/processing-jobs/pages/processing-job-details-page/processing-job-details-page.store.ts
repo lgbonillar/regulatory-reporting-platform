@@ -3,15 +3,18 @@ import { ActivatedRoute } from '@angular/router'
 import { Observable } from 'rxjs'
 
 import { SessionService } from '../../../../core/auth/session.service'
+import { AppToastService } from '../../../../shared/services/app-toast.service'
 import { resolveHttpErrorMessage } from '../../../../shared/utils/http-error-message'
 import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../../models/processing-job.model'
 import { ProcessingJobService } from '../../services/processing-job.service'
 
 @Injectable()
 export class ProcessingJobDetailsPageStore {
+
   private readonly route = inject(ActivatedRoute)
   private readonly sessionService = inject(SessionService)
   private readonly processingJobService = inject(ProcessingJobService)
+  private readonly toast = inject(AppToastService)
 
   readonly job = signal<ProcessingJobResponse | null>(null)
   readonly history = signal<ProcessingJobStatusHistoryResponse[]>([])
@@ -81,7 +84,11 @@ export class ProcessingJobDetailsPageStore {
       return
     }
 
-    this.runJobAction(this.processingJobService.startProcessing(selectedJob.jobId))
+    this.runJobAction(
+      this.processingJobService.startProcessing(selectedJob.jobId),
+      'Processing started',
+      'Could not start processing'
+    )
   }
 
   approveSelectedJob (): void {
@@ -91,7 +98,11 @@ export class ProcessingJobDetailsPageStore {
       return
     }
 
-    this.runJobAction(this.processingJobService.approve(selectedJob.jobId))
+    this.runJobAction(
+      this.processingJobService.approve(selectedJob.jobId),
+      'Process approved',
+      'Could not approve process'
+    )
   }
 
   rejectSelectedJob (reason: string): void {
@@ -101,7 +112,11 @@ export class ProcessingJobDetailsPageStore {
       return
     }
 
-    this.runJobAction(this.processingJobService.reject(selectedJob.jobId, reason))
+    this.runJobAction(
+      this.processingJobService.reject(selectedJob.jobId, reason),
+      'Process rejected',
+      'Could not reject process'
+    )
   }
 
   revokeSelectedJob (reason: string): void {
@@ -111,20 +126,32 @@ export class ProcessingJobDetailsPageStore {
       return
     }
 
-    this.runJobAction(this.processingJobService.revoke(selectedJob.jobId, reason))
+    this.runJobAction(
+      this.processingJobService.revoke(selectedJob.jobId, reason),
+      'Approval revoked',
+      'Could not revoke approval'
+    )
   }
 
-  private runJobAction (request: Observable<ProcessingJobResponse>): void {
+  private runJobAction (
+    request: Observable<ProcessingJobResponse>,
+    successSummary: string,
+    errorSummary: string
+  ): void {
     this.isActionRunning.set(true)
     this.errorMessage.set(null)
 
     request.subscribe({
       next: (updatedJob) => {
         this.job.set(updatedJob)
+        this.toast.success(successSummary)
         this.loadHistory(updatedJob.jobId)
       },
       error: (error: unknown) => {
-        this.errorMessage.set(resolveHttpErrorMessage(error))
+        const message = resolveHttpErrorMessage(error)
+
+        this.errorMessage.set(message)
+        this.toast.error(errorSummary, message)
         this.isActionRunning.set(false)
       },
       complete: () => {

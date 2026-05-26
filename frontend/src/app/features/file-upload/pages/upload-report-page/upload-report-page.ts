@@ -9,8 +9,6 @@ import { ReportFileUploadControl } from '../../components/report-file-upload-con
 import { UploadedFilesList } from '../../components/uploaded-files-list/uploaded-files-list'
 import { UploadReportPageStore } from './upload-report-page.store'
 
-const FIRST_FILE_INDEX = 0
-
 @Component({
   selector: 'app-upload-report-page',
   host: {
@@ -28,21 +26,18 @@ export class UploadReportPage implements OnInit {
     this.store.loadReportFiles()
   }
 
-  protected onFileSelected (event: Event): void {
-    const input = event.target as HTMLInputElement
-    const file = input.files?.item(FIRST_FILE_INDEX) ?? null
+  protected onFileSelected (event: Event | { files?: File[] }): void {
+    const file = this.getSelectedFile(event)
 
     this.store.setSelectedFile(file)
   }
 
-  protected onReplacementFileSelected (event: Event, fileId: string): void {
-    const input = event.target as HTMLInputElement
-    const file = input.files?.item(FIRST_FILE_INDEX) ?? null
+  protected onReplacementFileSelected (event: Event | { files?: File[] }, fileId: string): void {
+    const file = this.getSelectedFile(event)
 
     if (!file) return
 
     this.store.updateReportFile(fileId, file)
-    input.value = ''
   }
 
   protected requestDeleteReportFile (fileId: string): void {
@@ -60,5 +55,19 @@ export class UploadReportPage implements OnInit {
 
     this.store.deleteReportFile(fileId)
     this.pendingDeleteFileId.set(null)
+  }
+
+  private getSelectedFile (event: Event | { files?: File[] }): File | null {
+    if (this.isPrimeFileUploadEvent(event)) {
+      return event.files?.[0] ?? null
+    }
+
+    const input = event.target as HTMLInputElement | null
+
+    return input?.files?.[0] ?? null
+  }
+
+  private isPrimeFileUploadEvent (event: Event | { files?: File[] }): event is { files?: File[] } {
+    return 'files' in event
   }
 }

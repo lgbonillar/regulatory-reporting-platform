@@ -1,4 +1,6 @@
-import { Component, computed, effect, ElementRef, HostListener, input, output, signal, viewChild } from '@angular/core'
+import { Component, computed, effect, ElementRef, input, output, signal, viewChild } from '@angular/core'
+import { DialogModule } from 'primeng/dialog'
+import { TextareaModule } from 'primeng/textarea'
 
 import { AppButton } from '../app-button/app-button'
 
@@ -6,69 +8,65 @@ type ConfirmationVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'war
 
 @Component({
   selector: 'app-confirmation-dialog',
-  imports: [ AppButton ],
+  imports: [ AppButton, DialogModule, TextareaModule ],
   template: `
-    @if (isOpen()) {
-      <div
-        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6"
-        tabindex="-1"
-        (mousedown)="cancelOnBackdrop($event)"
-      >
-        <section
-          class="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-xl"
-          role="dialog"
-          aria-modal="true"
-          [attr.aria-labelledby]="titleId"
-        >
-          <div class="flex flex-col gap-2">
-            <h2 [id]="titleId" class="text-base font-semibold text-slate-950">
-              {{ title() }}
-            </h2>
+    <p-dialog
+      styleClass="w-[calc(100vw-2rem)] max-w-md"
+      [visible]="isOpen()"
+      [modal]="true"
+      [closable]="!isSubmitting()"
+      [closeOnEscape]="!isSubmitting()"
+      [draggable]="false"
+      [resizable]="false"
+      [header]="title()"
+      (visibleChange)="onVisibleChange($event)"
+    >
+      <div class="flex flex-col gap-4">
+        <p class="text-sm text-slate-600">
+          {{ message() }}
+        </p>
 
-            <p class="text-sm text-slate-600">
-              {{ message() }}
-            </p>
-          </div>
+        @if (requiresReason()) {
+          <div>
+            <label class="block text-sm font-medium text-slate-700" for="confirmation-reason">
+              {{ reasonLabel() }}
+            </label>
 
-          @if (requiresReason()) {
-            <div class="mt-4">
-              <label class="block text-sm font-medium text-slate-700" for="confirmation-reason">
-                {{ reasonLabel() }}
-              </label>
-
-              <textarea
-                #reasonTextarea
-                id="confirmation-reason"
-                class="mt-2 min-h-28 w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
-                [placeholder]="reasonPlaceholder()"
-                [disabled]="isSubmitting()"
-                [value]="reason()"
-                (input)="reason.set($any($event.target).value)"
-              ></textarea>
-            </div>
-          }
-
-          <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <app-button
-              variant="secondary"
+            <textarea
+              pTextarea
+              #reasonTextarea
+              id="confirmation-reason"
+              class="mt-2 min-h-28 w-full resize-y text-sm"
+              [placeholder]="reasonPlaceholder()"
               [disabled]="isSubmitting()"
-              (click)="cancel()"
-            >
-              {{ cancelLabel() }}
-            </app-button>
-
-            <app-button
-              [variant]="confirmVariant()"
-              [disabled]="isConfirmDisabled()"
-              [loading]="isSubmitting()"
-              (click)="submit()"
-            >
-              {{ confirmLabel() }}
-            </app-button>
+              [value]="reason()"
+              (input)="reason.set($any($event.target).value)"
+            ></textarea>
           </div>
-        </section>
+        }
       </div>
-    }
+
+      <ng-template #footer>
+        <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <app-button
+            variant="secondary"
+            [disabled]="isSubmitting()"
+            (click)="cancel()"
+          >
+            {{ cancelLabel() }}
+          </app-button>
+
+          <app-button
+            [variant]="confirmVariant()"
+            [disabled]="isConfirmDisabled()"
+            [loading]="isSubmitting()"
+            (click)="submit()"
+          >
+            {{ confirmLabel() }}
+          </app-button>
+        </div>
+      </ng-template>
+    </p-dialog>
   `
 })
 export class ConfirmationDialog {
@@ -89,7 +87,6 @@ export class ConfirmationDialog {
 
   protected readonly reason = signal('')
   protected readonly reasonTextarea = viewChild<ElementRef<HTMLTextAreaElement>>('reasonTextarea')
-  protected readonly titleId = `confirmation-dialog-title-${crypto.randomUUID()}`
   protected readonly isConfirmDisabled = computed(() =>
     this.isSubmitting() || (this.requiresReason() && !this.reason().trim())
   )
@@ -112,23 +109,16 @@ export class ConfirmationDialog {
     })
   }
 
-  protected cancel (): void {
-    if (this.isSubmitting()) return
+  protected onVisibleChange (visible: boolean): void {
+    if (visible || this.isSubmitting()) return
 
     this.cancelRequested.emit()
   }
 
-  protected cancelOnBackdrop (event: MouseEvent): void {
-    if (event.target !== event.currentTarget) return
+  protected cancel (): void {
+    if (this.isSubmitting()) return
 
-    this.cancel()
-  }
-
-  @HostListener('document:keydown.escape')
-  protected cancelOnEscape (): void {
-    if (!this.isOpen()) return
-
-    this.cancel()
+    this.cancelRequested.emit()
   }
 
   protected submit (): void {

@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common'
 import { Component, input, output } from '@angular/core'
 import { RouterLink } from '@angular/router'
+import { TableModule } from 'primeng/table'
 
 import { AppButton } from '../../../../shared/components/app-button/app-button'
 import { CopyableCode } from '../../../../shared/components/copyable-code/copyable-code'
@@ -13,56 +14,64 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
   host: {
     class: 'block h-full min-h-0'
   },
-  imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, RouterLink, StatusBadge ],
+  imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, RouterLink, StatusBadge, TableModule ],
   template: `
-    <div class="hidden h-full min-h-0 overflow-auto lg:block">
-      <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-        <thead class="sticky top-0 z-10 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+    <div class="hidden h-full min-h-0 lg:block">
+      <p-table
+        class="h-full! text-sm!"
+        [value]="jobs()"
+        [scrollable]="true"
+        scrollHeight="flex"
+        dataKey="jobId"
+      >
+        <ng-template #header>
           <tr>
-            <th class="px-6 py-3">File</th>
-            <th class="px-6 py-3">User</th>
-            <th class="px-6 py-3">Status</th>
-            <th class="px-6 py-3">Created</th>
-            <th class="px-6 py-3 text-right">Action</th>
+            <th>File</th>
+            <th>User</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th class="text-right">Action</th>
           </tr>
-        </thead>
+        </ng-template>
 
-        <tbody class="divide-y divide-slate-200">
-          @for (job of jobs(); track job.jobId) {
-            <tr class="align-middle transition hover:bg-slate-50">
-              <td class="px-6 py-4">
-                <app-file-download-link
-                  [fileId]="job.fileId"
-                  [filename]="job.originalFilename"
-                  [fileStatus]="job.fileStatus"
-                />
-                <div class="mt-1">
-                  <app-copyable-code [value]="job.jobId" [ariaLabel]="'Copy job ID'" />
-                </div>
-              </td>
+        <ng-template #body let-job>
+          <tr>
+            <td>
+              <app-file-download-link
+                [fileId]="job.fileId"
+                [filename]="job.originalFilename"
+                [fileStatus]="job.fileStatus"
+              />
 
-              <td class="px-6 py-4 text-slate-600">{{ job.uploadedBy }}</td>
+              <div class="mt-1">
+                <app-copyable-code [value]="job.jobId" [ariaLabel]="'Copy job ID'" />
+              </div>
+            </td>
 
-              <td class="px-6 py-4">
-                <app-status-badge [status]="job.jobStatus" />
-              </td>
+            <td class="text-slate-600">{{ job.uploadedBy }}</td>
 
-              <td class="px-6 py-4 text-slate-600">
-                {{ job.createdAt | date: 'medium' }}
-              </td>
+            <td>
+              <app-status-badge [status]="job.jobStatus" />
+            </td>
 
-              <td class="px-6 py-4 text-right">
-                <a
-                  [routerLink]="['/processing-jobs', job.jobId]"
-                  class="inline-flex ..."
-                >
-                  Details
-                </a>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+            <td class="text-slate-600">
+              {{ job.createdAt | date: 'medium' }}
+            </td>
+
+            <td class="text-right">
+              <a
+                [routerLink]="['/processing-jobs', job.jobId]"
+                class="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-
+slate-700 underline decoration-slate-300 underline-offset-4 hover:text-slate-950 hover:decoration-
+slate-500"
+              >
+                Details
+                <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
+              </a>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
     </div>
 
     <div class="h-full min-h-0 divide-y divide-slate-200 overflow-auto lg:hidden">
