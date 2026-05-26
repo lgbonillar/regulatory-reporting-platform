@@ -185,6 +185,7 @@ class DemoRegulatoryReportProcessorTest {
     private DemoRegulatoryReportProcessor processor(Path workbookPath) {
         FileStorageService fileStorageService = mock(FileStorageService.class);
         ExcelCellReader cellReader = new ExcelCellReader();
+        ExcelCellRules cellRules = new ExcelCellRules();
 
         when(fileStorageService.resolvePath("analyst01/stored-report.xlsx")).thenReturn(workbookPath);
 
@@ -194,7 +195,8 @@ class DemoRegulatoryReportProcessorTest {
                 new ExcelSheetRules(cellReader),
                 new ExcelHeaderRules(cellReader),
                 cellReader,
-                new ExcelCellRules()
+                cellRules,
+                new ExcelBusinessRules(cellReader, new ExcelCellRules())
         );
 
         return new DemoRegulatoryReportProcessor(fileStorageService, validator);

@@ -8,8 +8,6 @@ import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -24,6 +22,7 @@ public class DemoSalesWorkbookValidator {
     private final ExcelHeaderRules headerRules;
     private final ExcelCellReader cellReader;
     private final ExcelCellRules cellRules;
+    private final ExcelBusinessRules businessRules;
 
     public DemoSalesWorkbookValidator(
             ExcelRowRules rowRules,
@@ -31,7 +30,8 @@ public class DemoSalesWorkbookValidator {
             ExcelSheetRules sheetRules,
             ExcelHeaderRules headerRules,
             ExcelCellReader cellReader,
-            ExcelCellRules cellRules
+            ExcelCellRules cellRules,
+            ExcelBusinessRules businessRules
     ) {
         this.rowRules = rowRules;
         this.workbookRules = workbookRules;
@@ -39,6 +39,7 @@ public class DemoSalesWorkbookValidator {
         this.headerRules = headerRules;
         this.cellReader = cellReader;
         this.cellRules = cellRules;
+        this.businessRules = businessRules;
     }
 
     public List<ProcessingFindingCommand> validate(Workbook workbook) {
@@ -172,38 +173,33 @@ public class DemoSalesWorkbookValidator {
             Row row,
             List<ProcessingFindingCommand> findings
     ) {
-        try {
-            BigDecimal units = getNumericValue(row, "Unidades");
-            BigDecimal unitPrice = getNumericValue(row, "Precio Unitario");
-            BigDecimal unitCost = getNumericValue(row, "Coste unitario");
-            BigDecimal totalSaleAmount = getNumericValue(row, "Importe venta total");
-            BigDecimal totalCostAmount = getNumericValue(row, "Importe Coste total");
+        businessRules.validateMultiplication(
+                sheetName,
+                row,
+                "Unidades",
+                DemoSalesReportLayout.columnIndex("Unidades"),
+                "Precio Unitario",
+                DemoSalesReportLayout.columnIndex("Precio Unitario"),
+                "Importe venta total",
+                DemoSalesReportLayout.columnIndex("Importe venta total"),
+                "AMOUNT_CALCULATION_MISMATCH",
+                "The calculated amount does not match the reported amount",
+                findings
+        );
 
-            BigDecimal expectedSaleAmount = units.multiply(unitPrice);
-            BigDecimal expectedCostAmount = units.multiply(unitCost);
-
-            if (!sameAmount(expectedSaleAmount, totalSaleAmount)) {
-                findings.add(calculationMismatch(
-                        sheetName,
-                        row,
-                        "Importe venta total",
-                        expectedSaleAmount,
-                        totalSaleAmount
-                ));
-            }
-
-            if (!sameAmount(expectedCostAmount, totalCostAmount)) {
-                findings.add(calculationMismatch(
-                        sheetName,
-                        row,
-                        "Importe Coste total",
-                        expectedCostAmount,
-                        totalCostAmount
-                ));
-            }
-        } catch (IllegalArgumentException exception) {
-            // Numeric validation already reports the specific invalid cells.
-        }
+        businessRules.validateMultiplication(
+                sheetName,
+                row,
+                "Unidades",
+                DemoSalesReportLayout.columnIndex("Unidades"),
+                "Coste unitario",
+                DemoSalesReportLayout.columnIndex("Coste unitario"),
+                "Importe Coste total",
+                DemoSalesReportLayout.columnIndex("Importe Coste total"),
+                "AMOUNT_CALCULATION_MISMATCH",
+                "The calculated amount does not match the reported amount",
+                findings
+        );
     }
 
     private void validateDateRange(
@@ -211,40 +207,17 @@ public class DemoSalesWorkbookValidator {
             Row row,
             List<ProcessingFindingCommand> findings
     ) {
-        try {
-            LocalDate orderDate = getDateValue(row, "Fecha pedido");
-            LocalDate shippingDate = getDateValue(row, "Fecha envío");
-
-            if (shippingDate.isBefore(orderDate)) {
-                findings.add(new ProcessingFindingCommand(
-                        ProcessingFindingSeverity.ERROR,
-                        ProcessingFindingScope.BUSINESS_RULE,
-                        "INVALID_SHIPPING_DATE_RANGE",
-                        "The shipping date cannot be before the order date",
-                        sheetName,
-                        row.getRowNum() + 1,
-                        String.valueOf(DemoSalesReportLayout.columnIndex("Fecha envío") + 1),
-                        "Fecha envío",
-                        shippingDate.toString(),
-                        "Shipping date greater than or equal to order date",
-                        orderDate.toString()
-                ));
-            }
-        } catch (IllegalArgumentException exception) {
-            findings.add(new ProcessingFindingCommand(
-                    ProcessingFindingSeverity.ERROR,
-                    ProcessingFindingScope.ROW_DATA,
-                    "INVALID_DATE_VALUE",
-                    "The order date and shipping date must be valid Excel dates",
-                    sheetName,
-                    row.getRowNum() + 1,
-                    null,
-                    "Fecha pedido / Fecha envío",
-                    null,
-                    "Valid Excel date",
-                    "Invalid or blank date"
-            ));
-        }
+        businessRules.validateDateGreaterThanOrEqual(
+                sheetName,
+                row,
+                "Fecha pedido",
+                DemoSalesReportLayout.columnIndex("Fecha pedido"),
+                "Fecha envío",
+                DemoSalesReportLayout.columnIndex("Fecha envío"),
+                "INVALID_SHIPPING_DATE_RANGE",
+                "The shipping date cannot be before the order date",
+                findings
+        );
     }
 
     private void validateDuplicatedOrderId(
@@ -253,48 +226,15 @@ public class DemoSalesWorkbookValidator {
             Set<String> seenOrderIds,
             List<ProcessingFindingCommand> findings
     ) {
-        String orderId = cellReader.getCellText(row, DemoSalesReportLayout.columnIndex("ID Pedido"));
-
-        if (orderId.isBlank()) {
-            return;
-        }
-
-        if (!seenOrderIds.add(orderId)) {
-            findings.add(new ProcessingFindingCommand(
-                    ProcessingFindingSeverity.ERROR,
-                    ProcessingFindingScope.BUSINESS_RULE,
-                    "DUPLICATED_ORDER_ID",
-                    "The order id must be unique within the sales report",
-                    sheetName,
-                    row.getRowNum() + 1,
-                    String.valueOf(DemoSalesReportLayout.columnIndex("ID Pedido") + 1),
-                    "ID Pedido",
-                    orderId,
-                    "Unique order id",
-                    orderId
-            ));
-        }
-    }
-
-    private ProcessingFindingCommand calculationMismatch(
-            String sheetName,
-            Row row,
-            String header,
-            BigDecimal expected,
-            BigDecimal actual
-    ) {
-        return new ProcessingFindingCommand(
-                ProcessingFindingSeverity.ERROR,
-                ProcessingFindingScope.BUSINESS_RULE,
-                "AMOUNT_CALCULATION_MISMATCH",
-                "The calculated amount does not match the reported amount",
+        businessRules.validateUniqueValue(
                 sheetName,
-                row.getRowNum() + 1,
-                String.valueOf(DemoSalesReportLayout.columnIndex(header) + 1),
-                header,
-                actual.setScale(2, RoundingMode.HALF_UP).toPlainString(),
-                expected.setScale(2, RoundingMode.HALF_UP).toPlainString(),
-                actual.setScale(2, RoundingMode.HALF_UP).toPlainString()
+                row,
+                "ID Pedido",
+                DemoSalesReportLayout.columnIndex("ID Pedido"),
+                seenOrderIds,
+                "DUPLICATED_ORDER_ID",
+                "The order id must be unique within the sales report",
+                findings
         );
     }
 
@@ -310,15 +250,4 @@ public class DemoSalesWorkbookValidator {
         );
     }
 
-    private boolean sameAmount(BigDecimal expected, BigDecimal actual) {
-        return expected.setScale(2, RoundingMode.HALF_UP)
-                .compareTo(actual.setScale(2, RoundingMode.HALF_UP)) == 0;
-    }
-
-    private LocalDate getDateValue(Row row, String header) {
-        return cellRules.getDateValue(
-                row,
-                DemoSalesReportLayout.columnIndex(header)
-        );
-    }
 }
