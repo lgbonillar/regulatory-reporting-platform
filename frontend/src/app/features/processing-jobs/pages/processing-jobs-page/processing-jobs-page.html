@@ -1,36 +1,7 @@
 <section class="flex h-full min-h-0 w-full flex-col gap-4">
   <app-breadcrumb [items]="[{ label: 'processing-jobs', route: '/processing-jobs' }]" />
 
-  <app-page-header eyebrow="Processing jobs" title="Job monitor">
-    @if (store.canFilterByUsername()) {
-      <div class="flex flex-col gap-2 sm:flex-row">
-        <app-text-input
-          placeholder="Filter by username"
-          ariaLabel="Filter processing jobs by username"
-          [compact]="true"
-          [(value)]="store.filterUsername"
-        />
-
-        <app-button variant="primary" (click)="store.applyUsernameFilter()">
-          Apply
-        </app-button>
-
-        <app-button variant="secondary" (click)="store.loadMyJobs()">
-          Mine
-        </app-button>
-
-        <app-button variant="secondary" (click)="store.clearFilter()">
-          All
-        </app-button>
-
-      </div>
-    } @else {
-      <p class="text-sm text-slate-500">
-        Showing processes for
-        <span class="font-medium text-slate-800">{{ store.currentUser()?.username }}</span>
-      </p>
-    }
-  </app-page-header>
+  <app-page-header eyebrow="Processing jobs" title="Job monitor" />
 
   @if (store.errorMessage()) {
     <app-alert type="error" [message]="store.errorMessage()!" />

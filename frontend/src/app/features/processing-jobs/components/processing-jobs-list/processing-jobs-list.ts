@@ -1,6 +1,9 @@
 import { DatePipe } from '@angular/common'
-import { Component, input, output } from '@angular/core'
+import { Component, computed, input, output } from '@angular/core'
+import { FormsModule } from '@angular/forms'
 import { RouterLink } from '@angular/router'
+import { DatePickerModule } from 'primeng/datepicker'
+import { MultiSelectModule } from 'primeng/multiselect'
 import { TableModule } from 'primeng/table'
 
 import { AppButton } from '../../../../shared/components/app-button/app-button'
@@ -14,12 +17,12 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
   host: {
     class: 'block h-full min-h-0'
   },
-  imports: [ AppButton, CopyableCode, DatePipe, FileDownloadLink, RouterLink, StatusBadge, TableModule ],
+  imports: [ AppButton, CopyableCode, DatePipe, DatePickerModule, FileDownloadLink, FormsModule, MultiSelectModule, RouterLink, StatusBadge, TableModule ],
   template: `
     <div class="hidden h-full min-h-0 lg:block">
       <p-table
         class="h-full! text-sm!"
-        [value]="jobs()"
+        [value]="tableJobs()"
         [scrollable]="true"
         scrollHeight="flex"
         dataKey="jobId"
@@ -27,27 +30,125 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
         <ng-template #header>
           <tr>
             <th>
-              <div class="flex items-center justify-between gap-2">
+              <div class="flex cursor-pointer items-center justify-between gap-2">
                 <span>File</span>
-                <p-columnFilter type="text" field="originalFilename" display="menu" />
+
+                <p-columnFilter
+                  field="originalFilenameFilter"
+                  display="menu"
+                  matchMode="contains"
+                  [showMatchModes]="false"
+                  [showOperator]="false"
+                  [showAddButton]="false"
+                  [showApplyButton]="false"
+                >
+                  <ng-template #filter let-value let-filter="filterCallback">
+                    <input
+                      class="w-64 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                      type="text"
+                      placeholder="Filter by file name"
+                      [ngModel]="value"
+                      (ngModelChange)="filter($event ? $event.toLowerCase() : null)"
+                    />
+                  </ng-template>
+                </p-columnFilter>
               </div>
             </th>
             <th>
-              <div class="flex items-center justify-between gap-2">
+              <div class="flex cursor-pointer items-center justify-between gap-2">
                 <span>User</span>
-                <p-columnFilter type="text" field="uploadedBy" display="menu" />
+
+                <p-columnFilter
+                  #userFilter
+                  field="uploadedBy"
+                  matchMode="in"
+                  display="menu"
+                  [showMatchModes]="false"
+                  [showOperator]="false"
+                  [showAddButton]="false"
+                  [showApplyButton]="false"
+                >
+                  <ng-template #filter let-value let-filter="filterCallback">
+                    <p-multiselect
+                      class="w-64"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Select users"
+                      [options]="userOptions()"
+                      [ngModel]="value"
+                      (ngModelChange)="filter($event?.length ? $event : null)"
+                    />
+                  </ng-template>
+                </p-columnFilter>
               </div>
             </th>
             <th>
-              <div class="flex items-center justify-between gap-2">
+              <div class="flex cursor-pointer items-center justify-between gap-2">
                 <span>Status</span>
-                <p-columnFilter type="text" field="jobStatus" display="menu" />
+
+                <p-columnFilter
+                  #statusFilter
+                  field="jobStatus"
+                  matchMode="in"
+                  display="menu"
+                  [showMatchModes]="false"
+                  [showOperator]="false"
+                  [showAddButton]="false"
+                  [showApplyButton]="false"
+                >
+                  <ng-template #filter let-value let-filter="filterCallback">
+                    <p-multiselect
+                      class="w-64"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Select statuses"
+                      [options]="statusOptions()"
+                      [ngModel]="value"
+                      (ngModelChange)="filter($event?.length ? $event : null)"
+                    >
+                      <ng-template #item let-option>
+                        <app-status-badge [status]="option.value" />
+                      </ng-template>
+
+                      <ng-template #selectedItems let-value>
+                        @if (value?.length) {
+                          <span class="text-sm text-slate-700">
+                            {{ value.length }} selected
+                          </span>
+                        } @else {
+                          <span class="text-sm text-slate-400">Select statuses</span>
+                        }
+                      </ng-template>
+                    </p-multiselect>
+                  </ng-template>
+                </p-columnFilter>
               </div>
             </th>
             <th>
-              <div class="flex items-center justify-between gap-2">
+              <div class="flex cursor-pointer items-center justify-between gap-2">
                 <span>Created</span>
-                <p-columnFilter type="text" field="createdAt" display="menu" />
+
+                <p-columnFilter
+                  field="createdAtDate"
+                  type="date"
+                  display="menu"
+                  matchMode="between"
+                  [showMatchModes]="false"
+                  [showOperator]="false"
+                  [showAddButton]="false"
+                  [showApplyButton]="false"
+                >
+                  <ng-template #filter let-value let-filter="filterCallback">
+                    <p-datepicker
+                      class="w-72"
+                      selectionMode="range"
+                      placeholder="Select date range"
+                      [ngModel]="value"
+                      (ngModelChange)="filter($event)"
+                      [showIcon]="true"
+                    />
+                  </ng-template>
+                </p-columnFilter>
               </div>
             </th>
             <th class="text-right">Action</th>
@@ -81,9 +182,7 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
             <td class="text-right">
               <a
                 [routerLink]="['/processing-jobs', job.jobId]"
-                class="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-
-slate-700 underline decoration-slate-300 underline-offset-4 hover:text-slate-950 hover:decoration-
-slate-500"
+                class="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-slate-700 underline decoration-slate-300 underline-offset-4 hover:text-slate-950 hover:decoration-slate-500"
               >
                 Details
                 <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
@@ -128,4 +227,36 @@ slate-500"
 export class ProcessingJobsList {
   readonly jobs = input.required<ProcessingJobResponse[]>()
   readonly jobSelected = output<ProcessingJobResponse>()
+
+  protected readonly userOptions = computed(() =>
+    Array.from(new Set(this.jobs().map((job) => job.uploadedBy)))
+      .sort()
+      .map((user) => ({
+        label: user,
+        value: user
+      }))
+  )
+
+  protected readonly statusOptions = computed(() =>
+    Array.from(new Set(this.jobs().map((job) => job.jobStatus)))
+      .sort()
+      .map((status) => ({
+        label: status,
+        value: status
+      }))
+  )
+
+  protected readonly tableJobs = computed(() =>
+    this.jobs().map((job) => ({
+      ...job,
+      originalFilenameFilter: job.originalFilename.toLowerCase(),
+      createdAtDate: this.toDateOnly(job.createdAt)
+    }))
+  )
+
+  private toDateOnly (value: string): Date {
+    const date = new Date(value)
+
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  }
 }

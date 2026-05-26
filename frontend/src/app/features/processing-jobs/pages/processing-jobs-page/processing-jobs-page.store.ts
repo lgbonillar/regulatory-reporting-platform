@@ -14,7 +14,6 @@ export class ProcessingJobsPageStore {
   readonly jobs = signal<ProcessingJobResponse[]>([])
   readonly errorMessage = signal<string | null>(null)
   readonly isLoading = signal(false)
-  readonly filterUsername = signal('')
 
   readonly currentUser = this.sessionService.currentUser
   readonly canFilterByUsername = computed(() =>
@@ -38,7 +37,6 @@ export class ProcessingJobsPageStore {
       return
     }
 
-    this.filterUsername.set(username)
     this.loadJobs(username)
   }
 
@@ -62,32 +60,6 @@ export class ProcessingJobsPageStore {
         this.isLoading.set(false)
       }
     })
-  }
-
-  applyUsernameFilter (): void {
-    if (!this.canFilterByUsername()) {
-      this.loadMyJobs()
-      return
-    }
-
-    const username = this.filterUsername().trim()
-
-    if (!username) {
-      this.loadJobs()
-      return
-    }
-
-    this.loadJobs(username)
-  }
-
-  clearFilter (): void {
-    if (!this.canFilterByUsername()) {
-      this.loadMyJobs()
-      return
-    }
-
-    this.filterUsername.set('')
-    this.loadJobs()
   }
 
 }
