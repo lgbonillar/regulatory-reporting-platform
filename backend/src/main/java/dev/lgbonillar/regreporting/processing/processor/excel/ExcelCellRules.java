@@ -30,7 +30,7 @@ public class ExcelCellRules {
     public LocalDate getDateValue(Row row, int columnIndex) {
         Cell cell = row.getCell(columnIndex);
 
-        if (cell == null || !DateUtil.isCellDateFormatted(cell)) {
+        if (cell == null || !isDateCell(cell)) {
             throw new IllegalArgumentException("Cell is not a valid Excel date");
         }
 
@@ -38,6 +38,14 @@ public class ExcelCellRules {
                 .toInstant()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDate();
+    }
+
+    private boolean isDateCell(Cell cell) {
+        try {
+            return DateUtil.isCellDateFormatted(cell);
+        } catch (IllegalStateException exception) {
+            return false;
+        }
     }
 
     private BigDecimal parseBigDecimal(String value) {
