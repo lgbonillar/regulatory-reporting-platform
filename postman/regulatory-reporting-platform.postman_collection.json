@@ -476,6 +476,95 @@
           }
         },
         {
+          "name": "Upload valid sales report",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const envelope = pm.response.json();",
+                  "const response = envelope.data;",
+                  "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('returns success envelope', () => {",
+                  "  pm.expect(envelope.success).to.eql(true);",
+                  "  pm.expect(envelope.metadata.timestamp).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('returns valid sales upload response', () => {",
+                  "  pm.expect(response.fileId).to.be.a('string').and.not.empty;",
+                  "  pm.expect(response.jobId).to.be.a('string').and.not.empty;",
+                  "  pm.expect(response.originalFilename).to.contain('.xlsx');",
+                  "  pm.expect(response.fileStatus).to.eql('STORED');",
+                  "  pm.expect(response.jobStatus).to.eql('PENDING_EXECUTION');",
+                  "});",
+                  "pm.collectionVariables.set('validSalesFileId', response.fileId);",
+                  "pm.collectionVariables.set('validSalesJobId', response.jobId);",
+                  "pm.collectionVariables.set('pendingJobId', response.jobId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{validSalesReportPath}}"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/report-files"
+          }
+        },
+        {
+          "name": "Upload invalid sales report",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const envelope = pm.response.json();",
+                  "const response = envelope.data;",
+                  "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('returns success envelope', () => {",
+                  "  pm.expect(envelope.success).to.eql(true);",
+                  "  pm.expect(envelope.metadata.timestamp).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('returns invalid sales upload response', () => {",
+                  "  pm.expect(response.fileId).to.be.a('string').and.not.empty;",
+                  "  pm.expect(response.jobId).to.be.a('string').and.not.empty;",
+                  "  pm.expect(response.originalFilename).to.contain('.xlsx');",
+                  "  pm.expect(response.fileStatus).to.eql('STORED');",
+                  "  pm.expect(response.jobStatus).to.eql('PENDING_EXECUTION');",
+                  "});",
+                  "pm.collectionVariables.set('invalidSalesFileId', response.fileId);",
+                  "pm.collectionVariables.set('invalidSalesJobId', response.jobId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{invalidSalesReportPath}}"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/report-files"
+          }
+        },
+        {
           "name": "Update report file",
           "event": [
             {
@@ -809,6 +898,48 @@
           "response": []
         },
         {
+          "name": "Get invalid sales job findings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const envelope = pm.response.json();",
+                  "const response = envelope.data;",
+                  "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('returns success envelope', () => {",
+                  "  pm.expect(envelope.success).to.eql(true);",
+                  "  pm.expect(envelope.metadata.count).to.eql(response.length);",
+                  "});",
+                  "pm.test('returns validation findings', () => {",
+                  "  pm.expect(response).to.be.an('array').and.not.empty;",
+                  "  response.forEach(finding => {",
+                  "    pm.expect(finding.severity).to.be.oneOf(['ERROR', 'WARNING', 'INFO']);",
+                  "    pm.expect(finding.scope).to.be.oneOf(['FILE_STRUCTURE', 'SHEET_STRUCTURE', 'COLUMN_STRUCTURE', 'ROW_DATA', 'BUSINESS_RULE', 'CROSS_FILE_VALIDATION', 'SYSTEM']);",
+                  "    pm.expect(finding.code).to.be.a('string').and.not.empty;",
+                  "    pm.expect(finding.message).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "});",
+                  "pm.test('includes expected demo sales validation codes', () => {",
+                  "  const codes = response.map(finding => finding.code);",
+                  "  pm.expect(codes).to.include('INVALID_COLUMN_ORDER');",
+                  "  pm.expect(codes).to.include('INVALID_NUMERIC_VALUE');",
+                  "  pm.expect(codes).to.include('INVALID_SHIPPING_DATE_RANGE');",
+                  "  pm.expect(codes).to.include('DUPLICATED_ORDER_ID');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/processing-jobs/{{invalidSalesJobId}}/findings"
+          },
+          "response": []
+        },
+        {
           "name": "Start pending job",
           "request": {
             "method": "POST",
@@ -821,14 +952,14 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('returns expected workflow response', () => pm.expect([200, 409]).to.include(pm.response.code));",
+                  "pm.test('returns expected workflow response', () => pm.expect([200, 404, 409]).to.include(pm.response.code));",
                   "const envelope = pm.response.json();",
                   "if (pm.response.code === 200) {",
                   "  const response = envelope.data;",
                   "  pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
                   "  pm.test('returns updated job', () => {",
                   "    pm.expect(response.jobId).to.be.a('string').and.not.empty;",
-                  "    pm.expect(response.jobStatus).to.eql('PROCESSING');",
+                  "    pm.expect(response.jobStatus).to.be.oneOf(['AWAITING_APPROVAL', 'PROCESSING_FAILED']);",
                   "  });",
                   "} else {",
                   "  pm.test('returns error envelope', () => {",
@@ -837,6 +968,64 @@
                   "    pm.expect(envelope.message).to.be.a('string').and.not.empty;",
                   "  });",
                   "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Start valid sales job",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/processing-jobs/{{validSalesJobId}}/start"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const envelope = pm.response.json();",
+                  "const response = envelope.data;",
+                  "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
+                  "pm.test('valid sales job reaches awaiting approval', () => {",
+                  "  pm.expect(response.jobId).to.eql(pm.collectionVariables.get('validSalesJobId'));",
+                  "  pm.expect(response.jobStatus).to.eql('AWAITING_APPROVAL');",
+                  "  pm.expect(response.failureReason).to.be.oneOf([null, undefined]);",
+                  "});",
+                  "pm.collectionVariables.set('jobId', response.jobId);",
+                  "pm.collectionVariables.set('findingsJobId', response.jobId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Start invalid sales job",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/processing-jobs/{{invalidSalesJobId}}/start"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const envelope = pm.response.json();",
+                  "const response = envelope.data;",
+                  "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
+                  "pm.test('invalid sales job fails with validation findings', () => {",
+                  "  pm.expect(response.jobId).to.eql(pm.collectionVariables.get('invalidSalesJobId'));",
+                  "  pm.expect(response.jobStatus).to.eql('PROCESSING_FAILED');",
+                  "  pm.expect(response.failureReason).to.eql('Demo regulatory report contains validation findings');",
+                  "});",
+                  "pm.collectionVariables.set('jobId', response.jobId);",
+                  "pm.collectionVariables.set('findingsJobId', response.jobId);"
                 ]
               }
             }
@@ -1200,6 +1389,22 @@
     {
       "key": "findingsJobId",
       "value": "50000000-0000-0000-0000-000000000003"
+    },
+    {
+      "key": "validSalesReportPath",
+      "value": "/home/mrcrafterman/Work/code/regulatory-reporting-platform/samples/1000-Registros-de-ventas.xlsx"
+    },
+    {
+      "key": "invalidSalesReportPath",
+      "value": "/home/mrcrafterman/Work/code/regulatory-reporting-platform/samples/invalid-sales-report.xlsx"
+    },
+    {
+      "key": "validSalesJobId",
+      "value": ""
+    },
+    {
+      "key": "invalidSalesJobId",
+      "value": ""
     }
   ]
 }
