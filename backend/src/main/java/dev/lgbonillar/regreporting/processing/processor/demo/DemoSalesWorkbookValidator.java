@@ -3,10 +3,7 @@ package dev.lgbonillar.regreporting.processing.processor.demo;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingFindingScope;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingFindingSeverity;
 import dev.lgbonillar.regreporting.processing.processor.ProcessingFindingCommand;
-import dev.lgbonillar.regreporting.processing.processor.excel.ExcelCellReader;
-import dev.lgbonillar.regreporting.processing.processor.excel.ExcelHeaderRules;
-import dev.lgbonillar.regreporting.processing.processor.excel.ExcelSheetRules;
-import dev.lgbonillar.regreporting.processing.processor.excel.ExcelWorkbookRules;
+import dev.lgbonillar.regreporting.processing.processor.excel.*;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Component;
 
@@ -22,17 +19,20 @@ import java.util.Set;
 @Component
 public class DemoSalesWorkbookValidator {
 
+    private final ExcelRowRules rowRules;
     private final ExcelWorkbookRules workbookRules;
     private final ExcelSheetRules sheetRules;
     private final ExcelHeaderRules headerRules;
     private final ExcelCellReader cellReader;
 
     public DemoSalesWorkbookValidator(
+            ExcelRowRules rowRules,
             ExcelWorkbookRules workbookRules,
             ExcelSheetRules sheetRules,
             ExcelHeaderRules headerRules,
             ExcelCellReader cellReader
     ) {
+        this.rowRules = rowRules;
         this.workbookRules = workbookRules;
         this.sheetRules = sheetRules;
         this.headerRules = headerRules;
@@ -114,37 +114,17 @@ public class DemoSalesWorkbookValidator {
                 continue;
             }
 
-            validateRequiredRowValues(sheet.getSheetName(), row, findings);
+            rowRules.validateRequiredValues(
+                    sheet.getSheetName(),
+                    row,
+                    DemoSalesReportLayout.EXPECTED_HEADERS,
+                    findings
+            );
+
             validateNumericValues(sheet.getSheetName(), row, findings);
             validateBusinessCalculations(sheet.getSheetName(), row, findings);
             validateDateRange(sheet.getSheetName(), row, findings);
             validateDuplicatedOrderId(sheet.getSheetName(), row, seenOrderIds, findings);
-        }
-    }
-
-    private void validateRequiredRowValues(
-            String sheetName,
-            Row row,
-            List<ProcessingFindingCommand> findings
-    ) {
-        for (String header : DemoSalesReportLayout.EXPECTED_HEADERS) {
-            String value = cellReader.getCellText(row, DemoSalesReportLayout.columnIndex(header));
-
-            if (value.isBlank()) {
-                findings.add(new ProcessingFindingCommand(
-                        ProcessingFindingSeverity.ERROR,
-                        ProcessingFindingScope.ROW_DATA,
-                        "REQUIRED_VALUE_MISSING",
-                        "A required value is missing",
-                        sheetName,
-                        row.getRowNum() + 1,
-                        String.valueOf(DemoSalesReportLayout.columnIndex(header) + 1),
-                        header,
-                        null,
-                        "Non-empty value",
-                        "Blank value"
-                ));
-            }
         }
     }
 

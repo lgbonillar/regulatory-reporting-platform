@@ -7,7 +7,8 @@ import dev.lgbonillar.regreporting.processing.processor.ProcessingFindingCommand
 import dev.lgbonillar.regreporting.processing.processor.ProcessingResult;
 import dev.lgbonillar.regreporting.processing.processor.RegulatoryReportProcessor;
 import dev.lgbonillar.regreporting.upload.application.FileStorageService;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -23,8 +24,6 @@ public class DemoRegulatoryReportProcessor implements RegulatoryReportProcessor 
 
     private final FileStorageService fileStorageService;
     private final DemoSalesWorkbookValidator workbookValidator;
-
-    private final DataFormatter dataFormatter = new DataFormatter();
 
     public DemoRegulatoryReportProcessor(
             FileStorageService fileStorageService,

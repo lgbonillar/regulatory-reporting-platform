@@ -2,10 +2,7 @@ package dev.lgbonillar.regreporting.processing.processor.demo;
 
 import dev.lgbonillar.regreporting.processing.domain.ProcessingJob;
 import dev.lgbonillar.regreporting.processing.processor.ProcessingResult;
-import dev.lgbonillar.regreporting.processing.processor.excel.ExcelCellReader;
-import dev.lgbonillar.regreporting.processing.processor.excel.ExcelHeaderRules;
-import dev.lgbonillar.regreporting.processing.processor.excel.ExcelSheetRules;
-import dev.lgbonillar.regreporting.processing.processor.excel.ExcelWorkbookRules;
+import dev.lgbonillar.regreporting.processing.processor.excel.*;
 import dev.lgbonillar.regreporting.upload.application.FileStorageService;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileStatus;
@@ -192,6 +189,7 @@ class DemoRegulatoryReportProcessorTest {
         when(fileStorageService.resolvePath("analyst01/stored-report.xlsx")).thenReturn(workbookPath);
 
         DemoSalesWorkbookValidator validator = new DemoSalesWorkbookValidator(
+                new ExcelRowRules(cellReader),
                 new ExcelWorkbookRules(),
                 new ExcelSheetRules(cellReader),
                 new ExcelHeaderRules(cellReader),
