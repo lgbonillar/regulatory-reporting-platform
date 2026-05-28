@@ -1,4 +1,4 @@
-package dev.lgbonillar.regreporting.processing.processor.demo;
+package dev.lgbonillar.regreporting.modules.demo.validation;
 
 import dev.lgbonillar.regreporting.processing.domain.ProcessingFindingScope;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingFindingSeverity;

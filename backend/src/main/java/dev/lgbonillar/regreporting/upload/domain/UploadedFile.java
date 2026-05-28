@@ -95,7 +95,6 @@ public class UploadedFile {
         this.contentType = contentType;
         this.fileSize = fileSize;
         this.checksum = checksum;
-        this.status = UploadedFileStatus.STORED;
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -111,6 +110,16 @@ public class UploadedFile {
 
     public void markFailed() {
         this.status = UploadedFileStatus.FAILED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void markStored() {
+        this.status = UploadedFileStatus.STORED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void markPendingCorrection() {
+        this.status = UploadedFileStatus.PENDING_CORRECTION;
         this.updatedAt = LocalDateTime.now();
     }
 

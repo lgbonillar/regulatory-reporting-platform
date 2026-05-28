@@ -1,5 +1,6 @@
 package dev.lgbonillar.regreporting.processing.processor.demo;
 
+import dev.lgbonillar.regreporting.modules.demo.validation.DemoSalesWorkbookValidator;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingJob;
 import dev.lgbonillar.regreporting.processing.processor.ProcessingResult;
 import dev.lgbonillar.regreporting.processing.processor.excel.*;

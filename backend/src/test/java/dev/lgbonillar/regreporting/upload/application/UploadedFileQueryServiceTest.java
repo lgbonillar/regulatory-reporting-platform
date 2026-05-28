@@ -91,11 +91,7 @@ class UploadedFileQueryServiceTest {
         when(userRepository.findByUsername("analyst01")).thenReturn(Optional.of(user));
         when(uploadedFileRepository.findByUploadedByIdAndStatusInOrderByUploadedAtDesc(
                 user.getId(),
-                List.of(
-                        UploadedFileStatus.STORED,
-                        UploadedFileStatus.MISSING,
-                        UploadedFileStatus.FAILED
-                )
+                visibleStatuses()
         )).thenReturn(List.of(file));
         when(uploadedFileMapper.toUploadedFileResponse(file)).thenReturn(response);
 
@@ -106,11 +102,7 @@ class UploadedFileQueryServiceTest {
 
         verify(uploadedFileRepository).findByUploadedByIdAndStatusInOrderByUploadedAtDesc(
                 user.getId(),
-                List.of(
-                        UploadedFileStatus.STORED,
-                        UploadedFileStatus.MISSING,
-                        UploadedFileStatus.FAILED
-                )
+                visibleStatuses()
         );
     }
 
@@ -124,6 +116,15 @@ class UploadedFileQueryServiceTest {
                 "checksum",
                 status,
                 analyst()
+        );
+    }
+
+    private List<UploadedFileStatus> visibleStatuses() {
+        return List.of(
+                UploadedFileStatus.STORED,
+                UploadedFileStatus.PENDING_CORRECTION,
+                UploadedFileStatus.MISSING,
+                UploadedFileStatus.FAILED
         );
     }
 

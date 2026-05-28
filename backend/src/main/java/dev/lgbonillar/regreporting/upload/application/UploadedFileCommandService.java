@@ -5,6 +5,7 @@ import dev.lgbonillar.regreporting.shared.ResourceNotFoundException;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingJob;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileStatus;
+import dev.lgbonillar.regreporting.upload.domain.UploadedFileTransitionSource;
 import dev.lgbonillar.regreporting.upload.dto.ReportFileUploadResponse;
 import dev.lgbonillar.regreporting.upload.dto.StoredFile;
 import dev.lgbonillar.regreporting.upload.infrastructure.UploadedFileRepository;
@@ -25,17 +26,20 @@ public class UploadedFileCommandService {
     private final FileStorageService fileStorageService;
     private final UploadedFileRepository uploadedFileRepository;
     private final ProcessingJobCreationService processingJobCreationService;
+    private final UploadedFileStatusHistoryService uploadedFileStatusHistoryService;
 
     public UploadedFileCommandService(
             CurrentUserProvider currentUserProvider,
             FileStorageService fileStorageService,
             UploadedFileRepository uploadedFileRepository,
-            ProcessingJobCreationService processingJobCreationService
+            ProcessingJobCreationService processingJobCreationService,
+            UploadedFileStatusHistoryService uploadedFileStatusHistoryService
     ) {
         this.currentUserProvider = currentUserProvider;
         this.fileStorageService = fileStorageService;
         this.uploadedFileRepository = uploadedFileRepository;
         this.processingJobCreationService = processingJobCreationService;
+        this.uploadedFileStatusHistoryService = uploadedFileStatusHistoryService;
     }
 
     @Transactional
@@ -47,6 +51,10 @@ public class UploadedFileCommandService {
         UploadedFile existingFile = uploadedFileRepository
                 .findByUploadedByIdAndOriginalFilename(currentUser.getId(), originalFilename)
                 .orElse(null);
+
+        UploadedFileStatus previousStatus = existingFile == null
+                ? null
+                : existingFile.getStatus();
 
         ProcessingJob existingJob = null;
 
@@ -73,6 +81,8 @@ public class UploadedFileCommandService {
                     storedFile.checksum()
             );
 
+            existingFile.markStored();
+
             uploadedFile = existingFile;
         } else {
             uploadedFile = new UploadedFile(
@@ -88,6 +98,27 @@ public class UploadedFileCommandService {
         }
 
         UploadedFile savedFile = uploadedFileRepository.save(uploadedFile);
+
+        if (existingFile == null) {
+            uploadedFileStatusHistoryService.recordTransition(
+                    savedFile,
+                    null,
+                    UploadedFileStatus.STORED,
+                    UploadedFileTransitionSource.USER,
+                    currentUser,
+                    "File uploaded successfully"
+            );
+        } else {
+            uploadedFileStatusHistoryService.recordTransition(
+                    savedFile,
+                    previousStatus,
+                    UploadedFileStatus.STORED,
+                    UploadedFileTransitionSource.USER,
+                    currentUser,
+                    "File replaced successfully"
+            );
+        }
+
         ProcessingJob processingJob = existingJob == null
                 ? processingJobCreationService.createInitialJob(savedFile, currentUser)
                 : processingJobCreationService.markFileReplaced(existingJob);
@@ -106,6 +137,7 @@ public class UploadedFileCommandService {
                         currentUser.getId(),
                         List.of(
                                 UploadedFileStatus.STORED,
+                                UploadedFileStatus.PENDING_CORRECTION,
                                 UploadedFileStatus.MISSING,
                                 UploadedFileStatus.FAILED
                         )
@@ -128,12 +160,25 @@ public class UploadedFileCommandService {
             fileStorageService.delete(previousStoragePath);
         }
 
+        UploadedFileStatus previousStatus = uploadedFile.getStatus();
+
         uploadedFile.replaceWith(
                 storedFile.storedFilename(),
                 storedFile.relativeStoragePath(),
                 file.getContentType(),
                 file.getSize(),
                 storedFile.checksum()
+        );
+
+        uploadedFile.markStored();
+
+        uploadedFileStatusHistoryService.recordTransition(
+                uploadedFile,
+                previousStatus,
+                UploadedFileStatus.STORED,
+                UploadedFileTransitionSource.USER,
+                currentUser,
+                "File updated successfully"
         );
 
         ProcessingJob savedJob = processingJobCreationService.markFileUpdated(processingJob);
@@ -151,6 +196,7 @@ public class UploadedFileCommandService {
                         currentUser.getId(),
                         List.of(
                                 UploadedFileStatus.STORED,
+                                UploadedFileStatus.PENDING_CORRECTION,
                                 UploadedFileStatus.MISSING,
                                 UploadedFileStatus.FAILED
                         )
@@ -165,8 +211,19 @@ public class UploadedFileCommandService {
 
         processingJobCreationService.ensureFileCanBeDeleted(processingJob);
 
+        UploadedFileStatus previousStatus = uploadedFile.getStatus();
+
         fileStorageService.delete(uploadedFile.getStoragePath());
         uploadedFile.markDeleted();
+
+        uploadedFileStatusHistoryService.recordTransition(
+                uploadedFile,
+                previousStatus,
+                UploadedFileStatus.DELETED,
+                UploadedFileTransitionSource.USER,
+                currentUser,
+                "File deleted"
+        );
     }
 
     @Transactional
@@ -174,7 +231,18 @@ public class UploadedFileCommandService {
         UploadedFile uploadedFile = uploadedFileRepository.findById(fileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Uploaded file not found"));
 
+        UploadedFileStatus previousStatus = uploadedFile.getStatus();
+
         uploadedFile.markMissing();
+
+        uploadedFileStatusHistoryService.recordTransition(
+                uploadedFile,
+                previousStatus,
+                UploadedFileStatus.MISSING,
+                UploadedFileTransitionSource.SYSTEM,
+                null,
+                "Stored file was not found"
+        );
     }
 
     private ReportFileUploadResponse toReportFileUploadResponse(

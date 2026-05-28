@@ -1,13 +1,12 @@
-package dev.lgbonillar.regreporting.processing.processor.demo;
+package dev.lgbonillar.regreporting.modules.demo.validation;
 
-import dev.lgbonillar.regreporting.modules.demo.validation.DemoSalesWorkbookValidator;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingFindingScope;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingFindingSeverity;
-import dev.lgbonillar.regreporting.processing.domain.ProcessingJob;
 import dev.lgbonillar.regreporting.processing.processor.ProcessingFindingCommand;
-import dev.lgbonillar.regreporting.processing.processor.ProcessingResult;
-import dev.lgbonillar.regreporting.processing.processor.RegulatoryReportProcessor;
 import dev.lgbonillar.regreporting.upload.application.FileStorageService;
+import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
+import dev.lgbonillar.regreporting.upload.validation.UploadedFileValidationResult;
+import dev.lgbonillar.regreporting.upload.validation.UploadedFileValidator;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.stereotype.Component;
@@ -19,14 +18,14 @@ import java.nio.file.Path;
 import java.util.List;
 
 @Component
-public class DemoRegulatoryReportProcessor implements RegulatoryReportProcessor {
+public class DemoUploadedFileValidator implements UploadedFileValidator {
 
-    public static final String PROCESSOR_CODE = "DEMO_REGULATORY_REPORT";
+    public static final String VALIDATOR_CODE = "DEMO_UPLOADED_FILE";
 
     private final FileStorageService fileStorageService;
     private final DemoSalesWorkbookValidator workbookValidator;
 
-    public DemoRegulatoryReportProcessor(
+    public DemoUploadedFileValidator(
             FileStorageService fileStorageService,
             DemoSalesWorkbookValidator workbookValidator
     ) {
@@ -36,38 +35,29 @@ public class DemoRegulatoryReportProcessor implements RegulatoryReportProcessor 
 
     @Override
     public String code() {
-        return PROCESSOR_CODE;
+        return VALIDATOR_CODE;
     }
 
     @Override
-    public ProcessingResult process(ProcessingJob job) {
-        Path filePath = fileStorageService.resolvePath(
-                job.getUploadedFile().getStoragePath()
-        );
+    public UploadedFileValidationResult validate(UploadedFile uploadedFile) {
+        Path filePath = fileStorageService.resolvePath(uploadedFile.getStoragePath());
 
         try (InputStream inputStream = Files.newInputStream(filePath);
              Workbook workbook = WorkbookFactory.create(inputStream)) {
 
-            List<ProcessingFindingCommand> findings = workbookValidator.validate(workbook);
-
-            if (!findings.isEmpty()) {
-                return ProcessingResult.withFindings(
-                        PROCESSOR_CODE,
-                        "Demo regulatory report contains validation findings",
-                        findings
-                );
-            }
-
-            return ProcessingResult.successful(
-                    PROCESSOR_CODE,
-                    "Demo regulatory report processed successfully"
+            return UploadedFileValidationResult.withFindings(
+                    workbookValidator.validate(workbook)
             );
         } catch (IOException exception) {
-            return ProcessingResult.withFindings(
-                    PROCESSOR_CODE,
-                    "Could not read uploaded Excel file",
-                    List.of(systemError("EXCEL_READ_ERROR", exception.getMessage()))
-            );
+            return UploadedFileValidationResult.withFindings(List.of(systemError(
+                    "EXCEL_READ_ERROR",
+                    "Could not read uploaded Excel file"
+            )));
+        } catch (RuntimeException exception) {
+            return UploadedFileValidationResult.withFindings(List.of(systemError(
+                    "EXCEL_VALIDATION_ERROR",
+                    "Could not validate uploaded Excel file"
+            )));
         }
     }
 
@@ -86,5 +76,4 @@ public class DemoRegulatoryReportProcessor implements RegulatoryReportProcessor 
                 null
         );
     }
-
 }

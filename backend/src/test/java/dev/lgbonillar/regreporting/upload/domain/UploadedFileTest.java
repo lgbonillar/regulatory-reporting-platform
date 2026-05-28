@@ -20,7 +20,12 @@ class UploadedFileTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = UploadedFileStatus.class, names = {"DELETED", "MISSING", "FAILED"})
+    @EnumSource(value = UploadedFileStatus.class, names = {
+            "PENDING_CORRECTION",
+            "DELETED",
+            "MISSING",
+            "FAILED"
+    })
     void unavailableFileCannotBeProcessed(UploadedFileStatus status) {
         UploadedFile file = uploadedFile(status);
 
@@ -31,7 +36,7 @@ class UploadedFileTest {
     }
 
     @Test
-    void replaceWithRestoresStoredStatus() {
+    void replaceWithDoesNotChangeStatus() {
         UploadedFile file = uploadedFile(UploadedFileStatus.FAILED);
 
         file.replaceWith(
@@ -42,11 +47,31 @@ class UploadedFileTest {
                 "new-checksum"
         );
 
-        assertThat(file.getStatus()).isEqualTo(UploadedFileStatus.STORED);
+        assertThat(file.getStatus()).isEqualTo(UploadedFileStatus.FAILED);
         assertThat(file.getStoredFilename()).isEqualTo("new-stored.xlsx");
         assertThat(file.getStoragePath()).isEqualTo("/uploads/new-stored.xlsx");
         assertThat(file.getFileSize()).isEqualTo(2048L);
         assertThat(file.getChecksum()).isEqualTo("new-checksum");
+        assertThat(file.getUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    void markStoredChangesStatusAndUpdatesTimestamp() {
+        UploadedFile file = uploadedFile(UploadedFileStatus.PENDING_CORRECTION);
+
+        file.markStored();
+
+        assertThat(file.getStatus()).isEqualTo(UploadedFileStatus.STORED);
+        assertThat(file.getUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    void markPendingCorrectionChangesStatusAndUpdatesTimestamp() {
+        UploadedFile file = uploadedFile(UploadedFileStatus.STORED);
+
+        file.markPendingCorrection();
+
+        assertThat(file.getStatus()).isEqualTo(UploadedFileStatus.PENDING_CORRECTION);
         assertThat(file.getUpdatedAt()).isNotNull();
     }
 

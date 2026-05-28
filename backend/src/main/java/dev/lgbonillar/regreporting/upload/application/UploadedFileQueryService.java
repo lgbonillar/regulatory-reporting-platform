@@ -52,6 +52,7 @@ public class UploadedFileQueryService {
                         user.getId(),
                         List.of(
                                 UploadedFileStatus.STORED,
+                                UploadedFileStatus.PENDING_CORRECTION,
                                 UploadedFileStatus.MISSING,
                                 UploadedFileStatus.FAILED
                         )

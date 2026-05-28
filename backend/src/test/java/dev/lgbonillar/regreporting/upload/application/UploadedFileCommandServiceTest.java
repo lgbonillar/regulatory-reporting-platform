@@ -6,6 +6,7 @@ import dev.lgbonillar.regreporting.processing.domain.ProcessingJobStatus;
 import dev.lgbonillar.regreporting.shared.ResourceNotFoundException;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileStatus;
+import dev.lgbonillar.regreporting.upload.domain.UploadedFileTransitionSource;
 import dev.lgbonillar.regreporting.upload.dto.ReportFileUploadResponse;
 import dev.lgbonillar.regreporting.upload.dto.StoredFile;
 import dev.lgbonillar.regreporting.upload.infrastructure.UploadedFileRepository;
@@ -44,6 +45,9 @@ class UploadedFileCommandServiceTest {
 
     @Mock
     private ProcessingJobCreationService processingJobCreationService;
+
+    @Mock
+    private UploadedFileStatusHistoryService uploadedFileStatusHistoryService;
 
     @InjectMocks
     private UploadedFileCommandService uploadedFileCommandService;
@@ -88,6 +92,15 @@ class UploadedFileCommandServiceTest {
         assertThat(result.fileStatus()).isEqualTo(UploadedFileStatus.STORED.name());
         assertThat(result.jobStatus()).isEqualTo(ProcessingJobStatus.PENDING_EXECUTION.name());
         assertThat(result.message()).isEqualTo("File uploaded successfully");
+
+        verify(uploadedFileStatusHistoryService).recordTransition(
+                savedFile,
+                null,
+                UploadedFileStatus.STORED,
+                UploadedFileTransitionSource.USER,
+                analyst,
+                "File uploaded successfully"
+        );
     }
 
     @Test
@@ -112,6 +125,15 @@ class UploadedFileCommandServiceTest {
 
         assertThat(uploadedFile.getStatus()).isEqualTo(UploadedFileStatus.MISSING);
         assertThat(uploadedFile.getUpdatedAt()).isNotNull();
+
+        verify(uploadedFileStatusHistoryService).recordTransition(
+                uploadedFile,
+                UploadedFileStatus.STORED,
+                UploadedFileStatus.MISSING,
+                UploadedFileTransitionSource.SYSTEM,
+                null,
+                "Stored file was not found"
+        );
     }
 
     @Test
@@ -131,11 +153,7 @@ class UploadedFileCommandServiceTest {
         when(uploadedFileRepository.findByIdAndUploadedByIdAndStatusIn(
                 fileId,
                 analyst.getId(),
-                List.of(
-                        UploadedFileStatus.STORED,
-                        UploadedFileStatus.MISSING,
-                        UploadedFileStatus.FAILED
-                )
+                visibleStatuses()
         )).thenReturn(Optional.of(uploadedFile));
         when(processingJobCreationService.findByUploadedFile(uploadedFile))
                 .thenReturn(Optional.of(processingJob));
@@ -156,6 +174,15 @@ class UploadedFileCommandServiceTest {
         assertThat(result.originalFilename()).isEqualTo("report.xlsx");
         assertThat(result.fileStatus()).isEqualTo(UploadedFileStatus.STORED.name());
         assertThat(result.jobStatus()).isEqualTo(ProcessingJobStatus.PENDING_EXECUTION.name());
+
+        verify(uploadedFileStatusHistoryService).recordTransition(
+                uploadedFile,
+                UploadedFileStatus.STORED,
+                UploadedFileStatus.STORED,
+                UploadedFileTransitionSource.USER,
+                analyst,
+                "File updated successfully"
+        );
     }
 
     @Test
@@ -168,11 +195,7 @@ class UploadedFileCommandServiceTest {
         when(uploadedFileRepository.findByIdAndUploadedByIdAndStatusIn(
                 fileId,
                 analyst.getId(),
-                List.of(
-                        UploadedFileStatus.STORED,
-                        UploadedFileStatus.MISSING,
-                        UploadedFileStatus.FAILED
-                )
+                visibleStatuses()
         )).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> uploadedFileCommandService.updateReportFile(fileId, multipartFile))
@@ -191,11 +214,7 @@ class UploadedFileCommandServiceTest {
         when(uploadedFileRepository.findByIdAndUploadedByIdAndStatusIn(
                 fileId,
                 analyst.getId(),
-                List.of(
-                        UploadedFileStatus.STORED,
-                        UploadedFileStatus.MISSING,
-                        UploadedFileStatus.FAILED
-                )
+                visibleStatuses()
         )).thenReturn(Optional.of(uploadedFile));
         when(processingJobCreationService.findByUploadedFile(uploadedFile))
                 .thenReturn(Optional.of(processingJob));
@@ -207,6 +226,15 @@ class UploadedFileCommandServiceTest {
 
         assertThat(uploadedFile.getStatus()).isEqualTo(UploadedFileStatus.DELETED);
         assertThat(uploadedFile.getUpdatedAt()).isNotNull();
+
+        verify(uploadedFileStatusHistoryService).recordTransition(
+                uploadedFile,
+                UploadedFileStatus.STORED,
+                UploadedFileStatus.DELETED,
+                UploadedFileTransitionSource.USER,
+                analyst,
+                "File deleted"
+        );
     }
 
     @Test
@@ -218,11 +246,7 @@ class UploadedFileCommandServiceTest {
         when(uploadedFileRepository.findByIdAndUploadedByIdAndStatusIn(
                 fileId,
                 analyst.getId(),
-                List.of(
-                        UploadedFileStatus.STORED,
-                        UploadedFileStatus.MISSING,
-                        UploadedFileStatus.FAILED
-                )
+                visibleStatuses()
         )).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> uploadedFileCommandService.deleteUploadedFile(fileId))
@@ -265,6 +289,15 @@ class UploadedFileCommandServiceTest {
         assertThat(result.originalFilename()).isEqualTo("report.xlsx");
         assertThat(result.fileStatus()).isEqualTo(UploadedFileStatus.STORED.name());
         assertThat(result.jobStatus()).isEqualTo(ProcessingJobStatus.PENDING_EXECUTION.name());
+
+        verify(uploadedFileStatusHistoryService).recordTransition(
+                existingFile,
+                UploadedFileStatus.MISSING,
+                UploadedFileStatus.STORED,
+                UploadedFileTransitionSource.USER,
+                analyst,
+                "File replaced successfully"
+        );
     }
 
     @Test
@@ -303,11 +336,7 @@ class UploadedFileCommandServiceTest {
         when(uploadedFileRepository.findByIdAndUploadedByIdAndStatusIn(
                 fileId,
                 analyst.getId(),
-                List.of(
-                        UploadedFileStatus.STORED,
-                        UploadedFileStatus.MISSING,
-                        UploadedFileStatus.FAILED
-                )
+                visibleStatuses()
         )).thenReturn(Optional.of(uploadedFile));
         when(processingJobCreationService.findByUploadedFile(uploadedFile))
                 .thenReturn(Optional.of(processingJob));
@@ -332,11 +361,7 @@ class UploadedFileCommandServiceTest {
         when(uploadedFileRepository.findByIdAndUploadedByIdAndStatusIn(
                 fileId,
                 analyst.getId(),
-                List.of(
-                        UploadedFileStatus.STORED,
-                        UploadedFileStatus.MISSING,
-                        UploadedFileStatus.FAILED
-                )
+                visibleStatuses()
         )).thenReturn(Optional.of(uploadedFile));
         when(processingJobCreationService.findByUploadedFile(uploadedFile))
                 .thenReturn(Optional.empty());
@@ -356,11 +381,7 @@ class UploadedFileCommandServiceTest {
         when(uploadedFileRepository.findByIdAndUploadedByIdAndStatusIn(
                 fileId,
                 analyst.getId(),
-                List.of(
-                        UploadedFileStatus.STORED,
-                        UploadedFileStatus.MISSING,
-                        UploadedFileStatus.FAILED
-                )
+                visibleStatuses()
         )).thenReturn(Optional.of(uploadedFile));
         when(processingJobCreationService.findByUploadedFile(uploadedFile))
                 .thenReturn(Optional.empty());
@@ -397,6 +418,15 @@ class UploadedFileCommandServiceTest {
                 "checksum",
                 status,
                 analyst()
+        );
+    }
+
+    private List<UploadedFileStatus> visibleStatuses() {
+        return List.of(
+                UploadedFileStatus.STORED,
+                UploadedFileStatus.PENDING_CORRECTION,
+                UploadedFileStatus.MISSING,
+                UploadedFileStatus.FAILED
         );
     }
 
