@@ -1,15 +1,24 @@
 package dev.lgbonillar.regreporting.upload.application;
 
 import dev.lgbonillar.regreporting.processing.application.ProcessingJobCreationService;
+import dev.lgbonillar.regreporting.processing.domain.ProcessingFindingScope;
+import dev.lgbonillar.regreporting.processing.domain.ProcessingFindingSeverity;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingJob;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingJobStatus;
+import dev.lgbonillar.regreporting.processing.processor.ProcessingFindingCommand;
 import dev.lgbonillar.regreporting.shared.ResourceNotFoundException;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileStatus;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileTransitionSource;
+import dev.lgbonillar.regreporting.upload.domain.UploadedFileValidationRun;
+import dev.lgbonillar.regreporting.upload.domain.UploadedFileValidationRunSource;
+import dev.lgbonillar.regreporting.upload.domain.UploadedFileValidationRunStatus;
 import dev.lgbonillar.regreporting.upload.dto.ReportFileUploadResponse;
 import dev.lgbonillar.regreporting.upload.dto.StoredFile;
 import dev.lgbonillar.regreporting.upload.infrastructure.UploadedFileRepository;
+import dev.lgbonillar.regreporting.upload.validation.UploadedFileValidationResult;
+import dev.lgbonillar.regreporting.upload.validation.UploadedFileValidator;
+import dev.lgbonillar.regreporting.upload.validation.UploadedFileValidatorRegistry;
 import dev.lgbonillar.regreporting.users.application.CurrentUserProvider;
 import dev.lgbonillar.regreporting.users.domain.User;
 import dev.lgbonillar.regreporting.users.domain.UserStatus;
@@ -27,6 +36,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -49,6 +60,18 @@ class UploadedFileCommandServiceTest {
     @Mock
     private UploadedFileStatusHistoryService uploadedFileStatusHistoryService;
 
+    @Mock
+    private UploadedFileValidatorRegistry uploadedFileValidatorRegistry;
+
+    @Mock
+    private UploadedFileValidationRunService validationRunService;
+
+    @Mock
+    private UploadedFileFindingService findingService;
+
+    @Mock
+    private UploadedFileValidator uploadedFileValidator;
+
     @InjectMocks
     private UploadedFileCommandService uploadedFileCommandService;
 
@@ -66,6 +89,7 @@ class UploadedFileCommandServiceTest {
         when(fileStorageService.store(multipartFile, "analyst01")).thenReturn(storedFile);
         when(uploadedFileRepository.save(org.mockito.ArgumentMatchers.any(UploadedFile.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+        mockValidation(UploadedFileValidationRunStatus.PASSED, List.of());
         when(processingJobCreationService.createInitialJob(
                 org.mockito.ArgumentMatchers.any(UploadedFile.class),
                 org.mockito.ArgumentMatchers.same(analyst)
@@ -158,6 +182,7 @@ class UploadedFileCommandServiceTest {
         when(processingJobCreationService.findByUploadedFile(uploadedFile))
                 .thenReturn(Optional.of(processingJob));
         when(fileStorageService.store(multipartFile, "analyst01")).thenReturn(storedFile);
+        mockValidation(UploadedFileValidationRunStatus.PASSED, List.of());
         when(processingJobCreationService.markFileUpdated(processingJob)).thenReturn(processingJob);
 
         ReportFileUploadResponse result = uploadedFileCommandService.updateReportFile(fileId,
@@ -275,6 +300,7 @@ class UploadedFileCommandServiceTest {
                 .thenReturn(Optional.of(existingJob));
         when(fileStorageService.store(multipartFile, "analyst01")).thenReturn(storedFile);
         when(uploadedFileRepository.save(existingFile)).thenReturn(existingFile);
+        mockValidation(UploadedFileValidationRunStatus.PASSED, List.of());
         when(processingJobCreationService.markFileReplaced(existingJob)).thenReturn(existingJob);
 
         ReportFileUploadResponse result = uploadedFileCommandService.uploadReportFile(multipartFile);
@@ -301,10 +327,15 @@ class UploadedFileCommandServiceTest {
     }
 
     @Test
-    void uploadReportFileThrowsIllegalStateWhenExistingFileHasNoJob() {
+    void uploadReportFileReplacesExistingFileWithoutJobAndCreatesInitialJobWhenValid() {
         User analyst = analyst();
         UploadedFile existingFile = uploadedFile(UploadedFileStatus.STORED);
         MockMultipartFile multipartFile = multipartFile();
+        StoredFile storedFile = new StoredFile(
+                "replaced-report.xlsx",
+                "/uploads/replaced-report.xlsx",
+                "replaced-checksum"
+        );
 
         when(currentUserProvider.getCurrentUser()).thenReturn(analyst);
         when(uploadedFileRepository.findByUploadedByIdAndOriginalFilename(
@@ -313,10 +344,17 @@ class UploadedFileCommandServiceTest {
         )).thenReturn(Optional.of(existingFile));
         when(processingJobCreationService.findByUploadedFile(existingFile))
                 .thenReturn(Optional.empty());
+        when(fileStorageService.store(multipartFile, "analyst01")).thenReturn(storedFile);
+        when(uploadedFileRepository.save(existingFile)).thenReturn(existingFile);
+        mockValidation(UploadedFileValidationRunStatus.PASSED, List.of());
+        when(processingJobCreationService.createInitialJob(existingFile, analyst))
+                .thenAnswer(invocation -> new ProcessingJob(invocation.getArgument(0), "File uploaded successfully"));
 
-        assertThatThrownBy(() -> uploadedFileCommandService.uploadReportFile(multipartFile))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Processing job not found for uploaded file");
+        ReportFileUploadResponse result = uploadedFileCommandService.uploadReportFile(multipartFile);
+
+        assertThat(existingFile.getStatus()).isEqualTo(UploadedFileStatus.STORED);
+        assertThat(result.fileStatus()).isEqualTo(UploadedFileStatus.STORED.name());
+        assertThat(result.jobStatus()).isEqualTo(ProcessingJobStatus.PENDING_EXECUTION.name());
     }
 
     @Test
@@ -341,6 +379,7 @@ class UploadedFileCommandServiceTest {
         when(processingJobCreationService.findByUploadedFile(uploadedFile))
                 .thenReturn(Optional.of(processingJob));
         when(fileStorageService.store(multipartFile, "analyst01")).thenReturn(storedFile);
+        mockValidation(UploadedFileValidationRunStatus.PASSED, List.of());
         when(processingJobCreationService.markFileUpdated(processingJob)).thenReturn(processingJob);
 
         uploadedFileCommandService.updateReportFile(fileId, multipartFile);
@@ -351,11 +390,16 @@ class UploadedFileCommandServiceTest {
     }
 
     @Test
-    void updateReportFileThrowsIllegalStateWhenFileHasNoJob() {
+    void updateReportFileCreatesInitialJobWhenValidFileHadNoJob() {
         UUID fileId = UUID.randomUUID();
         User analyst = analyst();
         UploadedFile uploadedFile = uploadedFile(UploadedFileStatus.STORED);
         MockMultipartFile multipartFile = multipartFile();
+        StoredFile storedFile = new StoredFile(
+                "updated-report.xlsx",
+                "/uploads/updated-report.xlsx",
+                "updated-checksum"
+        );
 
         when(currentUserProvider.getCurrentUser()).thenReturn(analyst);
         when(uploadedFileRepository.findByIdAndUploadedByIdAndStatusIn(
@@ -365,14 +409,19 @@ class UploadedFileCommandServiceTest {
         )).thenReturn(Optional.of(uploadedFile));
         when(processingJobCreationService.findByUploadedFile(uploadedFile))
                 .thenReturn(Optional.empty());
+        when(fileStorageService.store(multipartFile, "analyst01")).thenReturn(storedFile);
+        mockValidation(UploadedFileValidationRunStatus.PASSED, List.of());
+        when(processingJobCreationService.createInitialJob(uploadedFile, analyst))
+                .thenAnswer(invocation -> new ProcessingJob(invocation.getArgument(0), "File uploaded successfully"));
 
-        assertThatThrownBy(() -> uploadedFileCommandService.updateReportFile(fileId, multipartFile))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Processing job not found for uploaded file");
+        ReportFileUploadResponse result = uploadedFileCommandService.updateReportFile(fileId, multipartFile);
+
+        assertThat(uploadedFile.getStatus()).isEqualTo(UploadedFileStatus.STORED);
+        assertThat(result.jobStatus()).isEqualTo(ProcessingJobStatus.PENDING_EXECUTION.name());
     }
 
     @Test
-    void deleteUploadedFileThrowsIllegalStateWhenFileHasNoJob() {
+    void deleteUploadedFileMarksFileAsDeletedWhenFileHasNoJob() {
         UUID fileId = UUID.randomUUID();
         User analyst = analyst();
         UploadedFile uploadedFile = uploadedFile(UploadedFileStatus.STORED);
@@ -386,9 +435,76 @@ class UploadedFileCommandServiceTest {
         when(processingJobCreationService.findByUploadedFile(uploadedFile))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> uploadedFileCommandService.deleteUploadedFile(fileId))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Processing job not found for uploaded file");
+        uploadedFileCommandService.deleteUploadedFile(fileId);
+
+        assertThat(uploadedFile.getStatus()).isEqualTo(UploadedFileStatus.DELETED);
+        verify(fileStorageService).delete("/uploads/stored-report.xlsx");
+    }
+
+    @Test
+    void uploadReportFileStoresValidationFindingsAndDoesNotCreateJobWhenValidationFails() {
+        User analyst = analyst();
+        MockMultipartFile multipartFile = multipartFile();
+        StoredFile storedFile = storedFile();
+        ProcessingFindingCommand finding = validationFinding();
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(analyst);
+        when(uploadedFileRepository.findByUploadedByIdAndOriginalFilename(
+                analyst.getId(),
+                "report.xlsx"
+        )).thenReturn(Optional.empty());
+        when(fileStorageService.store(multipartFile, "analyst01")).thenReturn(storedFile);
+        when(uploadedFileRepository.save(any(UploadedFile.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        UploadedFileValidationRun validationRun = mockValidation(
+                UploadedFileValidationRunStatus.FAILED,
+                List.of(finding)
+        );
+
+        ReportFileUploadResponse result = uploadedFileCommandService.uploadReportFile(multipartFile);
+
+        assertThat(result.fileStatus()).isEqualTo(UploadedFileStatus.PENDING_CORRECTION.name());
+        assertThat(result.jobId()).isNull();
+        assertThat(result.jobStatus()).isNull();
+
+        verify(findingService).saveFindings(
+                eq(validationRun),
+                any(UploadedFile.class),
+                eq(List.of(finding))
+        );
+        verify(processingJobCreationService, never()).createInitialJob(
+                any(UploadedFile.class),
+                any(User.class)
+        );
+    }
+
+    @Test
+    void uploadReportFileMarksFileFailedWhenValidationHasSystemError() {
+        User analyst = analyst();
+        MockMultipartFile multipartFile = multipartFile();
+        StoredFile storedFile = storedFile();
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(analyst);
+        when(uploadedFileRepository.findByUploadedByIdAndOriginalFilename(
+                analyst.getId(),
+                "report.xlsx"
+        )).thenReturn(Optional.empty());
+        when(fileStorageService.store(multipartFile, "analyst01")).thenReturn(storedFile);
+        when(uploadedFileRepository.save(any(UploadedFile.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        mockValidation(
+                UploadedFileValidationRunStatus.SYSTEM_FAILED,
+                List.of(systemFinding())
+        );
+
+        ReportFileUploadResponse result = uploadedFileCommandService.uploadReportFile(multipartFile);
+
+        assertThat(result.fileStatus()).isEqualTo(UploadedFileStatus.FAILED.name());
+        assertThat(result.jobId()).isNull();
+        verify(processingJobCreationService, never()).createInitialJob(
+                any(UploadedFile.class),
+                any(User.class)
+        );
     }
 
     private MockMultipartFile multipartFile() {
@@ -441,6 +557,64 @@ class UploadedFileCommandServiceTest {
         );
         user.setId(UUID.randomUUID());
         return user;
+    }
+
+    private UploadedFileValidationRun mockValidation(
+            UploadedFileValidationRunStatus expectedStatus,
+            List<ProcessingFindingCommand> findings
+    ) {
+        UploadedFileValidationRun validationRun = new UploadedFileValidationRun(
+                uploadedFile(UploadedFileStatus.STORED),
+                expectedStatus,
+                UploadedFileValidationRunSource.UPLOAD,
+                "Validation summary",
+                "analyst01"
+        );
+
+        when(uploadedFileValidatorRegistry.getDefaultValidator()).thenReturn(uploadedFileValidator);
+        when(uploadedFileValidator.validate(any(UploadedFile.class)))
+                .thenReturn(UploadedFileValidationResult.withFindings(findings));
+        when(validationRunService.createValidationRun(
+                any(UploadedFile.class),
+                eq(expectedStatus),
+                any(UploadedFileValidationRunSource.class),
+                any(String.class),
+                eq("analyst01")
+        )).thenReturn(validationRun);
+
+        return validationRun;
+    }
+
+    private ProcessingFindingCommand validationFinding() {
+        return new ProcessingFindingCommand(
+                ProcessingFindingSeverity.ERROR,
+                ProcessingFindingScope.FILE_STRUCTURE,
+                "INVALID_STRUCTURE",
+                "Invalid file structure",
+                "Hoja1",
+                null,
+                null,
+                null,
+                null,
+                "Expected structure",
+                "Invalid structure"
+        );
+    }
+
+    private ProcessingFindingCommand systemFinding() {
+        return new ProcessingFindingCommand(
+                ProcessingFindingSeverity.ERROR,
+                ProcessingFindingScope.SYSTEM,
+                "EXCEL_READ_ERROR",
+                "Could not read uploaded Excel file",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
     }
 
 }

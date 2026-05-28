@@ -1,14 +1,21 @@
 package dev.lgbonillar.regreporting.upload.application;
 
+import dev.lgbonillar.regreporting.processing.domain.ProcessingFindingScope;
+import dev.lgbonillar.regreporting.processing.domain.ProcessingFindingSeverity;
 import dev.lgbonillar.regreporting.processing.application.ProcessingJobCreationService;
 import dev.lgbonillar.regreporting.shared.ResourceNotFoundException;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingJob;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileStatus;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileTransitionSource;
+import dev.lgbonillar.regreporting.upload.domain.UploadedFileValidationRun;
+import dev.lgbonillar.regreporting.upload.domain.UploadedFileValidationRunSource;
+import dev.lgbonillar.regreporting.upload.domain.UploadedFileValidationRunStatus;
 import dev.lgbonillar.regreporting.upload.dto.ReportFileUploadResponse;
 import dev.lgbonillar.regreporting.upload.dto.StoredFile;
 import dev.lgbonillar.regreporting.upload.infrastructure.UploadedFileRepository;
+import dev.lgbonillar.regreporting.upload.validation.UploadedFileValidationResult;
+import dev.lgbonillar.regreporting.upload.validation.UploadedFileValidatorRegistry;
 import dev.lgbonillar.regreporting.users.application.CurrentUserProvider;
 import dev.lgbonillar.regreporting.users.domain.User;
 import org.springframework.stereotype.Service;
@@ -27,19 +34,28 @@ public class UploadedFileCommandService {
     private final UploadedFileRepository uploadedFileRepository;
     private final ProcessingJobCreationService processingJobCreationService;
     private final UploadedFileStatusHistoryService uploadedFileStatusHistoryService;
+    private final UploadedFileValidatorRegistry uploadedFileValidatorRegistry;
+    private final UploadedFileValidationRunService validationRunService;
+    private final UploadedFileFindingService findingService;
 
     public UploadedFileCommandService(
             CurrentUserProvider currentUserProvider,
             FileStorageService fileStorageService,
             UploadedFileRepository uploadedFileRepository,
             ProcessingJobCreationService processingJobCreationService,
-            UploadedFileStatusHistoryService uploadedFileStatusHistoryService
+            UploadedFileStatusHistoryService uploadedFileStatusHistoryService,
+            UploadedFileValidatorRegistry uploadedFileValidatorRegistry,
+            UploadedFileValidationRunService validationRunService,
+            UploadedFileFindingService findingService
     ) {
         this.currentUserProvider = currentUserProvider;
         this.fileStorageService = fileStorageService;
         this.uploadedFileRepository = uploadedFileRepository;
         this.processingJobCreationService = processingJobCreationService;
         this.uploadedFileStatusHistoryService = uploadedFileStatusHistoryService;
+        this.uploadedFileValidatorRegistry = uploadedFileValidatorRegistry;
+        this.validationRunService = validationRunService;
+        this.findingService = findingService;
     }
 
     @Transactional
@@ -61,11 +77,11 @@ public class UploadedFileCommandService {
         if (existingFile != null) {
             existingJob = processingJobCreationService
                     .findByUploadedFile(existingFile)
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Processing job not found for uploaded file"
-                    ));
+                    .orElse(null);
 
-            processingJobCreationService.ensureFileCanBeReplaced(existingJob);
+            if (existingJob != null) {
+                processingJobCreationService.ensureFileCanBeReplaced(existingJob);
+            }
         }
 
         StoredFile storedFile = fileStorageService.store(file, username);
@@ -80,8 +96,6 @@ public class UploadedFileCommandService {
                     file.getSize(),
                     storedFile.checksum()
             );
-
-            existingFile.markStored();
 
             uploadedFile = existingFile;
         } else {
@@ -98,30 +112,45 @@ public class UploadedFileCommandService {
         }
 
         UploadedFile savedFile = uploadedFileRepository.save(uploadedFile);
+        UploadedFileValidationOutcome validationOutcome = validateUploadedFile(
+                savedFile,
+                existingFile == null
+                        ? UploadedFileValidationRunSource.UPLOAD
+                        : UploadedFileValidationRunSource.REPLACEMENT,
+                currentUser
+        );
+        UploadedFileStatus targetStatus = validationOutcome.fileStatus();
+
+        applyValidationStatus(savedFile, targetStatus);
 
         if (existingFile == null) {
             uploadedFileStatusHistoryService.recordTransition(
                     savedFile,
                     null,
-                    UploadedFileStatus.STORED,
+                    targetStatus,
                     UploadedFileTransitionSource.USER,
                     currentUser,
-                    "File uploaded successfully"
+                    uploadHistoryMessage(targetStatus)
             );
         } else {
             uploadedFileStatusHistoryService.recordTransition(
                     savedFile,
                     previousStatus,
-                    UploadedFileStatus.STORED,
+                    targetStatus,
                     UploadedFileTransitionSource.USER,
                     currentUser,
-                    "File replaced successfully"
+                    replacementHistoryMessage(targetStatus)
             );
         }
 
-        ProcessingJob processingJob = existingJob == null
-                ? processingJobCreationService.createInitialJob(savedFile, currentUser)
-                : processingJobCreationService.markFileReplaced(existingJob);
+        ProcessingJob processingJob = updateProcessingJobAfterValidation(
+                savedFile,
+                existingJob,
+                currentUser,
+                existingFile == null
+                        ? ProcessingJobUpdateAction.CREATE
+                        : ProcessingJobUpdateAction.REPLACE
+        );
 
         return toReportFileUploadResponse(savedFile, processingJob);
     }
@@ -146,11 +175,11 @@ public class UploadedFileCommandService {
 
         ProcessingJob processingJob = processingJobCreationService
                 .findByUploadedFile(uploadedFile)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Processing job not found for uploaded file"
-                ));
+                .orElse(null);
 
-        processingJobCreationService.ensureFileCanBeUpdated(processingJob);
+        if (processingJob != null) {
+            processingJobCreationService.ensureFileCanBeUpdated(processingJob);
+        }
 
         String previousStoragePath = uploadedFile.getStoragePath();
 
@@ -170,18 +199,30 @@ public class UploadedFileCommandService {
                 storedFile.checksum()
         );
 
-        uploadedFile.markStored();
+        UploadedFileValidationOutcome validationOutcome = validateUploadedFile(
+                uploadedFile,
+                UploadedFileValidationRunSource.REPLACEMENT,
+                currentUser
+        );
+        UploadedFileStatus targetStatus = validationOutcome.fileStatus();
+
+        applyValidationStatus(uploadedFile, targetStatus);
 
         uploadedFileStatusHistoryService.recordTransition(
                 uploadedFile,
                 previousStatus,
-                UploadedFileStatus.STORED,
+                targetStatus,
                 UploadedFileTransitionSource.USER,
                 currentUser,
-                "File updated successfully"
+                updateHistoryMessage(targetStatus)
         );
 
-        ProcessingJob savedJob = processingJobCreationService.markFileUpdated(processingJob);
+        ProcessingJob savedJob = updateProcessingJobAfterValidation(
+                uploadedFile,
+                processingJob,
+                currentUser,
+                ProcessingJobUpdateAction.UPDATE
+        );
 
         return toReportFileUploadResponse(uploadedFile, savedJob);
     }
@@ -205,11 +246,11 @@ public class UploadedFileCommandService {
 
         ProcessingJob processingJob = processingJobCreationService
                 .findByUploadedFile(uploadedFile)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Processing job not found for uploaded file"
-                ));
+                .orElse(null);
 
-        processingJobCreationService.ensureFileCanBeDeleted(processingJob);
+        if (processingJob != null) {
+            processingJobCreationService.ensureFileCanBeDeleted(processingJob);
+        }
 
         UploadedFileStatus previousStatus = uploadedFile.getStatus();
 
@@ -251,12 +292,149 @@ public class UploadedFileCommandService {
     ) {
         return new ReportFileUploadResponse(
                 uploadedFile.getId(),
-                processingJob.getId(),
+                processingJob == null ? null : processingJob.getId(),
                 uploadedFile.getOriginalFilename(),
                 uploadedFile.getStatus().name(),
-                processingJob.getStatus().name(),
-                processingJob.getMessage()
+                processingJob == null ? null : processingJob.getStatus().name(),
+                processingJob == null
+                        ? uploadMessage(uploadedFile.getStatus())
+                        : processingJob.getMessage()
         );
+    }
+
+    private UploadedFileValidationOutcome validateUploadedFile(
+            UploadedFile uploadedFile,
+            UploadedFileValidationRunSource source,
+            User currentUser
+    ) {
+        UploadedFileValidationResult result = uploadedFileValidatorRegistry
+                .getDefaultValidator()
+                .validate(uploadedFile);
+        UploadedFileValidationRunStatus runStatus = validationRunStatus(result);
+        UploadedFileValidationRun validationRun = validationRunService.createValidationRun(
+                uploadedFile,
+                runStatus,
+                source,
+                validationSummary(runStatus),
+                currentUser.getUsername()
+        );
+
+        if (!result.findings().isEmpty()) {
+            findingService.saveFindings(validationRun, uploadedFile, result.findings());
+        }
+
+        return new UploadedFileValidationOutcome(fileStatus(runStatus));
+    }
+
+    private UploadedFileValidationRunStatus validationRunStatus(
+            UploadedFileValidationResult result
+    ) {
+        if (!result.hasErrors()) {
+            return UploadedFileValidationRunStatus.PASSED;
+        }
+
+        boolean hasSystemError = result.findings().stream()
+                .anyMatch(finding -> finding.severity() == ProcessingFindingSeverity.ERROR
+                        && finding.scope() == ProcessingFindingScope.SYSTEM);
+
+        return hasSystemError
+                ? UploadedFileValidationRunStatus.SYSTEM_FAILED
+                : UploadedFileValidationRunStatus.FAILED;
+    }
+
+    private UploadedFileStatus fileStatus(UploadedFileValidationRunStatus runStatus) {
+        return switch (runStatus) {
+            case PASSED -> UploadedFileStatus.STORED;
+            case FAILED -> UploadedFileStatus.PENDING_CORRECTION;
+            case SYSTEM_FAILED -> UploadedFileStatus.FAILED;
+        };
+    }
+
+    private void applyValidationStatus(
+            UploadedFile uploadedFile,
+            UploadedFileStatus status
+    ) {
+        switch (status) {
+            case STORED -> uploadedFile.markStored();
+            case PENDING_CORRECTION -> uploadedFile.markPendingCorrection();
+            case FAILED -> uploadedFile.markFailed();
+            default -> throw new IllegalArgumentException("Unsupported validation status: " + status);
+        }
+    }
+
+    private ProcessingJob updateProcessingJobAfterValidation(
+            UploadedFile uploadedFile,
+            ProcessingJob processingJob,
+            User currentUser,
+            ProcessingJobUpdateAction action
+    ) {
+        if (uploadedFile.getStatus() != UploadedFileStatus.STORED) {
+            return processingJob;
+        }
+
+        if (processingJob == null) {
+            return processingJobCreationService.createInitialJob(uploadedFile, currentUser);
+        }
+
+        return switch (action) {
+            case CREATE -> processingJob;
+            case REPLACE -> processingJobCreationService.markFileReplaced(processingJob);
+            case UPDATE -> processingJobCreationService.markFileUpdated(processingJob);
+        };
+    }
+
+    private String validationSummary(UploadedFileValidationRunStatus status) {
+        return switch (status) {
+            case PASSED -> "Uploaded file validation passed";
+            case FAILED -> "Uploaded file validation found issues";
+            case SYSTEM_FAILED -> "Uploaded file validation failed due to a system error";
+        };
+    }
+
+    private String uploadHistoryMessage(UploadedFileStatus status) {
+        return switch (status) {
+            case STORED -> "File uploaded successfully";
+            case PENDING_CORRECTION -> "File uploaded with validation issues";
+            case FAILED -> "File upload validation failed";
+            default -> "File uploaded";
+        };
+    }
+
+    private String replacementHistoryMessage(UploadedFileStatus status) {
+        return switch (status) {
+            case STORED -> "File replaced successfully";
+            case PENDING_CORRECTION -> "File replaced with validation issues";
+            case FAILED -> "File replacement validation failed";
+            default -> "File replaced";
+        };
+    }
+
+    private String updateHistoryMessage(UploadedFileStatus status) {
+        return switch (status) {
+            case STORED -> "File updated successfully";
+            case PENDING_CORRECTION -> "File updated with validation issues";
+            case FAILED -> "File update validation failed";
+            default -> "File updated";
+        };
+    }
+
+    private String uploadMessage(UploadedFileStatus status) {
+        return switch (status) {
+            case PENDING_CORRECTION -> "File uploaded with validation issues";
+            case FAILED -> "File upload validation failed";
+            default -> "File uploaded";
+        };
+    }
+
+    private record UploadedFileValidationOutcome(
+            UploadedFileStatus fileStatus
+    ) {
+    }
+
+    private enum ProcessingJobUpdateAction {
+        CREATE,
+        REPLACE,
+        UPDATE
     }
 
 }
