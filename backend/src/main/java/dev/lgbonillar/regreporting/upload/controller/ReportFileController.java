@@ -6,7 +6,9 @@ import dev.lgbonillar.regreporting.upload.application.FileStorageService;
 import dev.lgbonillar.regreporting.upload.application.ReportFileService;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
 import dev.lgbonillar.regreporting.upload.dto.ReportFileUploadResponse;
+import dev.lgbonillar.regreporting.upload.dto.UploadedFileFindingResponse;
 import dev.lgbonillar.regreporting.upload.dto.UploadedFileResponse;
+import dev.lgbonillar.regreporting.upload.dto.UploadedFileValidationRunResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -45,7 +47,7 @@ public class ReportFileController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ANALYST', 'ADMINISTRATOR')")
+    @PreAuthorize("hasAnyRole('ANALYST', 'ADMINISTRATOR', 'ROOT')")
     @Operation(
             summary = "List report files",
             description = """
@@ -147,7 +149,7 @@ public class ReportFileController {
     }
 
     @GetMapping("/{fileId}/download")
-    @PreAuthorize("hasAnyRole('ANALYST', 'ADMINISTRATOR')")
+    @PreAuthorize("hasAnyRole('ANALYST', 'ADMINISTRATOR', 'ROOT')")
     @Operation(
             summary = "Download report file",
             description = """
@@ -193,6 +195,119 @@ public class ReportFileController {
                                 .toString()
                 )
                 .body(resource);
+    }
+
+    @GetMapping("/{fileId}/validation-runs")
+    @PreAuthorize("hasAnyRole('ANALYST', 'ADMINISTRATOR', 'ROOT')")
+    @Operation(
+            summary = "List uploaded file validation runs",
+            description = """
+                    Returns validation executions for an uploaded file. Analysts can only
+                    inspect their own files; administrators and root can inspect all files.
+                    Auditors do not have access to uploaded file details.
+                    """,
+            responses = {
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "200",
+                            description = "Validation runs retrieved successfully",
+                            content = @Content(schema = @Schema(implementation = UploadedFileValidationRunResponse.class))
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "403",
+                            description = "User is not allowed to view uploaded file validation data"
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "404",
+                            description = "Uploaded file not found"
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponse<List<UploadedFileValidationRunResponse>>> listValidationRuns(
+            @Parameter(description = "Uploaded file identifier")
+            @PathVariable UUID fileId
+    ) {
+        List<UploadedFileValidationRunResponse> response =
+                reportFileService.listValidationRuns(fileId);
+
+        return ResponseEntity.ok(ApiResponse.successList(
+                "Validation runs retrieved successfully",
+                response
+        ));
+    }
+
+    @GetMapping("/{fileId}/findings")
+    @PreAuthorize("hasAnyRole('ANALYST', 'ADMINISTRATOR', 'ROOT')")
+    @Operation(
+            summary = "List uploaded file validation findings",
+            description = """
+                    Returns all validation findings stored for an uploaded file across
+                    validation runs.
+                    """,
+            responses = {
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "200",
+                            description = "Validation findings retrieved successfully",
+                            content = @Content(schema = @Schema(implementation = UploadedFileFindingResponse.class))
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "403",
+                            description = "User is not allowed to view uploaded file validation data"
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "404",
+                            description = "Uploaded file not found"
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponse<List<UploadedFileFindingResponse>>> listFindings(
+            @Parameter(description = "Uploaded file identifier")
+            @PathVariable UUID fileId
+    ) {
+        List<UploadedFileFindingResponse> response = reportFileService.listFindings(fileId);
+
+        return ResponseEntity.ok(ApiResponse.successList(
+                "Validation findings retrieved successfully",
+                response
+        ));
+    }
+
+    @GetMapping("/{fileId}/validation-runs/{validationRunId}/findings")
+    @PreAuthorize("hasAnyRole('ANALYST', 'ADMINISTRATOR', 'ROOT')")
+    @Operation(
+            summary = "List findings for one uploaded file validation run",
+            description = """
+                    Returns validation findings for a specific validation run associated
+                    with the uploaded file.
+                    """,
+            responses = {
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "200",
+                            description = "Validation run findings retrieved successfully",
+                            content = @Content(schema = @Schema(implementation = UploadedFileFindingResponse.class))
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "403",
+                            description = "User is not allowed to view uploaded file validation data"
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "404",
+                            description = "Uploaded file or validation run not found"
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponse<List<UploadedFileFindingResponse>>> listValidationRunFindings(
+            @Parameter(description = "Uploaded file identifier")
+            @PathVariable UUID fileId,
+            @Parameter(description = "Validation run identifier")
+            @PathVariable UUID validationRunId
+    ) {
+        List<UploadedFileFindingResponse> response =
+                reportFileService.listFindingsByValidationRun(fileId, validationRunId);
+
+        return ResponseEntity.ok(ApiResponse.successList(
+                "Validation run findings retrieved successfully",
+                response
+        ));
     }
 
     @DeleteMapping("/{fileId}")

@@ -1,9 +1,17 @@
 package dev.lgbonillar.regreporting.upload.application;
 
+import dev.lgbonillar.regreporting.processing.domain.ProcessingFindingScope;
+import dev.lgbonillar.regreporting.processing.domain.ProcessingFindingSeverity;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
+import dev.lgbonillar.regreporting.upload.domain.UploadedFileFinding;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileStatus;
+import dev.lgbonillar.regreporting.upload.domain.UploadedFileValidationRun;
+import dev.lgbonillar.regreporting.upload.domain.UploadedFileValidationRunSource;
+import dev.lgbonillar.regreporting.upload.domain.UploadedFileValidationRunStatus;
 import dev.lgbonillar.regreporting.upload.dto.ReportFileUploadResponse;
+import dev.lgbonillar.regreporting.upload.dto.UploadedFileFindingResponse;
 import dev.lgbonillar.regreporting.upload.dto.UploadedFileResponse;
+import dev.lgbonillar.regreporting.upload.dto.UploadedFileValidationRunResponse;
 import dev.lgbonillar.regreporting.users.domain.User;
 import dev.lgbonillar.regreporting.users.domain.UserStatus;
 import org.junit.jupiter.api.Test;
@@ -28,6 +36,12 @@ class ReportFileServiceTest {
 
     @Mock
     private UploadedFileQueryService uploadedFileQueryService;
+
+    @Mock
+    private UploadedFileValidationRunService validationRunService;
+
+    @Mock
+    private UploadedFileFindingService findingService;
 
     @InjectMocks
     private ReportFileService reportFileService;
@@ -102,6 +116,69 @@ class ReportFileServiceTest {
         verify(uploadedFileCommandService).markUploadedFileAsMissing(fileId);
     }
 
+    @Test
+    void listValidationRunsReturnsMappedValidationRunsForViewableFile() {
+        UUID fileId = UUID.randomUUID();
+        UploadedFile uploadedFile = uploadedFile();
+        UploadedFileValidationRun validationRun = validationRun(uploadedFile);
+
+        when(uploadedFileQueryService.getViewableUploadedFile(fileId)).thenReturn(uploadedFile);
+        when(validationRunService.listValidationRuns(uploadedFile.getId()))
+                .thenReturn(List.of(validationRun));
+
+        List<UploadedFileValidationRunResponse> result =
+                reportFileService.listValidationRuns(fileId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).status()).isEqualTo("FAILED");
+        assertThat(result.get(0).source()).isEqualTo("UPLOAD");
+        verify(uploadedFileQueryService).getViewableUploadedFile(fileId);
+        verify(validationRunService).listValidationRuns(uploadedFile.getId());
+    }
+
+    @Test
+    void listFindingsReturnsMappedFindingsForViewableFile() {
+        UUID fileId = UUID.randomUUID();
+        UploadedFile uploadedFile = uploadedFile();
+        UploadedFileValidationRun validationRun = validationRun(uploadedFile);
+        UploadedFileFinding finding = finding(validationRun, uploadedFile);
+
+        when(uploadedFileQueryService.getViewableUploadedFile(fileId)).thenReturn(uploadedFile);
+        when(findingService.listFindings(uploadedFile.getId()))
+                .thenReturn(List.of(finding));
+
+        List<UploadedFileFindingResponse> result = reportFileService.listFindings(fileId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).severity()).isEqualTo("ERROR");
+        assertThat(result.get(0).code()).isEqualTo("INVALID_STRUCTURE");
+        verify(uploadedFileQueryService).getViewableUploadedFile(fileId);
+        verify(findingService).listFindings(uploadedFile.getId());
+    }
+
+    @Test
+    void listFindingsByValidationRunChecksFileAndRunBeforeReturningFindings() {
+        UUID fileId = UUID.randomUUID();
+        UUID validationRunId = UUID.randomUUID();
+        UploadedFile uploadedFile = uploadedFile();
+        UploadedFileValidationRun validationRun = validationRun(uploadedFile);
+        UploadedFileFinding finding = finding(validationRun, uploadedFile);
+
+        when(uploadedFileQueryService.getViewableUploadedFile(fileId)).thenReturn(uploadedFile);
+        when(validationRunService.getValidationRun(uploadedFile.getId(), validationRunId))
+                .thenReturn(validationRun);
+        when(findingService.listFindingsByValidationRun(validationRun.getId()))
+                .thenReturn(List.of(finding));
+
+        List<UploadedFileFindingResponse> result =
+                reportFileService.listFindingsByValidationRun(fileId, validationRunId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).code()).isEqualTo("INVALID_STRUCTURE");
+        verify(validationRunService).getValidationRun(uploadedFile.getId(), validationRunId);
+        verify(findingService).listFindingsByValidationRun(validationRun.getId());
+    }
+
     private MockMultipartFile multipartFile() {
         return new MockMultipartFile(
                 "file",
@@ -123,7 +200,7 @@ class ReportFileServiceTest {
     }
 
     private UploadedFile uploadedFile() {
-        return new UploadedFile(
+        UploadedFile uploadedFile = new UploadedFile(
                 "report.xlsx",
                 "stored-report.xlsx",
                 "/uploads/stored-report.xlsx",
@@ -132,6 +209,39 @@ class ReportFileServiceTest {
                 "checksum",
                 UploadedFileStatus.STORED,
                 analyst()
+        );
+        uploadedFile.setId(UUID.randomUUID());
+        return uploadedFile;
+    }
+
+    private UploadedFileValidationRun validationRun(UploadedFile uploadedFile) {
+        return new UploadedFileValidationRun(
+                uploadedFile,
+                UploadedFileValidationRunStatus.FAILED,
+                UploadedFileValidationRunSource.UPLOAD,
+                "Uploaded file validation found issues",
+                "analyst01"
+        );
+    }
+
+    private UploadedFileFinding finding(
+            UploadedFileValidationRun validationRun,
+            UploadedFile uploadedFile
+    ) {
+        return new UploadedFileFinding(
+                validationRun,
+                uploadedFile,
+                ProcessingFindingSeverity.ERROR,
+                ProcessingFindingScope.FILE_STRUCTURE,
+                "INVALID_STRUCTURE",
+                "Invalid file structure",
+                "Hoja1",
+                null,
+                null,
+                null,
+                null,
+                "Expected structure",
+                "Invalid structure"
         );
     }
 

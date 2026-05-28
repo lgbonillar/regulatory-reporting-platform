@@ -7,7 +7,9 @@ import dev.lgbonillar.regreporting.upload.controller.ReportFileController;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileStatus;
 import dev.lgbonillar.regreporting.upload.dto.ReportFileUploadResponse;
+import dev.lgbonillar.regreporting.upload.dto.UploadedFileFindingResponse;
 import dev.lgbonillar.regreporting.upload.dto.UploadedFileResponse;
+import dev.lgbonillar.regreporting.upload.dto.UploadedFileValidationRunResponse;
 import dev.lgbonillar.regreporting.users.domain.User;
 import dev.lgbonillar.regreporting.users.domain.UserStatus;
 import org.junit.jupiter.api.Test;
@@ -18,6 +20,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -149,6 +152,62 @@ class ReportFileControllerTest {
         verify(reportFileService).markUploadedFileAsMissing(fileId);
     }
 
+    @Test
+    void listValidationRunsReturnsRuns() throws Exception {
+        UUID fileId = UUID.randomUUID();
+        UploadedFileValidationRunResponse response = validationRunResponse(fileId);
+
+        when(reportFileService.listValidationRuns(fileId)).thenReturn(List.of(response));
+
+        mockMvc.perform(get("/api/report-files/{fileId}/validation-runs", fileId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.metadata.count").value(1))
+                .andExpect(jsonPath("$.data[0].status").value("FAILED"))
+                .andExpect(jsonPath("$.data[0].source").value("UPLOAD"));
+
+        verify(reportFileService).listValidationRuns(fileId);
+    }
+
+    @Test
+    void listFindingsReturnsFindings() throws Exception {
+        UUID fileId = UUID.randomUUID();
+        UploadedFileFindingResponse response = findingResponse(fileId, UUID.randomUUID());
+
+        when(reportFileService.listFindings(fileId)).thenReturn(List.of(response));
+
+        mockMvc.perform(get("/api/report-files/{fileId}/findings", fileId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.metadata.count").value(1))
+                .andExpect(jsonPath("$.data[0].severity").value("ERROR"))
+                .andExpect(jsonPath("$.data[0].code").value("INVALID_STRUCTURE"));
+
+        verify(reportFileService).listFindings(fileId);
+    }
+
+    @Test
+    void listValidationRunFindingsReturnsFindings() throws Exception {
+        UUID fileId = UUID.randomUUID();
+        UUID validationRunId = UUID.randomUUID();
+        UploadedFileFindingResponse response = findingResponse(fileId, validationRunId);
+
+        when(reportFileService.listFindingsByValidationRun(fileId, validationRunId))
+                .thenReturn(List.of(response));
+
+        mockMvc.perform(get(
+                        "/api/report-files/{fileId}/validation-runs/{validationRunId}/findings",
+                        fileId,
+                        validationRunId
+                ))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.metadata.count").value(1))
+                .andExpect(jsonPath("$.data[0].code").value("INVALID_STRUCTURE"));
+
+        verify(reportFileService).listFindingsByValidationRun(fileId, validationRunId);
+    }
+
     private MockMultipartFile multipartFile() {
         return new MockMultipartFile(
                 "file",
@@ -181,6 +240,38 @@ class ReportFileControllerTest {
                 "analyst01",
                 null,
                 null
+        );
+    }
+
+    private UploadedFileValidationRunResponse validationRunResponse(UUID fileId) {
+        return new UploadedFileValidationRunResponse(
+                UUID.randomUUID(),
+                fileId,
+                "FAILED",
+                "UPLOAD",
+                "Uploaded file validation found issues",
+                "analyst01",
+                LocalDateTime.now()
+        );
+    }
+
+    private UploadedFileFindingResponse findingResponse(UUID fileId, UUID validationRunId) {
+        return new UploadedFileFindingResponse(
+                UUID.randomUUID(),
+                validationRunId,
+                fileId,
+                "ERROR",
+                "FILE_STRUCTURE",
+                "INVALID_STRUCTURE",
+                "Invalid file structure",
+                "Hoja1",
+                null,
+                null,
+                null,
+                null,
+                "Expected structure",
+                "Invalid structure",
+                LocalDateTime.now()
         );
     }
 

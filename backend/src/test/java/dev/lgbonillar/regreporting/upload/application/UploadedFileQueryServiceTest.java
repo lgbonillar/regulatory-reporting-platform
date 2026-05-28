@@ -1,11 +1,15 @@
 package dev.lgbonillar.regreporting.upload.application;
 
+import dev.lgbonillar.regreporting.shared.ForbiddenOperationException;
 import dev.lgbonillar.regreporting.shared.ResourceNotFoundException;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileStatus;
 import dev.lgbonillar.regreporting.upload.dto.UploadedFileResponse;
 import dev.lgbonillar.regreporting.upload.infrastructure.UploadedFileRepository;
+import dev.lgbonillar.regreporting.users.application.CurrentUserProvider;
+import dev.lgbonillar.regreporting.users.domain.Role;
 import dev.lgbonillar.regreporting.users.domain.User;
+import dev.lgbonillar.regreporting.users.domain.UserRole;
 import dev.lgbonillar.regreporting.users.domain.UserStatus;
 import dev.lgbonillar.regreporting.users.infrastructure.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -34,6 +38,9 @@ class UploadedFileQueryServiceTest {
 
     @Mock
     private UploadedFileMapper uploadedFileMapper;
+
+    @Mock
+    private CurrentUserProvider currentUserProvider;
 
     @InjectMocks
     private UploadedFileQueryService uploadedFileQueryService;
@@ -106,7 +113,77 @@ class UploadedFileQueryServiceTest {
         );
     }
 
+    @Test
+    void getViewableUploadedFileReturnsFileForOwnerAnalyst() {
+        UUID fileId = UUID.randomUUID();
+        User analyst = analyst();
+        UploadedFile file = uploadedFile(UploadedFileStatus.PENDING_CORRECTION, analyst);
+
+        when(uploadedFileRepository.findById(fileId)).thenReturn(Optional.of(file));
+        when(currentUserProvider.getCurrentUser()).thenReturn(analyst);
+
+        UploadedFile result = uploadedFileQueryService.getViewableUploadedFile(fileId);
+
+        assertThat(result).isSameAs(file);
+    }
+
+    @Test
+    void getViewableUploadedFileReturnsFileForAdministrator() {
+        UUID fileId = UUID.randomUUID();
+        UploadedFile file = uploadedFile(UploadedFileStatus.PENDING_CORRECTION);
+
+        when(uploadedFileRepository.findById(fileId)).thenReturn(Optional.of(file));
+        when(currentUserProvider.getCurrentUser()).thenReturn(user(UserRole.ADMINISTRATOR));
+
+        UploadedFile result = uploadedFileQueryService.getViewableUploadedFile(fileId);
+
+        assertThat(result).isSameAs(file);
+    }
+
+    @Test
+    void getViewableUploadedFileReturnsFileForRoot() {
+        UUID fileId = UUID.randomUUID();
+        UploadedFile file = uploadedFile(UploadedFileStatus.PENDING_CORRECTION);
+
+        when(uploadedFileRepository.findById(fileId)).thenReturn(Optional.of(file));
+        when(currentUserProvider.getCurrentUser()).thenReturn(user(UserRole.ROOT));
+
+        UploadedFile result = uploadedFileQueryService.getViewableUploadedFile(fileId);
+
+        assertThat(result).isSameAs(file);
+    }
+
+    @Test
+    void getViewableUploadedFileThrowsForbiddenForAuditor() {
+        UUID fileId = UUID.randomUUID();
+        UploadedFile file = uploadedFile(UploadedFileStatus.PENDING_CORRECTION);
+
+        when(uploadedFileRepository.findById(fileId)).thenReturn(Optional.of(file));
+        when(currentUserProvider.getCurrentUser()).thenReturn(user(UserRole.AUDITOR));
+
+        assertThatThrownBy(() -> uploadedFileQueryService.getViewableUploadedFile(fileId))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You are not allowed to view this uploaded file");
+    }
+
+    @Test
+    void getViewableUploadedFileThrowsForbiddenForAnotherAnalystFile() {
+        UUID fileId = UUID.randomUUID();
+        UploadedFile file = uploadedFile(UploadedFileStatus.PENDING_CORRECTION);
+
+        when(uploadedFileRepository.findById(fileId)).thenReturn(Optional.of(file));
+        when(currentUserProvider.getCurrentUser()).thenReturn(user(UserRole.ANALYST, "analyst02"));
+
+        assertThatThrownBy(() -> uploadedFileQueryService.getViewableUploadedFile(fileId))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You are not allowed to view this uploaded file");
+    }
+
     private UploadedFile uploadedFile(UploadedFileStatus status) {
+        return uploadedFile(status, analyst());
+    }
+
+    private UploadedFile uploadedFile(UploadedFileStatus status, User uploadedBy) {
         return new UploadedFile(
                 "report.xlsx",
                 "stored-report.xlsx",
@@ -115,7 +192,7 @@ class UploadedFileQueryServiceTest {
                 1024L,
                 "checksum",
                 status,
-                analyst()
+                uploadedBy
         );
     }
 
@@ -144,15 +221,24 @@ class UploadedFileQueryServiceTest {
     }
 
     private User analyst() {
+        return user(UserRole.ANALYST, "analyst01");
+    }
+
+    private User user(UserRole role) {
+        return user(role, role.name().toLowerCase());
+    }
+
+    private User user(UserRole role, String username) {
         User user = new User(
-                "analyst01",
-                "analyst01@example.com",
-                "Analyst 01",
+                username,
+                username + "@example.com",
+                username,
                 null,
                 false,
                 UserStatus.ACTIVE
         );
         user.setId(UUID.randomUUID());
+        user.getRoles().add(new Role(role.name(), role.name(), null));
         return user;
     }
 

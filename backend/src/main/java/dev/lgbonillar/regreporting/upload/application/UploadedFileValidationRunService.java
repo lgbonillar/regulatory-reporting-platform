@@ -1,5 +1,6 @@
 package dev.lgbonillar.regreporting.upload.application;
 
+import dev.lgbonillar.regreporting.shared.ResourceNotFoundException;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileValidationRun;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileValidationRunSource;
@@ -43,5 +44,16 @@ public class UploadedFileValidationRunService {
     public List<UploadedFileValidationRun> listValidationRuns(UUID uploadedFileId) {
         return
                 validationRunRepository.findAllByUploadedFile_IdOrderByCreatedAtDesc(uploadedFileId);
+    }
+
+    @Transactional(readOnly = true)
+    public UploadedFileValidationRun getValidationRun(
+            UUID uploadedFileId,
+        UUID validationRunId
+    ) {
+        return validationRunRepository.findByIdAndUploadedFile_Id(validationRunId, uploadedFileId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Uploaded file validation run not found"
+                ));
     }
 }

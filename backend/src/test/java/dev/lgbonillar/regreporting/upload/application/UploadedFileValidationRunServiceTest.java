@@ -1,5 +1,6 @@
 package dev.lgbonillar.regreporting.upload.application;
 
+import dev.lgbonillar.regreporting.shared.ResourceNotFoundException;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileStatus;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileValidationRun;
@@ -16,9 +17,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -81,6 +84,45 @@ class UploadedFileValidationRunServiceTest {
         List<UploadedFileValidationRun> result = validationRunService.listValidationRuns(uploadedFileId);
 
         assertThat(result).isSameAs(validationRuns);
+    }
+
+    @Test
+    void getValidationRunReturnsRunForUploadedFile() {
+        UUID uploadedFileId = UUID.randomUUID();
+        UUID validationRunId = UUID.randomUUID();
+        UploadedFileValidationRun validationRun = new UploadedFileValidationRun(
+                uploadedFile(),
+                UploadedFileValidationRunStatus.PASSED,
+                UploadedFileValidationRunSource.REPLACEMENT,
+                "Validation passed",
+                "analyst01"
+        );
+
+        when(validationRunRepository.findByIdAndUploadedFile_Id(validationRunId, uploadedFileId))
+                .thenReturn(Optional.of(validationRun));
+
+        UploadedFileValidationRun result = validationRunService.getValidationRun(
+                uploadedFileId,
+                validationRunId
+        );
+
+        assertThat(result).isSameAs(validationRun);
+    }
+
+    @Test
+    void getValidationRunThrowsResourceNotFoundWhenRunDoesNotBelongToFile() {
+        UUID uploadedFileId = UUID.randomUUID();
+        UUID validationRunId = UUID.randomUUID();
+
+        when(validationRunRepository.findByIdAndUploadedFile_Id(validationRunId, uploadedFileId))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> validationRunService.getValidationRun(
+                uploadedFileId,
+                validationRunId
+        ))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Uploaded file validation run not found");
     }
 
     private UploadedFile uploadedFile() {
