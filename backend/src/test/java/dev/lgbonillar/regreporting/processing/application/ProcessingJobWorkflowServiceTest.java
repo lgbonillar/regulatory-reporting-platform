@@ -18,6 +18,8 @@ import dev.lgbonillar.regreporting.users.domain.UserRole;
 import dev.lgbonillar.regreporting.users.domain.UserStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -148,6 +150,37 @@ class ProcessingJobWorkflowServiceTest {
 
         assertThat(job.getStatus()).isEqualTo(ProcessingJobStatus.PENDING_EXECUTION);
         verifyNoInteractions(processingJobHistoryService);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = UploadedFileStatus.class,
+            names = {
+                    "PENDING_CORRECTION",
+                    "FAILED",
+                    "MISSING",
+                    "DELETED"
+            }
+    )
+    void startProcessingThrowsBusinessConflictWhenUploadedFileCannotBeProcessed(
+            UploadedFileStatus fileStatus
+    ) {
+        UUID jobId = UUID.randomUUID();
+        ProcessingJob processingJob = new ProcessingJob(
+                uploadedFile(fileStatus, "analyst01"),
+                "File uploaded"
+        );
+
+        when(processingJobQueryService.getJob(jobId)).thenReturn(processingJob);
+
+        assertThatThrownBy(() -> processingJobWorkflowService.startProcessing(jobId))
+                .isInstanceOf(BusinessConflictException.class)
+                .hasMessage("The file cannot be processed because it is in state " + fileStatus);
+
+        verify(processingJobQueryService).requireCanView(processingJob);
+        verifyNoInteractions(currentUserProvider);
+        verifyNoInteractions(processingJobHistoryService);
+        verifyNoInteractions(regulatoryReportProcessorRegistry);
     }
 
     @Test

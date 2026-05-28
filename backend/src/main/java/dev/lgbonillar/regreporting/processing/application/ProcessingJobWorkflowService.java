@@ -41,52 +41,54 @@ public class ProcessingJobWorkflowService {
 
     @Transactional
     public ProcessingJobResponse startProcessing(UUID jobId) {
-        ProcessingJob job = processingJobQueryService.getJob(jobId);
-        job.getUploadedFile().ensureCanBeProcessed();
+        ProcessingJob processingJob = processingJobQueryService.getJob(jobId);
+
+        processingJobQueryService.requireCanView(processingJob);
+        processingJob.getUploadedFile().ensureCanBeProcessed();
 
         User currentUser = currentUserProvider.getCurrentUser();
         requireRole(currentUser, UserRole.ANALYST, "start processing");
-        requireOwnsJob(currentUser, job);
+        requireOwnsJob(currentUser, processingJob);
 
-        ProcessingJobStatus previousStatus = job.getStatus();
+        ProcessingJobStatus previousStatus = processingJob.getStatus();
 
-        job.startProcessing(currentUser);
+        processingJob.startProcessing(currentUser);
 
         processingJobHistoryService.recordTransition(
-                job,
+                processingJob,
                 previousStatus,
-                job.getStatus(),
+                processingJob.getStatus(),
                 ProcessingJobTransitionSource.USER,
                 currentUser,
                 "Analyst started processing"
         );
 
         RegulatoryReportProcessor processor = regulatoryReportProcessorRegistry.getDefaultProcessor();
-        ProcessingResult result = processor.process(job);
+        ProcessingResult result = processor.process(processingJob);
 
         processingJobFindingService.replaceProcessingJobFindings(
-                job,
+                processingJob,
                 result.findings()
         );
 
-        ProcessingJobStatus processingStatus = job.getStatus();
+        ProcessingJobStatus processingStatus = processingJob.getStatus();
 
         if (result.hasErrors()) {
-            job.markProcessingFailed(result.message());
+            processingJob.markProcessingFailed(result.message());
         } else {
-            job.markProcessingCompleted();
+            processingJob.markProcessingCompleted();
         }
 
         processingJobHistoryService.recordTransition(
-                job,
+                processingJob,
                 processingStatus,
-                job.getStatus(),
+                processingJob.getStatus(),
                 ProcessingJobTransitionSource.SYSTEM,
                 null,
                 result.message()
         );
 
-        return processingJobQueryService.toProcessingJobResponse(job);
+        return processingJobQueryService.toProcessingJobResponse(processingJob);
     }
 
     @Transactional
