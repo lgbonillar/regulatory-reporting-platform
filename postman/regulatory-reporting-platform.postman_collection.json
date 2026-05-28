@@ -370,7 +370,7 @@
                   "    pm.expect(file.fileId).to.be.a('string').and.not.empty;",
                   "    pm.expect(file.originalFilename).to.be.a('string').and.not.empty;",
                   "    pm.expect(file.storedFilename).to.be.a('string').and.not.empty;",
-                  "    pm.expect(file.fileStatus).to.be.oneOf(['STORED', 'MISSING', 'FAILED', 'DELETED']);",
+                  "    pm.expect(file.fileStatus).to.be.oneOf(['STORED', 'PENDING_CORRECTION', 'MISSING', 'FAILED', 'DELETED']);",
                   "    pm.expect(file.uploadedBy).to.be.a('string').and.not.empty;",
                   "    pm.expect(file.uploadedAt).to.be.a('string').and.not.empty;",
                   "  });",
@@ -380,8 +380,10 @@
                   "});",
                   "const stored = response.find(file => file.fileStatus === 'STORED');",
                   "const missing = response.find(file => file.fileStatus === 'MISSING');",
+                  "const pendingCorrection = response.find(file => file.fileStatus === 'PENDING_CORRECTION');",
                   "if (stored) pm.collectionVariables.set('storedFileId', stored.fileId);",
-                  "if (missing) pm.collectionVariables.set('missingFileId', missing.fileId);"
+                  "if (missing) pm.collectionVariables.set('missingFileId', missing.fileId);",
+                  "if (pendingCorrection) pm.collectionVariables.set('pendingCorrectionFileId', pendingCorrection.fileId);"
                 ]
               }
             }
@@ -418,15 +420,17 @@
                   "    pm.expect(file.fileId).to.be.a('string').and.not.empty;",
                   "    pm.expect(file.originalFilename).to.be.a('string').and.not.empty;",
                   "    pm.expect(file.storedFilename).to.be.a('string').and.not.empty;",
-                  "    pm.expect(file.fileStatus).to.be.oneOf(['STORED', 'MISSING', 'FAILED', 'DELETED']);",
+                  "    pm.expect(file.fileStatus).to.be.oneOf(['STORED', 'PENDING_CORRECTION', 'MISSING', 'FAILED', 'DELETED']);",
                   "    pm.expect(file.uploadedBy).to.be.a('string').and.not.empty;",
                   "    pm.expect(file.uploadedAt).to.be.a('string').and.not.empty;",
                   "  });",
                   "});",
                   "const stored = response.find(file => file.fileStatus === 'STORED');",
                   "const missing = response.find(file => file.fileStatus === 'MISSING');",
+                  "const pendingCorrection = response.find(file => file.fileStatus === 'PENDING_CORRECTION');",
                   "if (stored) pm.collectionVariables.set('storedFileId', stored.fileId);",
-                  "if (missing) pm.collectionVariables.set('missingFileId', missing.fileId);"
+                  "if (missing) pm.collectionVariables.set('missingFileId', missing.fileId);",
+                  "if (pendingCorrection) pm.collectionVariables.set('pendingCorrectionFileId', pendingCorrection.fileId);"
                 ]
               }
             }
@@ -537,13 +541,13 @@
                   "});",
                   "pm.test('returns invalid sales upload response', () => {",
                   "  pm.expect(response.fileId).to.be.a('string').and.not.empty;",
-                  "  pm.expect(response.jobId).to.be.a('string').and.not.empty;",
+                  "  pm.expect(response.jobId).to.be.oneOf([null, undefined]);",
                   "  pm.expect(response.originalFilename).to.contain('.xlsx');",
-                  "  pm.expect(response.fileStatus).to.eql('STORED');",
-                  "  pm.expect(response.jobStatus).to.eql('PENDING_EXECUTION');",
+                  "  pm.expect(response.fileStatus).to.eql('PENDING_CORRECTION');",
+                  "  pm.expect(response.jobStatus).to.be.oneOf([null, undefined]);",
                   "});",
                   "pm.collectionVariables.set('invalidSalesFileId', response.fileId);",
-                  "pm.collectionVariables.set('invalidSalesJobId', response.jobId);"
+                  "pm.collectionVariables.set('pendingCorrectionFileId', response.fileId);"
                 ]
               }
             }
@@ -562,6 +566,124 @@
               ]
             },
             "url": "{{baseUrl}}/api/report-files"
+          }
+        },
+        {
+          "name": "List validation runs for seeded invalid file",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const envelope = pm.response.json();",
+                  "const response = envelope.data;",
+                  "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('returns validation runs', () => {",
+                  "  pm.expect(envelope.success).to.eql(true);",
+                  "  pm.expect(response).to.be.an('array').and.not.empty;",
+                  "  pm.expect(envelope.metadata.count).to.eql(response.length);",
+                  "});",
+                  "pm.test('includes failed upload validation run', () => {",
+                  "  const failedRun = response.find(run => run.status === 'FAILED');",
+                  "  pm.expect(failedRun).to.exist;",
+                  "  pm.collectionVariables.set('validationRunId', failedRun.validationRunId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/report-files/{{pendingCorrectionFileId}}/validation-runs"
+          }
+        },
+        {
+          "name": "List findings for seeded invalid file",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const envelope = pm.response.json();",
+                  "const response = envelope.data;",
+                  "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('returns findings', () => {",
+                  "  pm.expect(envelope.success).to.eql(true);",
+                  "  pm.expect(response).to.be.an('array').and.not.empty;",
+                  "  pm.expect(envelope.metadata.count).to.eql(response.length);",
+                  "});",
+                  "pm.test('includes validation finding codes', () => {",
+                  "  const codes = response.map(finding => finding.code);",
+                  "  pm.expect(codes.some(code => ['MISSING_REQUIRED_SHEET', 'INVALID_COLUMN_ORDER', 'INVALID_NUMERIC_VALUE'].includes(code))).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/report-files/{{pendingCorrectionFileId}}/findings"
+          }
+        },
+        {
+          "name": "List findings by validation run",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const envelope = pm.response.json();",
+                  "const response = envelope.data;",
+                  "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('returns run findings', () => {",
+                  "  pm.expect(envelope.success).to.eql(true);",
+                  "  pm.expect(response).to.be.an('array').and.not.empty;",
+                  "  response.forEach(finding => {",
+                  "    pm.expect(finding.validationRunId).to.eql(pm.collectionVariables.get('validationRunId'));",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/report-files/{{pendingCorrectionFileId}}/validation-runs/{{validationRunId}}/findings"
+          }
+        },
+        {
+          "name": "Auditor cannot list file validation runs",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              {
+                "key": "token",
+                "value": "{{auditorAccessToken}}",
+                "type": "string"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 403 Forbidden for auditor', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/report-files/{{pendingCorrectionFileId}}/validation-runs"
           }
         },
         {
@@ -703,7 +825,7 @@
                   "    pm.expect(job.jobId).to.be.a('string').and.not.empty;",
                   "    pm.expect(job.fileId).to.be.a('string').and.not.empty;",
                   "    pm.expect(job.originalFilename).to.be.a('string').and.not.empty;",
-                  "    pm.expect(job.fileStatus).to.be.oneOf(['STORED', 'MISSING', 'FAILED', 'DELETED']);",
+                  "    pm.expect(job.fileStatus).to.be.oneOf(['STORED', 'PENDING_CORRECTION', 'MISSING', 'FAILED', 'DELETED']);",
                   "    pm.expect(job.jobStatus).to.be.oneOf(['PENDING_EXECUTION', 'PROCESSING', 'PROCESSING_FAILED', 'AWAITING_APPROVAL', 'APPROVED', 'REJECTED', 'REVOKED']);",
                   "    pm.expect(job.uploadedBy).to.be.a('string').and.not.empty;",
                   "    pm.expect(job.createdAt).to.be.a('string').and.not.empty;",
@@ -761,7 +883,7 @@
                   "    pm.expect(job.jobId).to.be.a('string').and.not.empty;",
                   "    pm.expect(job.fileId).to.be.a('string').and.not.empty;",
                   "    pm.expect(job.originalFilename).to.be.a('string').and.not.empty;",
-                  "    pm.expect(job.fileStatus).to.be.oneOf(['STORED', 'MISSING', 'FAILED', 'DELETED']);",
+                  "    pm.expect(job.fileStatus).to.be.oneOf(['STORED', 'PENDING_CORRECTION', 'MISSING', 'FAILED', 'DELETED']);",
                   "    pm.expect(job.jobStatus).to.be.oneOf(['PENDING_EXECUTION', 'PROCESSING', 'PROCESSING_FAILED', 'AWAITING_APPROVAL', 'APPROVED', 'REJECTED', 'REVOKED']);",
                   "    pm.expect(job.uploadedBy).to.be.a('string').and.not.empty;",
                   "    pm.expect(job.createdAt).to.be.a('string').and.not.empty;",
@@ -898,7 +1020,7 @@
           "response": []
         },
         {
-          "name": "Get invalid sales job findings",
+          "name": "Get invalid sales file findings",
           "event": [
             {
               "listen": "test",
@@ -923,10 +1045,7 @@
                   "});",
                   "pm.test('includes expected demo sales validation codes', () => {",
                   "  const codes = response.map(finding => finding.code);",
-                  "  pm.expect(codes).to.include('INVALID_COLUMN_ORDER');",
-                  "  pm.expect(codes).to.include('INVALID_NUMERIC_VALUE');",
-                  "  pm.expect(codes).to.include('INVALID_SHIPPING_DATE_RANGE');",
-                  "  pm.expect(codes).to.include('DUPLICATED_ORDER_ID');",
+                  "  pm.expect(codes.some(code => ['MISSING_REQUIRED_SHEET', 'INVALID_COLUMN_ORDER', 'INVALID_NUMERIC_VALUE', 'INVALID_SHIPPING_DATE_RANGE', 'DUPLICATED_ORDER_ID'].includes(code))).to.eql(true);",
                   "});"
                 ]
               }
@@ -935,7 +1054,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/processing-jobs/{{invalidSalesJobId}}/findings"
+            "url": "{{baseUrl}}/api/report-files/{{invalidSalesFileId}}/findings"
           },
           "response": []
         },
@@ -1003,11 +1122,11 @@
           ]
         },
         {
-          "name": "Start invalid sales job",
+          "name": "Start blocked pending correction job",
           "request": {
             "method": "POST",
             "header": [],
-            "url": "{{baseUrl}}/api/processing-jobs/{{invalidSalesJobId}}/start"
+            "url": "{{baseUrl}}/api/processing-jobs/{{blockedPendingCorrectionJobId}}/start"
           },
           "event": [
             {
@@ -1016,16 +1135,12 @@
                 "type": "text/javascript",
                 "exec": [
                   "const envelope = pm.response.json();",
-                  "const response = envelope.data;",
-                  "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
-                  "pm.test('invalid sales job fails with validation findings', () => {",
-                  "  pm.expect(response.jobId).to.eql(pm.collectionVariables.get('invalidSalesJobId'));",
-                  "  pm.expect(response.jobStatus).to.eql('PROCESSING_FAILED');",
-                  "  pm.expect(response.failureReason).to.eql('Demo regulatory report contains validation findings');",
-                  "});",
-                  "pm.collectionVariables.set('jobId', response.jobId);",
-                  "pm.collectionVariables.set('findingsJobId', response.jobId);"
+                  "pm.test('returns 409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('returns business conflict error', () => {",
+                  "  pm.expect(envelope.success).to.eql(false);",
+                  "  pm.expect(envelope.error.code).to.eql('BUSINESS_CONFLICT');",
+                  "  pm.expect(envelope.message).to.contain('PENDING_CORRECTION');",
+                  "});"
                 ]
               }
             }
@@ -1359,6 +1474,18 @@
       "value": "60000000-0000-0000-0000-000000000009"
     },
     {
+      "key": "failedUploadFileId",
+      "value": "60000000-0000-0000-0000-000000000010"
+    },
+    {
+      "key": "pendingCorrectionFileId",
+      "value": "60000000-0000-0000-0000-000000000012"
+    },
+    {
+      "key": "correctedFileId",
+      "value": "60000000-0000-0000-0000-000000000013"
+    },
+    {
       "key": "pendingJobId",
       "value": "50000000-0000-0000-0000-000000000001"
     },
@@ -1391,6 +1518,14 @@
       "value": "50000000-0000-0000-0000-000000000003"
     },
     {
+      "key": "blockedPendingCorrectionJobId",
+      "value": "50000000-0000-0000-0000-000000000010"
+    },
+    {
+      "key": "validationRunId",
+      "value": "61000000-0000-0000-0000-000000000012"
+    },
+    {
       "key": "validSalesReportPath",
       "value": "/home/mrcrafterman/Work/code/regulatory-reporting-platform/samples/1000-Registros-de-ventas.xlsx"
     },
@@ -1403,8 +1538,8 @@
       "value": ""
     },
     {
-      "key": "invalidSalesJobId",
-      "value": ""
+      "key": "invalidSalesFileId",
+      "value": "60000000-0000-0000-0000-000000000012"
     }
   ]
 }

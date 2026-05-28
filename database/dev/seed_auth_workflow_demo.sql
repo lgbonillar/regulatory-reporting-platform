@@ -77,6 +77,27 @@ WHERE processing_job_id IN (
 DELETE FROM processing_jobs
 WHERE id::text LIKE '50000000-0000-0000-0000-000000000%';
 
+DELETE FROM uploaded_file_findings
+WHERE uploaded_file_id IN (
+    SELECT id
+    FROM uploaded_files
+    WHERE id::text LIKE '60000000-0000-0000-0000-000000000%'
+);
+
+DELETE FROM uploaded_file_validation_runs
+WHERE uploaded_file_id IN (
+    SELECT id
+    FROM uploaded_files
+    WHERE id::text LIKE '60000000-0000-0000-0000-000000000%'
+);
+
+DELETE FROM uploaded_file_status_history
+WHERE uploaded_file_id IN (
+    SELECT id
+    FROM uploaded_files
+    WHERE id::text LIKE '60000000-0000-0000-0000-000000000%'
+);
+
 DELETE FROM uploaded_files
 WHERE id::text LIKE '60000000-0000-0000-0000-000000000%';
 
@@ -103,7 +124,201 @@ INSERT INTO uploaded_files (
     ('60000000-0000-0000-0000-000000000008', 'market-risk-q1.xlsx', 'market-risk-q1.xlsx', 'analyst02/market-risk-q1.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 121000, repeat('2', 64), 'STORED', '00000000-0000-0000-0000-000000000011', CURRENT_TIMESTAMP - INTERVAL '5 days', NULL),
     ('60000000-0000-0000-0000-000000000009', 'missing-source-file.xlsx', 'missing-source-file.xlsx', 'analyst01/missing-source-file.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 88000, repeat('3', 64), 'MISSING', '00000000-0000-0000-0000-000000000001', CURRENT_TIMESTAMP - INTERVAL '4 days', CURRENT_TIMESTAMP - INTERVAL '4 days'),
     ('60000000-0000-0000-0000-000000000010', 'failed-upload.xlsx', 'failed-upload.xlsx', 'analyst02/failed-upload.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 91000, repeat('4', 64), 'FAILED', '00000000-0000-0000-0000-000000000011', CURRENT_TIMESTAMP - INTERVAL '3 days', CURRENT_TIMESTAMP - INTERVAL '3 days'),
-    ('60000000-0000-0000-0000-000000000011', 'deleted-report.xlsx', 'deleted-report.xlsx', 'analyst03/deleted-report.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 76000, repeat('5', 64), 'DELETED', '00000000-0000-0000-0000-000000000012', CURRENT_TIMESTAMP - INTERVAL '2 days', CURRENT_TIMESTAMP - INTERVAL '2 days');
+    ('60000000-0000-0000-0000-000000000011', 'deleted-report.xlsx', 'deleted-report.xlsx', 'analyst03/deleted-report.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 76000, repeat('5', 64), 'DELETED', '00000000-0000-0000-0000-000000000012', CURRENT_TIMESTAMP - INTERVAL '2 days', CURRENT_TIMESTAMP - INTERVAL '2 days'),
+    ('60000000-0000-0000-0000-000000000012', 'invalid-sales-layout.xlsx', 'invalid-sales-layout.xlsx', 'analyst01/invalid-sales-layout.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 93000, repeat('6', 64), 'PENDING_CORRECTION', '00000000-0000-0000-0000-000000000001', CURRENT_TIMESTAMP - INTERVAL '1 day 12 hours', CURRENT_TIMESTAMP - INTERVAL '1 day 12 hours'),
+    ('60000000-0000-0000-0000-000000000013', 'corrected-sales-layout.xlsx', 'corrected-sales-layout.xlsx', 'analyst01/corrected-sales-layout.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 94000, repeat('7', 64), 'STORED', '00000000-0000-0000-0000-000000000001', CURRENT_TIMESTAMP - INTERVAL '1 day', CURRENT_TIMESTAMP - INTERVAL '12 hours');
+
+INSERT INTO uploaded_file_status_history (
+    id,
+    uploaded_file_id,
+    previous_status,
+    new_status,
+    transition_source,
+    transitioned_by_user_id,
+    reason,
+    created_at
+)
+SELECT
+    gen_random_uuid(),
+    uploaded_file.id,
+    NULL,
+    uploaded_file.status,
+    CASE
+        WHEN uploaded_file.status = 'MISSING' THEN 'SYSTEM'
+        ELSE 'USER'
+    END,
+    CASE
+        WHEN uploaded_file.status = 'MISSING' THEN NULL
+        ELSE uploaded_file.uploaded_by_user_id
+    END,
+    CASE uploaded_file.status
+        WHEN 'STORED' THEN 'File uploaded successfully'
+        WHEN 'PENDING_CORRECTION' THEN 'File uploaded with validation issues'
+        WHEN 'FAILED' THEN 'File upload validation failed'
+        WHEN 'MISSING' THEN 'Stored file was not found'
+        WHEN 'DELETED' THEN 'File deleted'
+        ELSE 'File status seeded'
+    END,
+    COALESCE(uploaded_file.updated_at, uploaded_file.uploaded_at)
+FROM uploaded_files uploaded_file
+WHERE uploaded_file.id::text LIKE '60000000-0000-0000-0000-000000000%'
+  AND uploaded_file.id <> '60000000-0000-0000-0000-000000000013';
+
+INSERT INTO uploaded_file_status_history (
+    id,
+    uploaded_file_id,
+    previous_status,
+    new_status,
+    transition_source,
+    transitioned_by_user_id,
+    reason,
+    created_at
+) VALUES
+    (
+        '64000000-0000-0000-0000-000000000012',
+        '60000000-0000-0000-0000-000000000013',
+        NULL,
+        'PENDING_CORRECTION',
+        'USER',
+        '00000000-0000-0000-0000-000000000001',
+        'File uploaded with validation issues',
+        CURRENT_TIMESTAMP - INTERVAL '1 day'
+    ),
+    (
+        '64000000-0000-0000-0000-000000000013',
+        '60000000-0000-0000-0000-000000000013',
+        'PENDING_CORRECTION',
+        'STORED',
+        'USER',
+        '00000000-0000-0000-0000-000000000001',
+        'File updated successfully',
+        CURRENT_TIMESTAMP - INTERVAL '12 hours'
+    );
+
+INSERT INTO uploaded_file_validation_runs (
+    id,
+    uploaded_file_id,
+    status,
+    source,
+    summary_message,
+    created_by,
+    created_at
+) VALUES
+    ('61000000-0000-0000-0000-000000000001', '60000000-0000-0000-0000-000000000001', 'PASSED', 'UPLOAD', 'Uploaded file validation passed', 'analyst01', CURRENT_TIMESTAMP - INTERVAL '12 days'),
+    ('61000000-0000-0000-0000-000000000002', '60000000-0000-0000-0000-000000000002', 'PASSED', 'UPLOAD', 'Uploaded file validation passed', 'analyst01', CURRENT_TIMESTAMP - INTERVAL '11 days'),
+    ('61000000-0000-0000-0000-000000000003', '60000000-0000-0000-0000-000000000003', 'PASSED', 'UPLOAD', 'Uploaded file validation passed', 'analyst02', CURRENT_TIMESTAMP - INTERVAL '10 days'),
+    ('61000000-0000-0000-0000-000000000004', '60000000-0000-0000-0000-000000000004', 'PASSED', 'UPLOAD', 'Uploaded file validation passed', 'analyst02', CURRENT_TIMESTAMP - INTERVAL '9 days'),
+    ('61000000-0000-0000-0000-000000000005', '60000000-0000-0000-0000-000000000005', 'PASSED', 'UPLOAD', 'Uploaded file validation passed', 'analyst03', CURRENT_TIMESTAMP - INTERVAL '8 days'),
+    ('61000000-0000-0000-0000-000000000006', '60000000-0000-0000-0000-000000000006', 'PASSED', 'UPLOAD', 'Uploaded file validation passed', 'analyst03', CURRENT_TIMESTAMP - INTERVAL '7 days'),
+    ('61000000-0000-0000-0000-000000000007', '60000000-0000-0000-0000-000000000007', 'PASSED', 'UPLOAD', 'Uploaded file validation passed', 'analyst01', CURRENT_TIMESTAMP - INTERVAL '6 days'),
+    ('61000000-0000-0000-0000-000000000008', '60000000-0000-0000-0000-000000000008', 'PASSED', 'UPLOAD', 'Uploaded file validation passed', 'analyst02', CURRENT_TIMESTAMP - INTERVAL '5 days'),
+    ('61000000-0000-0000-0000-000000000010', '60000000-0000-0000-0000-000000000010', 'SYSTEM_FAILED', 'UPLOAD', 'Uploaded file validation failed due to a system error', 'analyst02', CURRENT_TIMESTAMP - INTERVAL '3 days'),
+    ('61000000-0000-0000-0000-000000000012', '60000000-0000-0000-0000-000000000012', 'FAILED', 'UPLOAD', 'Uploaded file validation found issues', 'analyst01', CURRENT_TIMESTAMP - INTERVAL '1 day 12 hours'),
+    ('61000000-0000-0000-0000-000000000013', '60000000-0000-0000-0000-000000000013', 'FAILED', 'UPLOAD', 'Uploaded file validation found issues', 'analyst01', CURRENT_TIMESTAMP - INTERVAL '1 day'),
+    ('61000000-0000-0000-0000-000000000014', '60000000-0000-0000-0000-000000000013', 'PASSED', 'REPLACEMENT', 'Uploaded file validation passed', 'analyst01', CURRENT_TIMESTAMP - INTERVAL '12 hours');
+
+INSERT INTO uploaded_file_findings (
+    id,
+    validation_run_id,
+    uploaded_file_id,
+    severity,
+    scope,
+    code,
+    message,
+    sheet_name,
+    row_number,
+    column_name,
+    field_name,
+    rejected_value,
+    expected_value,
+    actual_value,
+    created_at
+) VALUES
+    (
+        '62000000-0000-0000-0000-000000000001',
+        '61000000-0000-0000-0000-000000000012',
+        '60000000-0000-0000-0000-000000000012',
+        'ERROR',
+        'FILE_STRUCTURE',
+        'MISSING_REQUIRED_SHEET',
+        'The required sheet Hoja1 was not found',
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        'Sheet Hoja1',
+        'Sheet Input',
+        CURRENT_TIMESTAMP - INTERVAL '1 day 12 hours'
+    ),
+    (
+        '62000000-0000-0000-0000-000000000002',
+        '61000000-0000-0000-0000-000000000012',
+        '60000000-0000-0000-0000-000000000012',
+        'ERROR',
+        'COLUMN_STRUCTURE',
+        'INVALID_COLUMN_ORDER',
+        'The workbook headers do not match the expected demo sales layout',
+        'Hoja1',
+        1,
+        'ID Cliente',
+        'customerId',
+        'Cliente',
+        'ID Cliente',
+        'Cliente',
+        CURRENT_TIMESTAMP - INTERVAL '1 day 12 hours'
+    ),
+    (
+        '62000000-0000-0000-0000-000000000003',
+        '61000000-0000-0000-0000-000000000010',
+        '60000000-0000-0000-0000-000000000010',
+        'ERROR',
+        'SYSTEM',
+        'EXCEL_READ_ERROR',
+        'Could not read uploaded Excel file',
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        'Readable .xlsx workbook',
+        'Corrupted workbook stream',
+        CURRENT_TIMESTAMP - INTERVAL '3 days'
+    ),
+    (
+        '62000000-0000-0000-0000-000000000004',
+        '61000000-0000-0000-0000-000000000013',
+        '60000000-0000-0000-0000-000000000013',
+        'ERROR',
+        'ROW_DATA',
+        'INVALID_NUMERIC_VALUE',
+        'The value must be numeric',
+        'Hoja1',
+        12,
+        'Unidades',
+        'units',
+        'N/A',
+        'Numeric value',
+        'N/A',
+        CURRENT_TIMESTAMP - INTERVAL '1 day'
+    ),
+    (
+        '62000000-0000-0000-0000-000000000005',
+        '61000000-0000-0000-0000-000000000013',
+        '60000000-0000-0000-0000-000000000013',
+        'ERROR',
+        'BUSINESS_RULE',
+        'DUPLICATED_ORDER_ID',
+        'The order id must be unique within the sales report',
+        'Hoja1',
+        21,
+        'ID Pedido',
+        'orderId',
+        'ORD-100',
+        'Unique order id',
+        'ORD-100',
+        CURRENT_TIMESTAMP - INTERVAL '1 day'
+    );
 
 INSERT INTO processing_jobs (
     id,
@@ -126,13 +341,15 @@ INSERT INTO processing_jobs (
     updated_at
 ) VALUES
     ('50000000-0000-0000-0000-000000000001', '60000000-0000-0000-0000-000000000001', 'PENDING_EXECUTION', 'Waiting for execution', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP - INTERVAL '12 days', NULL),
-    ('50000000-0000-0000-0000-000000000002', '60000000-0000-0000-0000-000000000002', 'PROCESSING', 'Processing file rows', '00000000-0000-0000-0000-000000000002', CURRENT_TIMESTAMP - INTERVAL '10 days', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP - INTERVAL '11 days', CURRENT_TIMESTAMP - INTERVAL '10 days'),
-    ('50000000-0000-0000-0000-000000000003', '60000000-0000-0000-0000-000000000003', 'PROCESSING_FAILED', 'Processing failed', '00000000-0000-0000-0000-000000000021', CURRENT_TIMESTAMP - INTERVAL '9 days', CURRENT_TIMESTAMP - INTERVAL '8 days 23 hours', 'Invalid worksheet layout', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP - INTERVAL '10 days', CURRENT_TIMESTAMP - INTERVAL '8 days 23 hours'),
-    ('50000000-0000-0000-0000-000000000004', '60000000-0000-0000-0000-000000000004', 'AWAITING_APPROVAL', 'Processing completed; awaiting approval', '00000000-0000-0000-0000-000000000002', CURRENT_TIMESTAMP - INTERVAL '8 days', CURRENT_TIMESTAMP - INTERVAL '7 days 22 hours', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP - INTERVAL '9 days', CURRENT_TIMESTAMP - INTERVAL '7 days 22 hours'),
-    ('50000000-0000-0000-0000-000000000005', '60000000-0000-0000-0000-000000000005', 'APPROVED', 'Approved by admin01', '00000000-0000-0000-0000-000000000021', CURRENT_TIMESTAMP - INTERVAL '7 days', CURRENT_TIMESTAMP - INTERVAL '6 days 22 hours', NULL, '00000000-0000-0000-0000-000000000002', CURRENT_TIMESTAMP - INTERVAL '6 days 20 hours', NULL, NULL, NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP - INTERVAL '8 days', CURRENT_TIMESTAMP - INTERVAL '6 days 20 hours'),
-    ('50000000-0000-0000-0000-000000000006', '60000000-0000-0000-0000-000000000006', 'REJECTED', 'Rejected by admin02', '00000000-0000-0000-0000-000000000002', CURRENT_TIMESTAMP - INTERVAL '6 days', CURRENT_TIMESTAMP - INTERVAL '5 days 22 hours', NULL, NULL, NULL, '00000000-0000-0000-0000-000000000021', CURRENT_TIMESTAMP - INTERVAL '5 days 20 hours', 'Totals do not match supporting evidence', NULL, NULL, NULL, CURRENT_TIMESTAMP - INTERVAL '7 days', CURRENT_TIMESTAMP - INTERVAL '5 days 20 hours'),
-    ('50000000-0000-0000-0000-000000000007', '60000000-0000-0000-0000-000000000007', 'REVOKED', 'Previously approved, later revoked', '00000000-0000-0000-0000-000000000021', CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP - INTERVAL '4 days 22 hours', NULL, '00000000-0000-0000-0000-000000000002', CURRENT_TIMESTAMP - INTERVAL '4 days 20 hours', NULL, NULL, NULL, '00000000-0000-0000-0000-000000000021', CURRENT_TIMESTAMP - INTERVAL '4 days', 'New evidence invalidated approval', CURRENT_TIMESTAMP - INTERVAL '6 days', CURRENT_TIMESTAMP - INTERVAL '4 days'),
-    ('50000000-0000-0000-0000-000000000008', '60000000-0000-0000-0000-000000000008', 'APPROVED', 'Approved by admin02', '00000000-0000-0000-0000-000000000002', CURRENT_TIMESTAMP - INTERVAL '4 days', CURRENT_TIMESTAMP - INTERVAL '3 days 22 hours', NULL, '00000000-0000-0000-0000-000000000021', CURRENT_TIMESTAMP - INTERVAL '3 days 20 hours', NULL, NULL, NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP - INTERVAL '3 days 20 hours');
+    ('50000000-0000-0000-0000-000000000002', '60000000-0000-0000-0000-000000000002', 'PROCESSING', 'Processing file rows', '00000000-0000-0000-0000-000000000001', CURRENT_TIMESTAMP - INTERVAL '10 days', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP - INTERVAL '11 days', CURRENT_TIMESTAMP - INTERVAL '10 days'),
+    ('50000000-0000-0000-0000-000000000003', '60000000-0000-0000-0000-000000000003', 'PROCESSING_FAILED', 'Processing failed', '00000000-0000-0000-0000-000000000011', CURRENT_TIMESTAMP - INTERVAL '9 days', CURRENT_TIMESTAMP - INTERVAL '8 days 23 hours', 'Invalid worksheet layout', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP - INTERVAL '10 days', CURRENT_TIMESTAMP - INTERVAL '8 days 23 hours'),
+    ('50000000-0000-0000-0000-000000000004', '60000000-0000-0000-0000-000000000004', 'AWAITING_APPROVAL', 'Processing completed; awaiting approval', '00000000-0000-0000-0000-000000000011', CURRENT_TIMESTAMP - INTERVAL '8 days', CURRENT_TIMESTAMP - INTERVAL '7 days 22 hours', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP - INTERVAL '9 days', CURRENT_TIMESTAMP - INTERVAL '7 days 22 hours'),
+    ('50000000-0000-0000-0000-000000000005', '60000000-0000-0000-0000-000000000005', 'APPROVED', 'Approved by admin01', '00000000-0000-0000-0000-000000000012', CURRENT_TIMESTAMP - INTERVAL '7 days', CURRENT_TIMESTAMP - INTERVAL '6 days 22 hours', NULL, '00000000-0000-0000-0000-000000000002', CURRENT_TIMESTAMP - INTERVAL '6 days 20 hours', NULL, NULL, NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP - INTERVAL '8 days', CURRENT_TIMESTAMP - INTERVAL '6 days 20 hours'),
+    ('50000000-0000-0000-0000-000000000006', '60000000-0000-0000-0000-000000000006', 'REJECTED', 'Rejected by admin02', '00000000-0000-0000-0000-000000000012', CURRENT_TIMESTAMP - INTERVAL '6 days', CURRENT_TIMESTAMP - INTERVAL '5 days 22 hours', NULL, NULL, NULL, '00000000-0000-0000-0000-000000000021', CURRENT_TIMESTAMP - INTERVAL '5 days 20 hours', 'Totals do not match supporting evidence', NULL, NULL, NULL, CURRENT_TIMESTAMP - INTERVAL '7 days', CURRENT_TIMESTAMP - INTERVAL '5 days 20 hours'),
+    ('50000000-0000-0000-0000-000000000007', '60000000-0000-0000-0000-000000000007', 'REVOKED', 'Previously approved, later revoked', '00000000-0000-0000-0000-000000000001', CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP - INTERVAL '4 days 22 hours', NULL, '00000000-0000-0000-0000-000000000002', CURRENT_TIMESTAMP - INTERVAL '4 days 20 hours', NULL, NULL, NULL, '00000000-0000-0000-0000-000000000021', CURRENT_TIMESTAMP - INTERVAL '4 days', 'New evidence invalidated approval', CURRENT_TIMESTAMP - INTERVAL '6 days', CURRENT_TIMESTAMP - INTERVAL '4 days'),
+    ('50000000-0000-0000-0000-000000000008', '60000000-0000-0000-0000-000000000008', 'APPROVED', 'Approved by admin02', '00000000-0000-0000-0000-000000000011', CURRENT_TIMESTAMP - INTERVAL '4 days', CURRENT_TIMESTAMP - INTERVAL '3 days 22 hours', NULL, '00000000-0000-0000-0000-000000000021', CURRENT_TIMESTAMP - INTERVAL '3 days 20 hours', NULL, NULL, NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP - INTERVAL '3 days 20 hours'),
+    ('50000000-0000-0000-0000-000000000009', '60000000-0000-0000-0000-000000000013', 'PENDING_EXECUTION', 'Waiting for execution after correction', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP - INTERVAL '12 hours', NULL),
+    ('50000000-0000-0000-0000-000000000010', '60000000-0000-0000-0000-000000000012', 'PENDING_EXECUTION', 'Legacy job blocked because file requires correction', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP - INTERVAL '1 day 12 hours', NULL);
 
 INSERT INTO processing_job_status_history (
     id,
@@ -174,7 +391,7 @@ SELECT
     'PROCESSING',
     'USER',
     triggered_by_user_id,
-    'Administrator started processing',
+    'Analyst started processing',
     triggered_at
 FROM processing_jobs
 WHERE triggered_by_user_id IS NOT NULL
