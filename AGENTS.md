@@ -25,10 +25,14 @@ Treat this repository as a documentation-driven spec.
 
 Use these docs in this order when adding or changing behavior:
 
-- `docs/specs/`: business and product requirements
-- `docs/adr/`: architectural decisions and tradeoffs
-- `docs/api/`: endpoint contracts and payload expectations
-- `README.md`: project overview, local setup, and current status
+- `docs/business-rules.md`: current business and workflow rules
+- `docs/architecture.md`: architectural decisions and boundaries
+- `docs/api-spec.md`: endpoint contracts and payload expectations
+- `docs/database-model.md`: schema and entity relationships
+- `docs/deployment.md`: runtime/deployment notes
+- `README.md`: project overview and local run entrypoint
+
+Planned docs folders such as `docs/specs/`, `docs/adr/`, and `docs/api/` may be introduced later. Until then, use the existing flat files above as source of truth.
 
 If a change affects user-visible behavior, validation rules, or API shape, update the docs in the same change when practical.
 

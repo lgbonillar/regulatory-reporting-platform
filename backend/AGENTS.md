@@ -26,6 +26,12 @@ Primary responsibilities:
 - springdoc-openapi
 - Testcontainers (when integration tests are needed)
 
+## Runtime Baseline
+
+- Use Java 21 for all local backend commands.
+- Prefer `./mvnw` over a global Maven install to keep builds reproducible.
+- If local Java is switched with SDKMAN or shell profile, verify `java -version` before running backend commands.
+
 ## Package Structure
 
 Base package:
