@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "skills": {
+    "angular-developer": {
+      "source": "angular/skills",
+      "sourceType": "github",
+      "skillPath": "angular-developer/SKILL.md",
+      "computedHash": "4de273da58236f27f3a59e70a2bbcc34167e298933f9a6f3b132f1d9ca44643c"
+    },
+    "frontend-design": {
+      "source": "anthropics/claude-code",
+      "sourceType": "github",
+      "skillPath": "plugins/frontend-design/skills/frontend-design/SKILL.md",
+      "computedHash": "e8118284a6365753790d44bb2758a6032b3af27fa84696428d9233f2be0f4e78"
+    },
+    "java-concurrency": {
+      "source": "pluginagentmarketplace/custom-plugin-java",
+      "sourceType": "github",
+      "skillPath": "skills/java-concurrency/SKILL.md",
+      "computedHash": "1916bd11af01e27c2e3434ff5f2696ddb7b985480210fb7d61e3dfbb6a38267a"
+    },
+    "java-fundamentals": {
+      "source": "pluginagentmarketplace/custom-plugin-java",
+      "sourceType": "github",
+      "skillPath": "skills/java-fundamentals/SKILL.md",
+      "computedHash": "b817b238a8d2b4e55523df667fcdc66e36c9c4c43257eaf423b0d0f083088225"
+    },
+    "java-jpa-hibernate": {
+      "source": "pluginagentmarketplace/custom-plugin-java",
+      "sourceType": "github",
+      "skillPath": "skills/java-jpa-hibernate/SKILL.md",
+      "computedHash": "2a0320a48f2f211c19f4fbc7a01a91656b5f5263cbf64b1edc957b7791c30a8d"
+    },
+    "java-maven": {
+      "source": "pluginagentmarketplace/custom-plugin-java",
+      "sourceType": "github",
+      "skillPath": "skills/java-maven/SKILL.md",
+      "computedHash": "ab7e888f64840a6db0e6f99b8aeed5d47d18214f6a72db36100272fcae8fcf41"
+    },
+    "java-microservices": {
+      "source": "pluginagentmarketplace/custom-plugin-java",
+      "sourceType": "github",
+      "skillPath": "skills/java-microservices/SKILL.md",
+      "computedHash": "19842d78086fa9d649d098a7bd77ed93cd6def80cd83c8bf2ce83937ad251663"
+    },
+    "java-performance": {
+      "source": "pluginagentmarketplace/custom-plugin-java",
+      "sourceType": "github",
+      "skillPath": "skills/java-performance/SKILL.md",
+      "computedHash": "e30fa5b22d77055132a60e097c200395b234f19e51e7483c83027121d3f9f6d1"
+    },
+    "java-spring-boot": {
+      "source": "pluginagentmarketplace/custom-plugin-java",
+      "sourceType": "github",
+      "skillPath": "skills/java-spring-boot/SKILL.md",
+      "computedHash": "93e5a124d8d5f29e0b19692d431452f8b6c2a2e1c3e05c0f93f07fb2473ab32a"
+    },
+    "java-testing": {
+      "source": "pluginagentmarketplace/custom-plugin-java",
+      "sourceType": "github",
+      "skillPath": "skills/java-testing/SKILL.md",
+      "computedHash": "ac873993487ec4d7d4da229792874d46847e2ba6bd97a68166bcf29f20998cb6"
+    },
+    "java-testing-advanced": {
+      "source": "pluginagentmarketplace/custom-plugin-java",
+      "sourceType": "github",
+      "skillPath": "skills/java-testing-advanced/SKILL.md",
+      "computedHash": "59b52ff2ea389902adb1c266eee935c34494c76d06d97e773bf592452e98de61"
+    }
+  }
+}
