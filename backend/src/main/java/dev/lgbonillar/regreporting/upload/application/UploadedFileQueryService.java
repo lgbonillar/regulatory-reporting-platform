@@ -50,12 +50,19 @@ public class UploadedFileQueryService {
 
     @Transactional(readOnly = true)
     public List<UploadedFileResponse> listUploadedFiles(String username) {
-        User user = userRepository.findByUsername(username)
+        User currentUser = currentUserProvider.getCurrentUser();
+        User targetUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!canListAs(currentUser, targetUser)) {
+            throw new ForbiddenOperationException(
+                    "You are not allowed to list files for this user"
+            );
+        }
 
         return uploadedFileRepository
                 .findByUploadedByIdAndStatusInOrderByUploadedAtDesc(
-                        user.getId(),
+                        targetUser.getId(),
                         List.of(
                                 UploadedFileStatus.STORED,
                                 UploadedFileStatus.PENDING_CORRECTION,
@@ -68,12 +75,39 @@ public class UploadedFileQueryService {
                 .toList();
     }
 
+    private boolean canListAs(User currentUser, User targetUser) {
+        if (currentUser.hasRole(UserRole.ROOT) ||
+                currentUser.hasRole(UserRole.ADMINISTRATOR)) {
+            return true;
+        }
+        if (currentUser.hasRole(UserRole.ANALYST)) {
+            return currentUser.getId().equals(targetUser.getId());
+        }
+        return false;
+    }
+
     @Transactional(readOnly = true)
     public UploadedFile getViewableUploadedFile(UUID fileId) {
         UploadedFile uploadedFile = uploadedFileRepository.findById(fileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Uploaded file not found"));
 
-        requireCanView(uploadedFile);
+        User currentUser = currentUserProvider.getCurrentUser();
+        boolean isPrivileged = currentUser.hasRole(UserRole.ROOT) ||
+                               currentUser.hasRole(UserRole.ADMINISTRATOR);
+        boolean isOwner = currentUser.hasRole(UserRole.ANALYST) &&
+                uploadedFile.getUploadedBy()
+                        .getUsername()
+                        .equals(currentUser.getUsername());
+
+        if (!isPrivileged && !isOwner) {
+            throw new ForbiddenOperationException(
+                    "You are not allowed to view this uploaded file"
+            );
+        }
+
+        if (!isPrivileged && uploadedFile.getStatus() != UploadedFileStatus.STORED) {
+            throw new ResourceNotFoundException("Uploaded file not found");
+        }
 
         return uploadedFile;
     }

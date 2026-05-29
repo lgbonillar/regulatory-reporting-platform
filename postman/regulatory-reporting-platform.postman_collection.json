@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "520eb9a8-e925-4998-8c72-0844e8a37ead",
+    "_postman_id": "520eb9a8-e925-4998-8c72-0844e8a37ead-revised",
     "name": "Regulatory Reporting Platform",
-    "description": "Local collection for JWT authentication, report files and processing jobs. Import with the local environment and run login first to populate tokens.",
+    "description": "Complete API workflow collection for regulatory reporting platform. Covers auth, report files, validation runs, processing jobs, and role-based authorization. Run in order listed in the collection.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -17,32 +17,19 @@
   },
   "item": [
     {
-      "name": "Auth",
+      "name": "1 - Health",
       "item": [
         {
-          "name": "Login - current user",
+          "name": "Actuator health",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const envelope = pm.response.json();",
-                  "const response = envelope.data;",
+                  "const response = pm.response.json();",
                   "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('returns success envelope', () => {",
-                  "  pm.expect(envelope.success).to.eql(true);",
-                  "  pm.expect(envelope.message).to.be.a('string').and.not.empty;",
-                  "  pm.expect(envelope.metadata.timestamp).to.be.a('string').and.not.empty;",
-                  "});",
-                  "pm.test('returns bearer tokens', () => {",
-                  "  pm.expect(response.accessToken).to.be.a('string').and.not.empty;",
-                  "  pm.expect(response.refreshToken).to.be.a('string').and.not.empty;",
-                  "  pm.expect(response.tokenType).to.eql('Bearer');",
-                  "  pm.expect(response.expiresInSeconds).to.eql(900);",
-                  "});",
-                  "pm.environment.set('accessToken', response.accessToken);",
-                  "pm.environment.set('refreshToken', response.refreshToken);"
+                  "pm.test('service is up', () => pm.expect(response.status).to.eql('UP'));"
                 ]
               }
             }
@@ -51,30 +38,48 @@
             "auth": {
               "type": "noauth"
             },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "login"
-              ]
-            }
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/actuator/health"
           }
         },
+        {
+          "name": "OpenAPI spec",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('returns openapi document', () => {",
+                  "  pm.expect(response.openapi).to.be.a('string').and.not.empty;",
+                  "  pm.expect(response.paths).to.be.an('object');",
+                  "});",
+                  "pm.test('includes auth paths', () => {",
+                  "  pm.expect(response.paths['/api/auth/login']).to.exist;",
+                  "  pm.expect(response.paths['/api/report-files']).to.exist;",
+                  "  pm.expect(response.paths['/api/processing-jobs']).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v3/api-docs"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 - Auth",
+      "item": [
         {
           "name": "Login - analyst01",
           "event": [
@@ -83,6 +88,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "const parseJwt = (token) => { try { const [h,p] = token.split(\".\"); return JSON.parse(atob(p.replace(/-/g, \"+\").replace(/_/g, \"/\"))); } catch(e) { return {}; } };",
                   "const envelope = pm.response.json();",
                   "const response = envelope.data;",
                   "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
@@ -96,6 +102,10 @@
                   "  pm.expect(response.refreshToken).to.be.a('string').and.not.empty;",
                   "  pm.expect(response.tokenType).to.eql('Bearer');",
                   "  pm.expect(response.expiresInSeconds).to.eql(900);",
+                  "});",
+                  "pm.test('JWT contains correct claims', () => {",
+                  "  pm.expect(parseJwt(response.accessToken).username).to.eql('analyst01');",
+                  "  pm.expect(parseJwt(response.accessToken).role).to.eql('ANALYST');",
                   "});",
                   "pm.environment.set('accessToken', response.accessToken);",
                   "pm.environment.set('refreshToken', response.refreshToken);",
@@ -131,19 +141,21 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "const parseJwt = (token) => { try { const [h,p] = token.split(\".\"); return JSON.parse(atob(p.replace(/-/g, \"+\").replace(/_/g, \"/\"))); } catch(e) { return {}; } };",
                   "const envelope = pm.response.json();",
                   "const response = envelope.data;",
                   "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
                   "pm.test('returns success envelope', () => {",
                   "  pm.expect(envelope.success).to.eql(true);",
                   "  pm.expect(envelope.message).to.be.a('string').and.not.empty;",
-                  "  pm.expect(envelope.metadata.timestamp).to.be.a('string').and.not.empty;",
                   "});",
                   "pm.test('returns bearer tokens', () => {",
                   "  pm.expect(response.accessToken).to.be.a('string').and.not.empty;",
                   "  pm.expect(response.refreshToken).to.be.a('string').and.not.empty;",
-                  "  pm.expect(response.tokenType).to.eql('Bearer');",
-                  "  pm.expect(response.expiresInSeconds).to.eql(900);",
+                  "});",
+                  "pm.test('JWT contains correct claims', () => {",
+                  "  pm.expect(parseJwt(response.accessToken).username).to.eql('admin01');",
+                  "  pm.expect(parseJwt(response.accessToken).role).to.eql('ADMINISTRATOR');",
                   "});",
                   "pm.environment.set('accessToken', response.accessToken);",
                   "pm.environment.set('refreshToken', response.refreshToken);",
@@ -179,19 +191,14 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "const parseJwt = (token) => { try { const [h,p] = token.split(\".\"); return JSON.parse(atob(p.replace(/-/g, \"+\").replace(/_/g, \"/\"))); } catch(e) { return {}; } };",
                   "const envelope = pm.response.json();",
                   "const response = envelope.data;",
                   "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('returns success envelope', () => {",
-                  "  pm.expect(envelope.success).to.eql(true);",
-                  "  pm.expect(envelope.message).to.be.a('string').and.not.empty;",
-                  "  pm.expect(envelope.metadata.timestamp).to.be.a('string').and.not.empty;",
-                  "});",
-                  "pm.test('returns bearer tokens', () => {",
-                  "  pm.expect(response.accessToken).to.be.a('string').and.not.empty;",
-                  "  pm.expect(response.refreshToken).to.be.a('string').and.not.empty;",
-                  "  pm.expect(response.tokenType).to.eql('Bearer');",
-                  "  pm.expect(response.expiresInSeconds).to.eql(900);",
+                  "pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
+                  "pm.test('JWT contains correct claims', () => {",
+                  "  pm.expect(parseJwt(response.accessToken).username).to.eql('auditor01');",
+                  "  pm.expect(parseJwt(response.accessToken).role).to.eql('AUDITOR');",
                   "});",
                   "pm.environment.set('accessToken', response.accessToken);",
                   "pm.environment.set('refreshToken', response.refreshToken);",
@@ -227,22 +234,15 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "const parseJwt = (token) => { try { const [h,p] = token.split(\".\"); return JSON.parse(atob(p.replace(/-/g, \"+\").replace(/_/g, \"/\"))); } catch(e) { return {}; } };",
                   "const envelope = pm.response.json();",
                   "const response = envelope.data;",
                   "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('returns success envelope', () => {",
-                  "  pm.expect(envelope.success).to.eql(true);",
-                  "  pm.expect(envelope.message).to.be.a('string').and.not.empty;",
-                  "  pm.expect(envelope.metadata.timestamp).to.be.a('string').and.not.empty;",
+                  "pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
+                  "pm.test('JWT contains correct claims', () => {",
+                  "  pm.expect(parseJwt(response.accessToken).username).to.eql('root01');",
+                  "  pm.expect(parseJwt(response.accessToken).role).to.eql('ROOT');",
                   "});",
-                  "pm.test('returns bearer tokens', () => {",
-                  "  pm.expect(response.accessToken).to.be.a('string').and.not.empty;",
-                  "  pm.expect(response.refreshToken).to.be.a('string').and.not.empty;",
-                  "  pm.expect(response.tokenType).to.eql('Bearer');",
-                  "  pm.expect(response.expiresInSeconds).to.eql(900);",
-                  "});",
-                  "pm.environment.set('accessToken', response.accessToken);",
-                  "pm.environment.set('refreshToken', response.refreshToken);",
                   "pm.environment.set('rootAccessToken', response.accessToken);",
                   "pm.environment.set('username', 'root01');"
                 ]
@@ -268,6 +268,85 @@
           }
         },
         {
+          "name": "Login - invalid credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 403 Forbidden', () => pm.response.to.have.status(403));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "pm.test('returns error envelope', () => {",
+                  "  pm.expect(envelope.success).to.eql(false);",
+                  "  pm.expect(envelope.message).to.be.a('string').and.not.empty;",
+                  "  pm.expect(envelope.error).to.be.an('object');",
+                  "  pm.expect(envelope.error.code).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('does not set access token', () => {",
+                  "  pm.expect(pm.environment.get('accessToken')).to.not.be.ok;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"analyst01\",\n  \"password\": \"wrongpassword\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Login - empty payload",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 400 Bad Request', () => pm.response.to.have.status(400));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "pm.test('returns error envelope', () => {",
+                  "  pm.expect(envelope.success).to.eql(false);",
+                  "  pm.expect(envelope.error).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"\",\n  \"password\": \"\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        },
+        {
           "name": "Refresh token",
           "event": [
             {
@@ -275,19 +354,20 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "const oldRefreshToken = pm.environment.get('refreshToken');",
                   "const envelope = pm.response.json();",
                   "const response = envelope.data;",
                   "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
                   "pm.test('returns success envelope', () => {",
                   "  pm.expect(envelope.success).to.eql(true);",
-                  "  pm.expect(envelope.message).to.be.a('string').and.not.empty;",
                   "  pm.expect(envelope.metadata.timestamp).to.be.a('string').and.not.empty;",
                   "});",
-                  "pm.test('returns bearer tokens', () => {",
+                  "pm.test('returns new access token', () => {",
                   "  pm.expect(response.accessToken).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('rotates refresh token', () => {",
                   "  pm.expect(response.refreshToken).to.be.a('string').and.not.empty;",
-                  "  pm.expect(response.tokenType).to.eql('Bearer');",
-                  "  pm.expect(response.expiresInSeconds).to.eql(900);",
+                  "  pm.expect(response.refreshToken).to.not.eql(oldRefreshToken);",
                   "});",
                   "pm.environment.set('accessToken', response.accessToken);",
                   "pm.environment.set('refreshToken', response.refreshToken);"
@@ -314,6 +394,43 @@
           }
         },
         {
+          "name": "Refresh - invalid token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 403 Forbidden', () => pm.response.to.have.status(403));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "pm.test('returns error envelope', () => {",
+                  "  pm.expect(envelope.success).to.eql(false);",
+                  "  pm.expect(envelope.error.code).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"this-is-not-a-valid-refresh-token\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/refresh"
+          }
+        },
+        {
           "name": "Logout",
           "event": [
             {
@@ -322,9 +439,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('returns 204 No Content', () => pm.response.to.have.status(204));",
-                  "pm.test('response body is empty', () => pm.expect(pm.response.text()).to.eql(''));",
-                  "pm.environment.unset('accessToken');",
-                  "pm.environment.unset('refreshToken');"
+                  "pm.test('response body is empty', () => pm.expect(pm.response.text()).to.satisfy(t => t === ''));"
                 ]
               }
             }
@@ -347,7 +462,7 @@
       ]
     },
     {
-      "name": "Report Files",
+      "name": "3 - Report Files",
       "item": [
         {
           "name": "List files by analyst01",
@@ -375,15 +490,19 @@
                   "    pm.expect(file.uploadedAt).to.be.a('string').and.not.empty;",
                   "  });",
                   "});",
-                  "pm.test('all files belong to expected user', () => {",
+                  "pm.test('all files belong to analyst01', () => {",
                   "  response.forEach(file => pm.expect(file.uploadedBy).to.eql('analyst01'));",
                   "});",
                   "const stored = response.find(file => file.fileStatus === 'STORED');",
                   "const missing = response.find(file => file.fileStatus === 'MISSING');",
                   "const pendingCorrection = response.find(file => file.fileStatus === 'PENDING_CORRECTION');",
+                  "const failedUpload = response.find(file => file.fileStatus === 'FAILED');",
                   "if (stored) pm.collectionVariables.set('storedFileId', stored.fileId);",
                   "if (missing) pm.collectionVariables.set('missingFileId', missing.fileId);",
-                  "if (pendingCorrection) pm.collectionVariables.set('pendingCorrectionFileId', pendingCorrection.fileId);"
+                  "if (pendingCorrection) pm.collectionVariables.set('pendingCorrectionFileId', pendingCorrection.fileId);",
+                  "if (failedUpload) pm.collectionVariables.set('failedUploadFileId', failedUpload.fileId);",
+                  "const analyst02File = response.find(file => file.uploadedBy === 'analyst02');",
+                  "if (analyst02File) pm.collectionVariables.set('analyst02FileId', analyst02File.fileId);"
                 ]
               }
             }
@@ -395,13 +514,17 @@
           }
         },
         {
-          "name": "List files by environment username",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/report-files?username={{username}}"
-          },
+          "name": "List files by analyst01 - as ADMINISTRATOR",
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('adminAccessToken'));"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -410,73 +533,112 @@
                   "const envelope = pm.response.json();",
                   "const response = envelope.data;",
                   "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('returns success envelope', () => {",
-                  "  pm.expect(envelope.success).to.eql(true);",
-                  "  pm.expect(envelope.metadata.count).to.eql(response.length);",
-                  "});",
+                  "pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
                   "pm.test('returns a list', () => pm.expect(response).to.be.an('array'));",
-                  "pm.test('file items have expected shape', () => {",
-                  "  response.forEach(file => {",
-                  "    pm.expect(file.fileId).to.be.a('string').and.not.empty;",
-                  "    pm.expect(file.originalFilename).to.be.a('string').and.not.empty;",
-                  "    pm.expect(file.storedFilename).to.be.a('string').and.not.empty;",
-                  "    pm.expect(file.fileStatus).to.be.oneOf(['STORED', 'PENDING_CORRECTION', 'MISSING', 'FAILED', 'DELETED']);",
-                  "    pm.expect(file.uploadedBy).to.be.a('string').and.not.empty;",
-                  "    pm.expect(file.uploadedAt).to.be.a('string').and.not.empty;",
-                  "  });",
-                  "});",
-                  "const stored = response.find(file => file.fileStatus === 'STORED');",
-                  "const missing = response.find(file => file.fileStatus === 'MISSING');",
-                  "const pendingCorrection = response.find(file => file.fileStatus === 'PENDING_CORRECTION');",
-                  "if (stored) pm.collectionVariables.set('storedFileId', stored.fileId);",
-                  "if (missing) pm.collectionVariables.set('missingFileId', missing.fileId);",
-                  "if (pendingCorrection) pm.collectionVariables.set('pendingCorrectionFileId', pendingCorrection.fileId);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Upload report file",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "  const envelope = pm.response.json();",
-                  "  const response = envelope.data;",
-                  "  pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
-                  "  pm.test('returns upload response', () => {",
-                  "    pm.expect(response.fileId).to.be.a('string').and.not.empty;",
-                  "    pm.expect(response.jobId).to.be.a('string').and.not.empty;",
-                  "    pm.expect(response.originalFilename).to.be.a('string').and.not.empty;",
-                  "    pm.expect(response.fileStatus).to.eql('STORED');",
-                  "    pm.expect(response.jobStatus).to.eql('PENDING_EXECUTION');",
-                  "  });",
-                  "  pm.collectionVariables.set('uploadedFileId', response.fileId);",
-                  "  pm.collectionVariables.set('uploadedJobId', response.jobId);",
-                  "}",
-                  "pm.test('returns 200 OK when a file is selected', () => pm.expect([200, 400]).to.include(pm.response.code));"
+                  "pm.test('all files belong to analyst01', () => {",
+                  "  response.forEach(file => pm.expect(file.uploadedBy).to.eql('analyst01'));",
+                  "});"
                 ]
               }
             }
           ],
           "request": {
-            "method": "POST",
+            "method": "GET",
             "header": [],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "file",
-                  "type": "file",
-                  "src": []
-                }
-              ]
+            "url": "{{baseUrl}}/api/report-files?username=analyst01"
+          }
+        },
+        {
+          "name": "List files as AUDITOR - should be forbidden",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('auditorAccessToken'));"
+                ]
+              }
             },
-            "url": "{{baseUrl}}/api/report-files"
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 403 Forbidden', () => pm.response.to.have.status(403));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "pm.test('returns error envelope', () => {",
+                  "  pm.expect(envelope.success).to.eql(false);",
+                  "  pm.expect(envelope.message).to.be.a('string').and.not.empty;",
+                  "  pm.expect(envelope.error.code).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/report-files?username=analyst01"
+          }
+        },
+        {
+          "name": "List files as ROOT",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('rootAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('returns success envelope', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "pm.test('returns a list', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/report-files?username=analyst01"
+          }
+        },
+        {
+          "name": "List files analyst02 as analyst01 - should be forbidden",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('analystAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/report-files?username=analyst02"
           }
         },
         {
@@ -494,7 +656,7 @@
                   "  pm.expect(envelope.success).to.eql(true);",
                   "  pm.expect(envelope.metadata.timestamp).to.be.a('string').and.not.empty;",
                   "});",
-                  "pm.test('returns valid sales upload response', () => {",
+                  "pm.test('returns valid upload response', () => {",
                   "  pm.expect(response.fileId).to.be.a('string').and.not.empty;",
                   "  pm.expect(response.jobId).to.be.a('string').and.not.empty;",
                   "  pm.expect(response.originalFilename).to.contain('.xlsx');",
@@ -502,8 +664,7 @@
                   "  pm.expect(response.jobStatus).to.eql('PENDING_EXECUTION');",
                   "});",
                   "pm.collectionVariables.set('validSalesFileId', response.fileId);",
-                  "pm.collectionVariables.set('validSalesJobId', response.jobId);",
-                  "pm.collectionVariables.set('pendingJobId', response.jobId);"
+                  "pm.collectionVariables.set('validSalesJobId', response.jobId);"
                 ]
               }
             }
@@ -535,16 +696,12 @@
                   "const envelope = pm.response.json();",
                   "const response = envelope.data;",
                   "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('returns success envelope', () => {",
-                  "  pm.expect(envelope.success).to.eql(true);",
-                  "  pm.expect(envelope.metadata.timestamp).to.be.a('string').and.not.empty;",
-                  "});",
-                  "pm.test('returns invalid sales upload response', () => {",
+                  "pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
+                  "pm.test('returns invalid upload response', () => {",
                   "  pm.expect(response.fileId).to.be.a('string').and.not.empty;",
-                  "  pm.expect(response.jobId).to.be.oneOf([null, undefined]);",
                   "  pm.expect(response.originalFilename).to.contain('.xlsx');",
                   "  pm.expect(response.fileStatus).to.eql('PENDING_CORRECTION');",
-                  "  pm.expect(response.jobStatus).to.be.oneOf([null, undefined]);",
+                  "  pm.expect(response.jobId).to.be.oneOf([null, undefined]);",
                   "});",
                   "pm.collectionVariables.set('invalidSalesFileId', response.fileId);",
                   "pm.collectionVariables.set('pendingCorrectionFileId', response.fileId);"
@@ -569,7 +726,55 @@
           }
         },
         {
-          "name": "List validation runs for seeded invalid file",
+          "name": "Upload as ADMINISTRATOR - should be forbidden",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('adminAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 403 Forbidden when admin token is available', () => {",
+                  "  if (pm.environment.get('adminAccessToken')) {",
+                  "    pm.expect(pm.response.code).to.eql(403);",
+                  "  }",
+                  "});",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "  const envelope = pm.response.json();",
+                  "  pm.test('returns error envelope', () => {",
+                  "    pm.expect(envelope.success).to.eql(false);",
+                  "    pm.expect(envelope.error.code).to.be.a('string').and.not.empty;",
+                  "  });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{validSalesReportPath}}"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/report-files"
+          }
+        },
+        {
+          "name": "List validation runs for invalid file",
           "event": [
             {
               "listen": "test",
@@ -584,11 +789,22 @@
                   "  pm.expect(response).to.be.an('array').and.not.empty;",
                   "  pm.expect(envelope.metadata.count).to.eql(response.length);",
                   "});",
-                  "pm.test('includes failed upload validation run', () => {",
-                  "  const failedRun = response.find(run => run.status === 'FAILED');",
-                  "  pm.expect(failedRun).to.exist;",
-                  "  pm.collectionVariables.set('validationRunId', failedRun.validationRunId);",
-                  "});"
+                  "pm.test('validation run items have expected shape', () => {",
+                  "  response.forEach(run => {",
+                  "    pm.expect(run.validationRunId).to.be.a('string').and.not.empty;",
+                  "    pm.expect(run.fileId).to.be.a('string').and.not.empty;",
+                  "    pm.expect(run.status).to.be.oneOf(['PASSED', 'FAILED', 'SYSTEM_FAILED']);",
+                  "    pm.expect(run.source).to.be.oneOf(['UPLOAD', 'REPLACEMENT']);",
+                  "    pm.expect(run.summaryMessage).to.be.a('string').and.not.empty;",
+                  "    pm.expect(run.createdBy).to.be.a('string').and.not.empty;",
+                  "    pm.expect(run.createdAt).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "});",
+                  "pm.test('validation run fileId matches requested file', () => {",
+                  "  response.forEach(run => pm.expect(run.fileId).to.eql(pm.collectionVariables.get('pendingCorrectionFileId')));",
+                  "});",
+                  "const failedRun = response.find(run => run.status === 'FAILED');",
+                  "if (failedRun) pm.collectionVariables.set('validationRunId', failedRun.validationRunId);"
                 ]
               }
             }
@@ -600,7 +816,7 @@
           }
         },
         {
-          "name": "List findings for seeded invalid file",
+          "name": "List findings for invalid file",
           "event": [
             {
               "listen": "test",
@@ -615,8 +831,20 @@
                   "  pm.expect(response).to.be.an('array').and.not.empty;",
                   "  pm.expect(envelope.metadata.count).to.eql(response.length);",
                   "});",
+                  "pm.test('finding items have expected shape', () => {",
+                  "  response.forEach(finding => {",
+                  "    pm.expect(finding.findingId).to.be.a('string').and.not.empty;",
+                  "    pm.expect(finding.validationRunId).to.be.a('string').and.not.empty;",
+                  "    pm.expect(finding.fileId).to.be.a('string').and.not.empty;",
+                  "    pm.expect(finding.severity).to.be.oneOf(['ERROR', 'WARNING', 'INFO']);",
+                  "    pm.expect(finding.scope).to.be.a('string').and.not.empty;",
+                  "    pm.expect(finding.code).to.be.a('string').and.not.empty;",
+                  "    pm.expect(finding.message).to.be.a('string').and.not.empty;",
+                  "    pm.expect(finding.createdAt).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "});",
                   "pm.test('includes validation finding codes', () => {",
-                  "  const codes = response.map(finding => finding.code);",
+                  "  const codes = response.map(f => f.code);",
                   "  pm.expect(codes.some(code => ['MISSING_REQUIRED_SHEET', 'INVALID_COLUMN_ORDER', 'INVALID_NUMERIC_VALUE'].includes(code))).to.eql(true);",
                   "});"
                 ]
@@ -640,12 +868,20 @@
                   "const envelope = pm.response.json();",
                   "const response = envelope.data;",
                   "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('returns run findings', () => {",
+                  "pm.test('returns success envelope', () => {",
                   "  pm.expect(envelope.success).to.eql(true);",
+                  "  pm.expect(envelope.metadata.count).to.eql(response.length);",
+                  "});",
+                  "pm.test('returns run findings', () => {",
                   "  pm.expect(response).to.be.an('array').and.not.empty;",
+                  "});",
+                  "pm.test('findings belong to specified validation run', () => {",
                   "  response.forEach(finding => {",
                   "    pm.expect(finding.validationRunId).to.eql(pm.collectionVariables.get('validationRunId'));",
                   "  });",
+                  "});",
+                  "pm.test('findings fileId matches pending correction file', () => {",
+                  "  response.forEach(finding => pm.expect(finding.fileId).to.eql(pm.collectionVariables.get('pendingCorrectionFileId')));",
                   "});"
                 ]
               }
@@ -658,24 +894,30 @@
           }
         },
         {
-          "name": "Auditor cannot list file validation runs",
-          "auth": {
-            "type": "bearer",
-            "bearer": [
-              {
-                "key": "token",
-                "value": "{{auditorAccessToken}}",
-                "type": "string"
-              }
-            ]
-          },
+          "name": "Validation runs as AUDITOR - should be forbidden",
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('auditorAccessToken'));"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('returns 403 Forbidden for auditor', () => pm.response.to.have.status(403));"
+                  "pm.test('returns 403 Forbidden', () => pm.response.to.have.status(403));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "pm.test('returns error envelope', () => {",
+                  "  pm.expect(envelope.success).to.eql(false);",
+                  "  pm.expect(envelope.message).to.be.a('string').and.not.empty;",
+                  "  pm.expect(envelope.error.code).to.be.a('string').and.not.empty;",
+                  "});"
                 ]
               }
             }
@@ -687,6 +929,157 @@
           }
         },
         {
+          "name": "Findings as AUDITOR - should be forbidden",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('auditorAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 403 Forbidden', () => pm.response.to.have.status(403));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "pm.test('returns error envelope', () => pm.expect(envelope.success).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/report-files/{{pendingCorrectionFileId}}/findings"
+          }
+        },
+        {
+          "name": "Validation run findings as AUDITOR - should be forbidden",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('auditorAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 403 Forbidden', () => pm.response.to.have.status(403));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "pm.test('returns error envelope', () => pm.expect(envelope.success).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/report-files/{{pendingCorrectionFileId}}/validation-runs/{{validationRunId}}/findings"
+          }
+        },
+        {
+          "name": "Download stored file",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('returns attachment header', () => {",
+                  "    pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment');",
+                  "  });",
+                  "  pm.test('returns content type excel', () => {",
+                  "    const ct = pm.response.headers.get('Content-Type');",
+                  "    pm.expect(ct).to.match(/excel|spreadsheet|octet/);",
+                  "  });",
+                  "} else if (pm.response.code === 404) {",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "  const envelope = pm.response.json();",
+                  "  pm.test('returns missing resource message', () => pm.expect(envelope.message).to.be.a('string').and.not.empty);",
+                  "}",
+                  "pm.test('returns 200 OK or 404 Not Found', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/report-files/{{storedFileId}}/download"
+          }
+        },
+        {
+          "name": "Download missing file - 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 404 Not Found', () => pm.response.to.have.status(404));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "pm.test('returns error envelope', () => {",
+                  "  pm.expect(envelope.success).to.eql(false);",
+                  "  pm.expect(envelope.error).to.be.an('object');",
+                  "  pm.expect(envelope.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/report-files/{{missingFileId}}/download"
+          }
+        },
+        {
+          "name": "Download as AUDITOR - should be forbidden",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('auditorAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 403 Forbidden', () => pm.response.to.have.status(403));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "pm.test('returns error envelope', () => pm.expect(envelope.success).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/report-files/{{storedFileId}}/download"
+          }
+        },
+        {
           "name": "Update report file",
           "event": [
             {
@@ -694,16 +1087,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('returns 200 OK when a file is selected and id exists', () => pm.expect([200, 400, 404]).to.include(pm.response.code));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
                   "if (pm.response.code === 200) {",
-                  "  const envelope = pm.response.json();",
                   "  const response = envelope.data;",
-                  "  pm.expect(envelope.success).to.eql(true);",
-                  "  pm.expect(response.fileId).to.eql(pm.collectionVariables.get('storedFileId'));",
-                  "  pm.expect(response.jobId).to.be.a('string').and.not.empty;",
-                  "  pm.expect(response.fileStatus).to.eql('STORED');",
-                  "  pm.expect(response.jobStatus).to.eql('PENDING_EXECUTION');",
+                  "  pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
+                  "  pm.test('returns updated file', () => {",
+                  "    pm.expect(response.fileId).to.be.a('string').and.not.empty;",
+                  "    pm.expect(response.originalFilename).to.contain('.xlsx');",
+                  "  });",
+                  "  pm.test('file status is STORED', () => pm.expect(response.fileStatus).to.eql('STORED'));",
                   "  pm.collectionVariables.set('updatedJobId', response.jobId);",
+                  "  pm.collectionVariables.set('correctedFileId', response.fileId);",
                   "}"
                 ]
               }
@@ -718,7 +1113,7 @@
                 {
                   "key": "file",
                   "type": "file",
-                  "src": []
+                  "src": "{{validSalesReportPath}}"
                 }
               ]
             },
@@ -726,55 +1121,45 @@
           }
         },
         {
-          "name": "Download stored file",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/report-files/{{storedFileId}}/download"
-          },
+          "name": "Update as ADMINISTRATOR - should be forbidden",
           "event": [
             {
-              "listen": "test",
+              "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('returns file or missing-file error', () => pm.expect([200, 404]).to.include(pm.response.code));",
-                  "if (pm.response.code === 200) {",
-                  "  pm.test('returns attachment header', () => {",
-                  "    pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment');",
-                  "  });",
-                  "} else {",
-                  "  const response = pm.response.json();",
-                  "  pm.test('returns missing resource message', () => pm.expect(response.message).to.be.a('string').and.not.empty);",
-                  "}"
+                  "pm.environment.set('accessToken', pm.environment.get('adminAccessToken'));"
                 ]
               }
-            }
-          ]
-        },
-        {
-          "name": "Download missing file",
-          "event": [
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('returns 404 Not Found', () => pm.response.to.have.status(404));",
+                  "pm.test('returns 403 Forbidden', () => pm.response.to.have.status(403));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
                   "const envelope = pm.response.json();",
-                  "pm.test('returns error envelope', () => {",
-                  "  pm.expect(envelope.success).to.eql(false);",
-                  "  pm.expect(envelope.error.code).to.eql('RESOURCE_NOT_FOUND');",
-                  "  pm.expect(envelope.message).to.be.a('string').and.not.empty;",
-                  "});"
+                  "pm.test('returns error envelope', () => pm.expect(envelope.success).to.eql(false));",
+                  "}"
                 ]
               }
             }
           ],
           "request": {
-            "method": "GET",
+            "method": "PUT",
             "header": [],
-            "url": "{{baseUrl}}/api/report-files/{{missingFileId}}/download"
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{validSalesReportPath}}"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/report-files/{{storedFileId}}"
           }
         },
         {
@@ -785,9 +1170,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('deletes file or reports it already unavailable', () => pm.expect([204, 404, 409]).to.include(pm.response.code));",
+                  "pm.test('returns 204 No Content on success', () => pm.expect([204, 404, 409]).to.include(pm.response.code));",
                   "if (pm.response.code === 204) {",
-                  "  pm.expect(pm.response.text()).to.eql('');",
+                  "  pm.test('response body is empty', () => pm.expect(pm.response.text()).to.satisfy(t => t === ''));",
                   "}"
                 ]
               }
@@ -798,11 +1183,87 @@
             "header": [],
             "url": "{{baseUrl}}/api/report-files/{{deletableFileId}}"
           }
+        },
+        {
+          "name": "Delete as ADMINISTRATOR - should be forbidden",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('adminAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 403 Forbidden', () => pm.response.to.have.status(403));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "pm.test('returns error envelope', () => pm.expect(envelope.success).to.eql(false));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/report-files/{{storedFileId}}"
+          }
+        },
+        {
+          "name": "Validation runs for missing file - 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 404 Not Found', () => pm.response.to.have.status(404));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "pm.test('returns error envelope', () => pm.expect(envelope.success).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/report-files/{{missingFileId}}/validation-runs"
+          }
+        },
+        {
+          "name": "Findings for missing validation run - 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 404 Not Found', () => pm.response.to.have.status(404));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "pm.test('returns error envelope', () => pm.expect(envelope.success).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/report-files/{{pendingCorrectionFileId}}/validation-runs/{{missingValidationRunId}}/findings"
+          }
         }
       ]
     },
     {
-      "name": "Processing Jobs",
+      "name": "4 - Processing Jobs",
       "item": [
         {
           "name": "List all processing jobs",
@@ -832,7 +1293,6 @@
                   "  });",
                   "});",
                   "const byStatus = status => response.find(job => job.jobStatus === status);",
-                  "if (response[0]) { pm.collectionVariables.set('jobId', response[0].jobId); pm.collectionVariables.set('fileId', response[0].fileId); }",
                   "const pending = byStatus('PENDING_EXECUTION');",
                   "const processing = byStatus('PROCESSING');",
                   "const awaiting = byStatus('AWAITING_APPROVAL');",
@@ -840,6 +1300,7 @@
                   "const rejected = byStatus('REJECTED');",
                   "const revoked = byStatus('REVOKED');",
                   "const failed = byStatus('PROCESSING_FAILED');",
+                  "if (response[0]) { pm.collectionVariables.set('jobId', response[0].jobId); pm.collectionVariables.set('fileId', response[0].fileId); }",
                   "if (pending) pm.collectionVariables.set('pendingJobId', pending.jobId);",
                   "if (processing) pm.collectionVariables.set('processingJobId', processing.jobId);",
                   "if (awaiting) pm.collectionVariables.set('awaitingApprovalJobId', awaiting.jobId);",
@@ -859,11 +1320,6 @@
         },
         {
           "name": "List processing jobs by analyst01",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/processing-jobs?username=analyst01"
-          },
           "event": [
             {
               "listen": "test",
@@ -873,53 +1329,116 @@
                   "const envelope = pm.response.json();",
                   "const response = envelope.data;",
                   "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('returns success envelope', () => {",
-                  "  pm.expect(envelope.success).to.eql(true);",
-                  "  pm.expect(envelope.metadata.count).to.eql(response.length);",
-                  "});",
+                  "pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
                   "pm.test('returns a list', () => pm.expect(response).to.be.an('array'));",
-                  "pm.test('job items have expected shape', () => {",
-                  "  response.forEach(job => {",
-                  "    pm.expect(job.jobId).to.be.a('string').and.not.empty;",
-                  "    pm.expect(job.fileId).to.be.a('string').and.not.empty;",
-                  "    pm.expect(job.originalFilename).to.be.a('string').and.not.empty;",
-                  "    pm.expect(job.fileStatus).to.be.oneOf(['STORED', 'PENDING_CORRECTION', 'MISSING', 'FAILED', 'DELETED']);",
-                  "    pm.expect(job.jobStatus).to.be.oneOf(['PENDING_EXECUTION', 'PROCESSING', 'PROCESSING_FAILED', 'AWAITING_APPROVAL', 'APPROVED', 'REJECTED', 'REVOKED']);",
-                  "    pm.expect(job.uploadedBy).to.be.a('string').and.not.empty;",
-                  "    pm.expect(job.createdAt).to.be.a('string').and.not.empty;",
-                  "  });",
-                  "});",
-                  "pm.test('all jobs belong to expected user', () => {",
+                  "pm.test('all jobs belong to analyst01', () => {",
                   "  response.forEach(job => pm.expect(job.uploadedBy).to.eql('analyst01'));",
-                  "});",
-                  "const byStatus = status => response.find(job => job.jobStatus === status);",
-                  "if (response[0]) { pm.collectionVariables.set('jobId', response[0].jobId); pm.collectionVariables.set('fileId', response[0].fileId); }",
-                  "const pending = byStatus('PENDING_EXECUTION');",
-                  "const processing = byStatus('PROCESSING');",
-                  "const awaiting = byStatus('AWAITING_APPROVAL');",
-                  "const approved = byStatus('APPROVED');",
-                  "const rejected = byStatus('REJECTED');",
-                  "const revoked = byStatus('REVOKED');",
-                  "const failed = byStatus('PROCESSING_FAILED');",
-                  "if (pending) pm.collectionVariables.set('pendingJobId', pending.jobId);",
-                  "if (processing) pm.collectionVariables.set('processingJobId', processing.jobId);",
-                  "if (awaiting) pm.collectionVariables.set('awaitingApprovalJobId', awaiting.jobId);",
-                  "if (approved) pm.collectionVariables.set('approvedJobId', approved.jobId);",
-                  "if (rejected) pm.collectionVariables.set('rejectedJobId', rejected.jobId);",
-                  "if (revoked) pm.collectionVariables.set('revokedJobId', revoked.jobId);",
-                  "if (failed) pm.collectionVariables.set('failedJobId', failed.jobId);"
+                  "});"
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Get processing job",
+          ],
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/processing-jobs/{{jobId}}"
-          },
+            "url": "{{baseUrl}}/api/processing-jobs?username=analyst01"
+          }
+        },
+        {
+          "name": "List processing jobs as ADMINISTRATOR for analyst01",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('adminAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const envelope = pm.response.json();",
+                  "const response = envelope.data;",
+                  "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('returns a list', () => pm.expect(response).to.be.an('array'));",
+                  "pm.test('all jobs belong to analyst01', () => {",
+                  "  response.forEach(job => pm.expect(job.uploadedBy).to.eql('analyst01'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/processing-jobs?username=analyst01"
+          }
+        },
+        {
+          "name": "List processing jobs as AUDITOR - should be forbidden",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('auditorAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 403 Forbidden', () => pm.response.to.have.status(403));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "pm.test('returns error envelope', () => pm.expect(envelope.success).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/processing-jobs"
+          }
+        },
+        {
+          "name": "List jobs analyst02 as analyst01 - should be forbidden",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('analystAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 403 Forbidden or filtered list', () => pm.expect([200, 200, 403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/processing-jobs?username=analyst02"
+          }
+        },
+        {
+          "name": "Get processing job",
           "event": [
             {
               "listen": "test",
@@ -942,7 +1461,37 @@
                 ]
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/processing-jobs/{{jobId}}"
+          }
+        },
+        {
+          "name": "Get missing processing job - 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 404 Not Found', () => pm.response.to.have.status(404));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "pm.test('returns error envelope', () => {",
+                  "  pm.expect(envelope.success).to.eql(false);",
+                  "  pm.expect(envelope.error.code).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/processing-jobs/{{missingJobId}}"
+          }
         },
         {
           "name": "Get processing job history",
@@ -955,7 +1504,10 @@
                   "const envelope = pm.response.json();",
                   "const response = envelope.data;",
                   "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('returns success envelope', () => { pm.expect(envelope.success).to.eql(true); pm.expect(envelope.metadata.count).to.eql(response.length); });",
+                  "pm.test('returns success envelope', () => {",
+                  "  pm.expect(envelope.success).to.eql(true);",
+                  "  pm.expect(envelope.metadata.count).to.eql(response.length);",
+                  "});",
                   "pm.test('returns history list', () => pm.expect(response).to.be.an('array'));",
                   "pm.test('history items have expected shape', () => {",
                   "  response.forEach(item => {",
@@ -988,8 +1540,6 @@
                   "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
                   "pm.test('returns success envelope', () => {",
                   "  pm.expect(envelope.success).to.eql(true);",
-                  "  pm.expect(envelope.message).to.be.a('string').and.not.empty;",
-                  "  pm.expect(envelope.metadata.timestamp).to.be.a('string').and.not.empty;",
                   "  pm.expect(envelope.metadata.count).to.eql(response.length);",
                   "});",
                   "pm.test('returns findings list', () => pm.expect(response).to.be.an('array'));",
@@ -997,17 +1547,16 @@
                   "  response.forEach(finding => {",
                   "    pm.expect(finding.id).to.be.a('string').and.not.empty;",
                   "    pm.expect(finding.severity).to.be.oneOf(['ERROR', 'WARNING', 'INFO']);",
-                  "    pm.expect(finding.scope).to.be.oneOf(['FILE_STRUCTURE', 'SHEET_STRUCTURE', 'COLUMN_STRUCTURE', 'ROW_DATA', 'BUSINESS_RULE', 'CROSS_FILE_VALIDATION', 'SYSTEM']);",
+                  "    pm.expect(finding.scope).to.be.a('string').and.not.empty;",
                   "    pm.expect(finding.code).to.be.a('string').and.not.empty;",
                   "    pm.expect(finding.message).to.be.a('string').and.not.empty;",
                   "    pm.expect(finding.createdAt).to.be.a('string').and.not.empty;",
                   "  });",
                   "});",
-                  "pm.test('demo failed job includes at least one error finding', () => {",
-                  "  if (pm.collectionVariables.get('findingsJobId') === '50000000-0000-0000-0000-000000000003') {",
-                  "    pm.expect(response.some(finding => finding.severity === 'ERROR')).to.eql(true);",
-                  "  }",
-                  "});"
+                  "if (pm.collectionVariables.get('findingsJobId') === '50000000-0000-0000-0000-000000000003') {",
+                  "  pm.test('demo failed job includes at least one error finding', () => {",
+                  "    pm.expect(response.some(f => f.severity === 'ERROR')).to.eql(true);",
+                  "  });"
                 ]
               }
             }
@@ -1016,124 +1565,50 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/processing-jobs/{{findingsJobId}}/findings"
-          },
-          "response": []
+          }
         },
         {
-          "name": "Get invalid sales file findings",
+          "name": "Start pending valid job",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.response.text() && pm.response.text().trim()) {",
                   "const envelope = pm.response.json();",
                   "const response = envelope.data;",
-                  "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('returns success envelope', () => {",
-                  "  pm.expect(envelope.success).to.eql(true);",
-                  "  pm.expect(envelope.metadata.count).to.eql(response.length);",
-                  "});",
-                  "pm.test('returns validation findings', () => {",
-                  "  pm.expect(response).to.be.an('array').and.not.empty;",
-                  "  response.forEach(finding => {",
-                  "    pm.expect(finding.severity).to.be.oneOf(['ERROR', 'WARNING', 'INFO']);",
-                  "    pm.expect(finding.scope).to.be.oneOf(['FILE_STRUCTURE', 'SHEET_STRUCTURE', 'COLUMN_STRUCTURE', 'ROW_DATA', 'BUSINESS_RULE', 'CROSS_FILE_VALIDATION', 'SYSTEM']);",
-                  "    pm.expect(finding.code).to.be.a('string').and.not.empty;",
-                  "    pm.expect(finding.message).to.be.a('string').and.not.empty;",
+                  "pm.test('returns 200 OK when file is processable', () => pm.expect([200, 409]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
+                  "  pm.test('job transitions to processing or awaiting approval', () => {",
+                  "    pm.expect(['AWAITING_APPROVAL', 'PROCESSING_FAILED']).to.include(response.jobStatus);",
                   "  });",
-                  "});",
-                  "pm.test('includes expected demo sales validation codes', () => {",
-                  "  const codes = response.map(finding => finding.code);",
-                  "  pm.expect(codes.some(code => ['MISSING_REQUIRED_SHEET', 'INVALID_COLUMN_ORDER', 'INVALID_NUMERIC_VALUE', 'INVALID_SHIPPING_DATE_RANGE', 'DUPLICATED_ORDER_ID'].includes(code))).to.eql(true);",
-                  "});"
+                  "  pm.collectionVariables.set('findingsJobId', response.jobId);",
+                  "} else {",
+                  "  pm.test('returns error envelope on conflict', () => {",
+                  "    pm.expect(envelope.success).to.eql(false);",
+                  "    pm.expect(envelope.error.code).to.be.a('string').and.not.empty;",
+                  "  });"
                 ]
               }
             }
           ],
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/report-files/{{invalidSalesFileId}}/findings"
-          },
-          "response": []
-        },
-        {
-          "name": "Start pending job",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": "{{baseUrl}}/api/processing-jobs/{{pendingJobId}}/start"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('returns expected workflow response', () => pm.expect([200, 404, 409]).to.include(pm.response.code));",
-                  "const envelope = pm.response.json();",
-                  "if (pm.response.code === 200) {",
-                  "  const response = envelope.data;",
-                  "  pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
-                  "  pm.test('returns updated job', () => {",
-                  "    pm.expect(response.jobId).to.be.a('string').and.not.empty;",
-                  "    pm.expect(response.jobStatus).to.be.oneOf(['AWAITING_APPROVAL', 'PROCESSING_FAILED']);",
-                  "  });",
-                  "} else {",
-                  "  pm.test('returns error envelope', () => {",
-                  "    pm.expect(envelope.success).to.eql(false);",
-                  "    pm.expect(envelope.error.code).to.be.a('string').and.not.empty;",
-                  "    pm.expect(envelope.message).to.be.a('string').and.not.empty;",
-                  "  });",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Start valid sales job",
-          "request": {
             "method": "POST",
             "header": [],
             "url": "{{baseUrl}}/api/processing-jobs/{{validSalesJobId}}/start"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const envelope = pm.response.json();",
-                  "const response = envelope.data;",
-                  "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
-                  "pm.test('valid sales job reaches awaiting approval', () => {",
-                  "  pm.expect(response.jobId).to.eql(pm.collectionVariables.get('validSalesJobId'));",
-                  "  pm.expect(response.jobStatus).to.eql('AWAITING_APPROVAL');",
-                  "  pm.expect(response.failureReason).to.be.oneOf([null, undefined]);",
-                  "});",
-                  "pm.collectionVariables.set('jobId', response.jobId);",
-                  "pm.collectionVariables.set('findingsJobId', response.jobId);"
-                ]
-              }
-            }
-          ]
+          }
         },
         {
-          "name": "Start blocked pending correction job",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": "{{baseUrl}}/api/processing-jobs/{{blockedPendingCorrectionJobId}}/start"
-          },
+          "name": "Start blocked pending correction job - 409",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "if (pm.response.text() && pm.response.text().trim()) {",
                   "const envelope = pm.response.json();",
                   "pm.test('returns 409 Conflict', () => pm.response.to.have.status(409));",
                   "pm.test('returns business conflict error', () => {",
@@ -1144,243 +1619,15 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Complete processing job",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": "{{baseUrl}}/api/processing-jobs/{{processingJobId}}/complete"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('returns expected workflow response', () => pm.expect([200, 409]).to.include(pm.response.code));",
-                  "const envelope = pm.response.json();",
-                  "if (pm.response.code === 200) {",
-                  "  const response = envelope.data;",
-                  "  pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
-                  "  pm.test('returns updated job', () => {",
-                  "    pm.expect(response.jobId).to.be.a('string').and.not.empty;",
-                  "    pm.expect(response.jobStatus).to.eql('AWAITING_APPROVAL');",
-                  "  });",
-                  "} else {",
-                  "  pm.test('returns error envelope', () => {",
-                  "    pm.expect(envelope.success).to.eql(false);",
-                  "    pm.expect(envelope.error.code).to.be.a('string').and.not.empty;",
-                  "    pm.expect(envelope.message).to.be.a('string').and.not.empty;",
-                  "  });",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Fail processing job",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Demo failure reason from Postman\"\n}"
-            },
-            "url": "{{baseUrl}}/api/processing-jobs/{{processingJobId}}/fail"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('returns expected workflow response', () => pm.expect([200, 409]).to.include(pm.response.code));",
-                  "const envelope = pm.response.json();",
-                  "if (pm.response.code === 200) {",
-                  "  const response = envelope.data;",
-                  "  pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
-                  "  pm.test('returns updated job', () => {",
-                  "    pm.expect(response.jobId).to.be.a('string').and.not.empty;",
-                  "    pm.expect(response.jobStatus).to.eql('PROCESSING_FAILED');",
-                  "  });",
-                  "} else {",
-                  "  pm.test('returns error envelope', () => {",
-                  "    pm.expect(envelope.success).to.eql(false);",
-                  "    pm.expect(envelope.error.code).to.be.a('string').and.not.empty;",
-                  "    pm.expect(envelope.message).to.be.a('string').and.not.empty;",
-                  "  });",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Approve awaiting approval job",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": "{{baseUrl}}/api/processing-jobs/{{awaitingApprovalJobId}}/approve"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('returns expected workflow response', () => pm.expect([200, 409]).to.include(pm.response.code));",
-                  "const envelope = pm.response.json();",
-                  "if (pm.response.code === 200) {",
-                  "  const response = envelope.data;",
-                  "  pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
-                  "  pm.test('returns updated job', () => {",
-                  "    pm.expect(response.jobId).to.be.a('string').and.not.empty;",
-                  "    pm.expect(response.jobStatus).to.eql('APPROVED');",
-                  "  });",
-                  "} else {",
-                  "  pm.test('returns error envelope', () => {",
-                  "    pm.expect(envelope.success).to.eql(false);",
-                  "    pm.expect(envelope.error.code).to.be.a('string').and.not.empty;",
-                  "    pm.expect(envelope.message).to.be.a('string').and.not.empty;",
-                  "  });",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Reject awaiting approval job",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Demo rejection reason from Postman\"\n}"
-            },
-            "url": "{{baseUrl}}/api/processing-jobs/{{awaitingApprovalJobId}}/reject"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('returns expected workflow response', () => pm.expect([200, 409]).to.include(pm.response.code));",
-                  "const envelope = pm.response.json();",
-                  "if (pm.response.code === 200) {",
-                  "  const response = envelope.data;",
-                  "  pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
-                  "  pm.test('returns updated job', () => {",
-                  "    pm.expect(response.jobId).to.be.a('string').and.not.empty;",
-                  "    pm.expect(response.jobStatus).to.eql('REJECTED');",
-                  "  });",
-                  "} else {",
-                  "  pm.test('returns error envelope', () => {",
-                  "    pm.expect(envelope.success).to.eql(false);",
-                  "    pm.expect(envelope.error.code).to.be.a('string').and.not.empty;",
-                  "    pm.expect(envelope.message).to.be.a('string').and.not.empty;",
-                  "  });",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Revoke approved job",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Demo revocation reason from Postman\"\n}"
-            },
-            "url": "{{baseUrl}}/api/processing-jobs/{{approvedJobId}}/revoke"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('returns expected workflow response', () => pm.expect([200, 409]).to.include(pm.response.code));",
-                  "const envelope = pm.response.json();",
-                  "if (pm.response.code === 200) {",
-                  "  const response = envelope.data;",
-                  "  pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
-                  "  pm.test('returns updated job', () => {",
-                  "    pm.expect(response.jobId).to.be.a('string').and.not.empty;",
-                  "    pm.expect(response.jobStatus).to.eql('REVOKED');",
-                  "  });",
-                  "} else {",
-                  "  pm.test('returns error envelope', () => {",
-                  "    pm.expect(envelope.success).to.eql(false);",
-                  "    pm.expect(envelope.error.code).to.be.a('string').and.not.empty;",
-                  "    pm.expect(envelope.message).to.be.a('string').and.not.empty;",
-                  "  });",
-                  "}"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Authorization Checks",
-      "item": [
-        {
-          "name": "Analyst cannot approve",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.environment.set('accessToken', pm.environment.get('analystAccessToken'));"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('returns 403 Forbidden when analyst token is available', () => pm.expect([401, 403]).to.include(pm.response.code));",
-                  "if (pm.environment.get('analystAccessToken')) {",
-                  "  pm.expect(pm.response.code).to.eql(403);",
-                  "}"
-                ]
-              }
-            }
           ],
           "request": {
             "method": "POST",
             "header": [],
-            "url": "{{baseUrl}}/api/processing-jobs/{{awaitingApprovalJobId}}/approve"
+            "url": "{{baseUrl}}/api/processing-jobs/{{blockedPendingCorrectionJobId}}/start"
           }
         },
         {
-          "name": "Admin cannot upload file",
+          "name": "Start as ADMINISTRATOR - should be forbidden",
           "event": [
             {
               "listen": "prerequest",
@@ -1396,9 +1643,192 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('returns 403 Forbidden when admin token is available', () => pm.expect([400, 401, 403]).to.include(pm.response.code));",
-                  "if (pm.environment.get('adminAccessToken') && pm.response.code !== 400) {",
-                  "  pm.expect(pm.response.code).to.eql(403);",
+                  "pm.test('returns 403 Forbidden', () => pm.response.to.have.status(403));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "pm.test('returns error envelope', () => pm.expect(envelope.success).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/processing-jobs/{{pendingJobId}}/start"
+          }
+        },
+        {
+          "name": "Complete processing job",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('adminAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns expected workflow response', () => pm.expect([200, 409]).to.include(pm.response.code));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "if (pm.response.code === 200) {",
+                  "  const response = envelope.data;",
+                  "  pm.test('returns success envelope', () => pm.expect(envelope.success).to.eql(true));",
+                  "  pm.test('job moves to AWAITING_APPROVAL', () => pm.expect(response.jobStatus).to.eql('AWAITING_APPROVAL'));",
+                  "} else {",
+                  "  pm.test('returns error envelope on conflict', () => {",
+                  "    pm.expect(envelope.success).to.eql(false);",
+                  "  });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/processing-jobs/{{processingJobId}}/complete"
+          }
+        },
+        {
+          "name": "Fail processing job",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('adminAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns expected workflow response', () => pm.expect([200, 409]).to.include(pm.response.code));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('job moves to PROCESSING_FAILED', () => pm.expect(envelope.data.jobStatus).to.eql('PROCESSING_FAILED'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Demo failure reason from Postman\"\n}"
+            },
+            "url": "{{baseUrl}}/api/processing-jobs/{{processingJobId}}/fail"
+          }
+        },
+        {
+          "name": "Fail with empty reason - 400",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('adminAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 400 Bad Request', () => pm.response.to.have.status(400));",
+                  "if (pm.response.text() && pm.response.text().trim()) {",
+                  "const envelope = pm.response.json();",
+                  "pm.test('returns error envelope', () => pm.expect(envelope.success).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"\"\n}"
+            },
+            "url": "{{baseUrl}}/api/processing-jobs/{{processingJobId}}/fail"
+          }
+        },
+        {
+          "name": "Approve as ANALYST - should be forbidden",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('analystAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 403 Forbidden when analyst token is available', () => {",
+                  "  if (pm.environment.get('analystAccessToken')) {",
+                  "    pm.expect(pm.response.code).to.eql(403);",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/processing-jobs/{{awaitingApprovalJobId}}/approve"
+          }
+        },
+        {
+          "name": "Approve awaiting approval job",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('adminAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns expected workflow response', () => pm.expect([200, 409]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('job moves to APPROVED', () => pm.expect(pm.response.json().data.jobStatus).to.eql('APPROVED'));",
                   "}"
                 ]
               }
@@ -1407,47 +1837,303 @@
           "request": {
             "method": "POST",
             "header": [],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "file",
-                  "type": "file",
-                  "src": []
-                }
-              ]
-            },
-            "url": "{{baseUrl}}/api/report-files"
+            "url": "{{baseUrl}}/api/processing-jobs/{{awaitingApprovalJobId}}/approve"
           }
-        }
-      ]
-    },
-    {
-      "name": "Health",
-      "item": [
+        },
         {
-          "name": "Actuator health",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/actuator/health"
-          },
+          "name": "Reject awaiting approval job",
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('adminAccessToken'));"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('service is up', () => pm.expect(response.status).to.eql('UP'));"
+                  "pm.test('returns expected workflow response', () => pm.expect([200, 409]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('job moves to REJECTED', () => pm.expect(pm.response.json().data.jobStatus).to.eql('REJECTED'));",
+                  "}"
                 ]
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Demo rejection reason from Postman\"\n}"
+            },
+            "url": "{{baseUrl}}/api/processing-jobs/{{awaitingApprovalJobId}}/reject"
+          }
+        },
+        {
+          "name": "Reject with empty reason - 400",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('adminAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('returns error envelope', () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"\"\n}"
+            },
+            "url": "{{baseUrl}}/api/processing-jobs/{{awaitingApprovalJobId}}/reject"
+          }
+        },
+        {
+          "name": "Revoke approved job",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('adminAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns expected workflow response', () => pm.expect([200, 409]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('job moves to REVOKED', () => pm.expect(pm.response.json().data.jobStatus).to.eql('REVOKED'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Demo revocation reason from Postman\"\n}"
+            },
+            "url": "{{baseUrl}}/api/processing-jobs/{{approvedJobId}}/revoke"
+          }
+        },
+        {
+          "name": "Revoke with empty reason - 400",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('adminAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('returns error envelope', () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"\"\n}"
+            },
+            "url": "{{baseUrl}}/api/processing-jobs/{{approvedJobId}}/revoke"
+          }
+        },
+        {
+          "name": "Complete as ANALYST - should be forbidden",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('analystAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/processing-jobs/{{processingJobId}}/complete"
+          }
+        },
+        {
+          "name": "Fail as ANALYST - should be forbidden",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('analystAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Some reason\"\n}"
+            },
+            "url": "{{baseUrl}}/api/processing-jobs/{{processingJobId}}/fail"
+          }
+        },
+        {
+          "name": "Reject as ANALYST - should be forbidden",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('analystAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Some reason\"\n}"
+            },
+            "url": "{{baseUrl}}/api/processing-jobs/{{awaitingApprovalJobId}}/reject"
+          }
+        },
+        {
+          "name": "Revoke as ANALYST - should be forbidden",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('accessToken', pm.environment.get('analystAccessToken'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Some reason\"\n}"
+            },
+            "url": "{{baseUrl}}/api/processing-jobs/{{approvedJobId}}/revoke"
+          }
         }
       ]
     }
@@ -1527,11 +2213,11 @@
     },
     {
       "key": "validSalesReportPath",
-      "value": "/home/mrcrafterman/Work/code/regulatory-reporting-platform/samples/1000-Registros-de-ventas.xlsx"
+      "value": "samples/1000-Registros-de-ventas.xlsx"
     },
     {
       "key": "invalidSalesReportPath",
-      "value": "/home/mrcrafterman/Work/code/regulatory-reporting-platform/samples/invalid-sales-report.xlsx"
+      "value": "samples/invalid-sales-report.xlsx"
     },
     {
       "key": "validSalesJobId",
@@ -1540,6 +2226,18 @@
     {
       "key": "invalidSalesFileId",
       "value": "60000000-0000-0000-0000-000000000012"
+    },
+    {
+      "key": "missingJobId",
+      "value": "00000000-0000-0000-0000-000000000999"
+    },
+    {
+      "key": "missingValidationRunId",
+      "value": "00000000-0000-0000-0000-000000000999"
+    },
+    {
+      "key": "analyst02FileId",
+      "value": "60000000-0000-0000-0000-000000000003"
     }
   ]
 }

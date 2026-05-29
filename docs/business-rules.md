@@ -11,8 +11,9 @@ System roles:
 
 Current behavior:
 
-- Analysts upload/replace/delete their own files and start processing on their jobs.
-- Administrators manage processing workflow decisions (complete/fail/approve/reject/revoke).
+- Analysts upload/replace/delete their own files and start processing on their jobs. Analysts can list files for their own username only; listing another analyst's files returns 403 Forbidden.
+- Administrators can list files for any username.
+- Administrators manage processing workflow decisions (complete/fail/approve/reject/revoke). Administrators can list processing jobs for any username; analysts can list jobs for their own username only; listing another analyst's jobs returns 403 Forbidden.
 - Root has high-level administrative authority where configured by backend rules.
 - Auditors currently do not have access to report file endpoints.
 

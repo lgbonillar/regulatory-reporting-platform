@@ -75,16 +75,12 @@ Success response data (`AuthResponse`):
 {
   "accessToken": "jwt",
   "refreshToken": "opaque-token",
-  "expiresInSeconds": 900,
-  "sessionId": "uuid",
-  "user": {
-    "id": "uuid",
-    "username": "analyst01",
-    "displayName": "Analyst 01",
-    "role": "ANALYST"
-  }
+  "tokenType": "Bearer",
+  "expiresInSeconds": 900
 }
 ```
+
+Note: the JWT payload contains the following claims: `sub` (userId), `userId`, `username`, `role`, `sessionId`, `iss`, `iat`, `exp`. These are not part of the `data` envelope.
 
 ### `POST /api/auth/refresh`
 

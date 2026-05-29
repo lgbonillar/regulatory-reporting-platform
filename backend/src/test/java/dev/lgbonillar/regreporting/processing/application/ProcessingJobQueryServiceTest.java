@@ -87,14 +87,25 @@ class ProcessingJobQueryServiceTest {
     }
 
     @Test
-    void listProcessingJobsAsAnalystIgnoresUsernameAndFindsOwnJobs() {
+    void listProcessingJobsAsAnalystForbiddenWhenListingAnotherUsersJobs() {
+        when(currentUserProvider.getCurrentUser()).thenReturn(analyst());
+
+        assertThatThrownBy(() ->
+                processingJobQueryService.listProcessingJobs("otherUser")
+        )
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You are not allowed to list processing jobs for another user");
+    }
+
+    @Test
+    void listProcessingJobsAsAnalystReturnsOwnJobs() {
         ProcessingJob job = pendingJob();
 
         when(currentUserProvider.getCurrentUser()).thenReturn(analyst());
         when(processingJobRepository.findAllByUsername("analyst01")).thenReturn(List.of(job));
 
         List<ProcessingJobResponse> result =
-                processingJobQueryService.listProcessingJobs("otherUser");
+                processingJobQueryService.listProcessingJobs("analyst01");
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().uploadedBy()).isEqualTo("analyst01");

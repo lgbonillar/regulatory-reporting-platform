@@ -5,6 +5,10 @@ import dev.lgbonillar.regreporting.processing.domain.ProcessingJobFinding;
 import dev.lgbonillar.regreporting.processing.dto.ProcessingJobFindingResponse;
 import dev.lgbonillar.regreporting.processing.infrastructure.ProcessingJobFindingRepository;
 import dev.lgbonillar.regreporting.processing.processor.ProcessingFindingCommand;
+import dev.lgbonillar.regreporting.shared.ForbiddenOperationException;
+import dev.lgbonillar.regreporting.users.application.CurrentUserProvider;
+import dev.lgbonillar.regreporting.users.domain.User;
+import dev.lgbonillar.regreporting.users.domain.UserRole;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,19 +20,36 @@ public class ProcessingJobFindingService {
 
     private final ProcessingJobQueryService processingJobQueryService;
     private final ProcessingJobFindingRepository processingJobFindingRepository;
+    private final CurrentUserProvider currentUserProvider;
 
     public ProcessingJobFindingService(
             ProcessingJobQueryService processingJobQueryService,
-            ProcessingJobFindingRepository processingJobFindingRepository
+            ProcessingJobFindingRepository processingJobFindingRepository,
+            CurrentUserProvider currentUserProvider
     ) {
         this.processingJobQueryService = processingJobQueryService;
         this.processingJobFindingRepository = processingJobFindingRepository;
+        this.currentUserProvider = currentUserProvider;
     }
 
     @Transactional(readOnly = true)
     public List<ProcessingJobFindingResponse> getProcessingJobFindings(UUID jobId) {
         ProcessingJob processingJob = processingJobQueryService.getJob(jobId);
-        processingJobQueryService.requireCanView(processingJob);
+
+        User currentUser = currentUserProvider.getCurrentUser();
+        boolean isPrivileged = currentUser.hasRole(UserRole.ROOT) ||
+                                currentUser.hasRole(UserRole.ADMINISTRATOR);
+        boolean isOwner = currentUser.hasRole(UserRole.ANALYST) &&
+                processingJob.getUploadedFile()
+                        .getUploadedBy()
+                        .getUsername()
+                        .equals(currentUser.getUsername());
+
+        if (!isPrivileged && !isOwner) {
+            throw new ForbiddenOperationException(
+                    "You are not allowed to view this processing job"
+            );
+        }
 
         return processingJobFindingRepository.findAllByProcessingJobIdOrderByCreatedAtAsc(jobId)
                 .stream()

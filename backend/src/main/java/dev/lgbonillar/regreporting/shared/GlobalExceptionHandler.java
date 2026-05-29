@@ -1,5 +1,6 @@
 package dev.lgbonillar.regreporting.shared;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,6 +45,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(ApiErrorResponse.of(exception.getMessage(), "FORBIDDEN_OPERATION"));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> handleAccessDeniedException(
+            AccessDeniedException exception
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiErrorResponse.of(exception.getMessage(), "ACCESS_DENIED"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

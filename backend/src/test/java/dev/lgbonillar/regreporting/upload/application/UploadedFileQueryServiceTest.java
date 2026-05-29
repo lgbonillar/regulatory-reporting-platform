@@ -82,6 +82,8 @@ class UploadedFileQueryServiceTest {
 
     @Test
     void listUploadedFilesThrowsResourceNotFoundWhenUserDoesNotExist() {
+        User analyst = analyst();
+        when(currentUserProvider.getCurrentUser()).thenReturn(analyst);
         when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> uploadedFileQueryService.listUploadedFiles("unknown"))
@@ -95,6 +97,7 @@ class UploadedFileQueryServiceTest {
         UploadedFile file = uploadedFile(UploadedFileStatus.STORED);
         UploadedFileResponse response = uploadedFileResponse(file);
 
+        when(currentUserProvider.getCurrentUser()).thenReturn(user);
         when(userRepository.findByUsername("analyst01")).thenReturn(Optional.of(user));
         when(uploadedFileRepository.findByUploadedByIdAndStatusInOrderByUploadedAtDesc(
                 user.getId(),
@@ -114,10 +117,44 @@ class UploadedFileQueryServiceTest {
     }
 
     @Test
+    void listUploadedFilesForbiddenWhenAnalystListsAnotherAnalystFiles() {
+        User analyst01 = analyst();
+        User analyst02 = user(UserRole.ANALYST, "analyst02");
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(analyst01);
+        when(userRepository.findByUsername("analyst02")).thenReturn(Optional.of(analyst02));
+
+        assertThatThrownBy(() -> uploadedFileQueryService.listUploadedFiles("analyst02"))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You are not allowed to list files for this user");
+    }
+
+    @Test
+    void listUploadedFilesAllowedWhenAdministratorListsAnalystFiles() {
+        User admin = user(UserRole.ADMINISTRATOR);
+        User analyst01 = analyst();
+        UploadedFile file = uploadedFile(UploadedFileStatus.STORED);
+        UploadedFileResponse response = uploadedFileResponse(file);
+
+        when(currentUserProvider.getCurrentUser()).thenReturn(admin);
+        when(userRepository.findByUsername("analyst01")).thenReturn(Optional.of(analyst01));
+        when(uploadedFileRepository.findByUploadedByIdAndStatusInOrderByUploadedAtDesc(
+                analyst01.getId(),
+                visibleStatuses()
+        )).thenReturn(List.of(file));
+        when(uploadedFileMapper.toUploadedFileResponse(file)).thenReturn(response);
+
+        List<UploadedFileResponse> result =
+                uploadedFileQueryService.listUploadedFiles("analyst01");
+
+        assertThat(result).containsExactly(response);
+    }
+
+    @Test
     void getViewableUploadedFileReturnsFileForOwnerAnalyst() {
         UUID fileId = UUID.randomUUID();
         User analyst = analyst();
-        UploadedFile file = uploadedFile(UploadedFileStatus.PENDING_CORRECTION, analyst);
+        UploadedFile file = uploadedFile(UploadedFileStatus.STORED, analyst);
 
         when(uploadedFileRepository.findById(fileId)).thenReturn(Optional.of(file));
         when(currentUserProvider.getCurrentUser()).thenReturn(analyst);
@@ -125,6 +162,20 @@ class UploadedFileQueryServiceTest {
         UploadedFile result = uploadedFileQueryService.getViewableUploadedFile(fileId);
 
         assertThat(result).isSameAs(file);
+    }
+
+    @Test
+    void getViewableUploadedFileThrowsNotFoundForOwnerAnalystOnNonStoredFile() {
+        UUID fileId = UUID.randomUUID();
+        User analyst = analyst();
+        UploadedFile file = uploadedFile(UploadedFileStatus.PENDING_CORRECTION, analyst);
+
+        when(uploadedFileRepository.findById(fileId)).thenReturn(Optional.of(file));
+        when(currentUserProvider.getCurrentUser()).thenReturn(analyst);
+
+        assertThatThrownBy(() -> uploadedFileQueryService.getViewableUploadedFile(fileId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Uploaded file not found");
     }
 
     @Test

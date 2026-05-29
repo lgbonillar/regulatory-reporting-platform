@@ -86,6 +86,48 @@ Do not move logic from one bounded area to another unless the change explicitly 
 - Avoid field injection.
 - Avoid introducing abstractions without repeated use or clear complexity reduction.
 
+## Naming and Readability
+
+* Use intention-revealing names for variables, functions, and computed values.
+* Boolean variables should read naturally in conditions.
+* Prefer positive boolean names when they represent the normal or expected state, such as `isValid`, `canSubmit`, `hasPermission`, or `shouldRetry`.
+* Use negative boolean names only when the negative state is the actual business concept or when it makes the condition more readable, such as `isInvalidCode`, `hasErrors`, `isExpired`, or `isDisabled`.
+* Avoid double negatives such as `!isNotValid`, `!hasNoErrors`, or `!isNotAllowed`.
+* If a condition is not immediately clear, extract it into a well-named boolean.
+* Prefer to domain-specific names over generic ones.
+
+Example:
+
+```ts
+const isInvalidCode = !validateCode(code);
+
+if (isInvalidCode) {
+  // handle invalid code
+}
+```
+
+Instead of:
+
+```ts
+const isValid = validateCode(code);
+
+if (!isValid) {
+  // handle invalid code
+}
+```
+
+If the positive path is the main flow, using a positive name is fine:
+
+```ts
+const isValidCode = validateCode(code);
+
+if (!isValidCode) {
+  return;
+}
+
+processCode(code);
+```
+
 ## API Guidelines
 
 - Keep API responses consistent with `ApiResponse` and `ApiErrorResponse`.

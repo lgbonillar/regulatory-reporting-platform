@@ -34,6 +34,11 @@ public class ProcessingJobQueryService {
         User currentUser = currentUserProvider.getCurrentUser();
 
         if (currentUser.hasRole(UserRole.ANALYST)) {
+            if (!currentUser.getUsername().equals(username)) {
+                throw new ForbiddenOperationException(
+                        "You are not allowed to list processing jobs for another user"
+                );
+            }
             return processingJobRepository.findAllByUsername(currentUser.getUsername())
                     .stream()
                     .map(this::toProcessingJobResponse)
@@ -69,7 +74,8 @@ public class ProcessingJobQueryService {
     public void requireCanView(ProcessingJob processingJob) {
         User currentUser = currentUserProvider.getCurrentUser();
 
-        if (currentUser.hasRole(UserRole.ADMINISTRATOR)) {
+        if (currentUser.hasRole(UserRole.ROOT) ||
+                currentUser.hasRole(UserRole.ADMINISTRATOR)) {
             return;
         }
 
