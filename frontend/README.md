@@ -1,59 +1,206 @@
 # Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.11.
+Angular client application for the Regulatory Reporting Platform.
 
-## Development server
+This project is a client-side rendered enterprise SPA focused on:
 
-To start a local development server, run:
+- Excel file upload
+- Processing job tracking
+- Validation findings
+- Role-based navigation
+- Audit-friendly detail views
+- Modular UI components
+- Future JWT-based authentication flows
 
-```bash
-ng serve
-```
+## Tech Stack
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- Angular
+- TypeScript
+- PrimeNG
+- Tailwind CSS
+- Font Awesome
+- Standalone components
+- Angular signals
+- Reactive Forms
 
-## Code scaffolding
+## Prerequisites
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+- [nvm](https://github.com/nvm-sh/nvm)
+- Node.js `24.16.0`
+- npm
 
-```bash
-ng generate component component-name
-```
+### Node Version
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+This project uses `nvm` to pin the Node.js version.
 
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+From the `frontend/` directory:
 
 ```bash
-ng test
+nvm install
+nvm use
 ```
 
-## Running end-to-end tests
+If you already have the correct version installed, nvm use will switch to it using the .nvmrc file.
 
-For end-to-end (e2e) testing, run:
+## Local Development
+
+### Install dependencies
 
 ```bash
-ng e2e
+npm install
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+### Run the development server
 
-## Additional Resources
+```bash
+npm start
+```
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+The app runs at: `http://localhost:4200`
+
+### Build for production
+```
+npm run build
+```
+
+### Run tests
+
+```
+npm test
+```
+
+## Project Structure
+
+```text
+src/app/
+├── core/      # singleton services, guards, interceptors,
+├── layout/    # shell, topbar, sidenav, page chrome
+├── shared/    # reusable UI pieces, pipes, directives
+└── features/  # business screens by domain
+```
+
+### core/
+
+Application-wide singleton logic:
+
+- authentication
+- guards
+- interceptors
+- navigation config
+- theme config
+- global services
+
+### layout/
+
+Application shell and structural UI:
+
+- main shell
+- top bar
+- side navigation
+- responsive layout containers
+
+### shared/
+
+Reusable UI and utility code:
+
+- generic components
+- pipes
+- directives
+- helper utilities
+- shared models
+
+### features/
+
+Business features grouped by domain:
+
+- auth/
+- file-upload/
+- processing-jobs/
+- forbidden/
+
+## Key UI Principles
+
+- Keep components small and focused.
+- Prefer reusable components over duplicated markup.
+- Use signals for local UI state.
+- Use Reactive Forms for forms.
+- Keep API calls inside services.
+- Avoid putting business logic in components.
+- Keep loading, empty, error, and success states explicit.
+
+## Naming Conventions
+
+- Page components use the *-page suffix.
+- Service files use the *.service.ts suffix.
+- Models use the *.model.ts suffix.
+- Route files use the *.routes.ts suffix.
+
+Examples:
+
+upload-report-page
+processing-jobs-page
+processing-job-details-page
+report-file-upload.service.ts
+processing-job.model.ts
+processing-jobs.routes.ts
+
+## Routing
+
+- Use lazy-loaded feature routes.
+- Keep route definitions inside each feature folder.
+- Keep app.routes.ts focused on top-level composition.
+- Use guards for authentication and role-based access control.
+
+## HTTP Guidelines
+
+- Use typed request and response models.
+- Keep HttpClient usage inside services.
+- Map backend DTOs to UI models when needed.
+- Handle loading and error states explicitly.
+- Do not swallow HTTP errors silently.
+
+## Accessibility
+
+The frontend should follow basic enterprise accessibility standards:
+
+- visible focus states
+- good contrast
+- keyboard support
+- semantic HTML
+- tooltips used only where they add value
+- ARIA labels where appropriate
+
+## Related Docs
+
+- ../README.md
+- ./AGENTS.md
+- ../docs/architecture.md
+- ../docs/api-spec.md
+- ../docs/business-rules.md
+
+## Development Notes
+
+- SSR and SSG are not part of this application.
+- The UI should stay enterprise-focused and stable.
+- Keep the layout modular so future features can be added without rewriting the shell.
+
+## Common Issues
+
+### Build fails after dependency changes
+
+Delete node_modules and reinstall dependencies:
+
+rm -rf node_modules
+npm install
+
+### Port already in use
+
+Stop the process using port 4200 or change the local Angular port in the project configuration.
+
+## Contribution Flow
+
+1. Review the relevant docs.
+2. Make the smallest change needed.
+3. Keep UI, services, and models separated.
+4. Update tests if behavior changes.
+5. Verify the app builds and tests pass.

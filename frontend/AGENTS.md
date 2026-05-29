@@ -1,4 +1,3 @@
-
 You are an expert in TypeScript, Angular, and scalable web application development. You write functional, maintainable, performant, and accessible code following Angular and TypeScript best practices.
 
 ## TypeScript Best Practices
@@ -10,17 +9,41 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 ## Angular Best Practices
 
 - Always use standalone components over NgModules
-- Must NOT set `standalone: true` inside Angular decorators. It's the default in Angular v20+.
+- Must NOT set `standalone: true` inside Angular decorators for Angular 20+ projects. It is the default in modern Angular.
+- If the installed Angular version is older than Angular 20, verify the project configuration before removing or omitting `standalone: true`.
 - Use signals for state management
 - Implement lazy loading for feature routes
 - Do NOT use the `@HostBinding` and `@HostListener` decorators. Put host bindings inside the `host` object of the `@Component` or `@Directive` decorator instead
 - Use `NgOptimizedImage` for all static images.
   - `NgOptimizedImage` does not work for inline base64 images.
 
+## Angular Version Target
+
+This project targets modern Angular, preferably Angular 20+ / 21+.
+
+Before applying Angular-specific migrations or syntax changes, verify the installed Angular version in `package.json`.
+
+Do not apply rules that require Angular 19+ or Angular 21+ to older Angular projects unless the task explicitly includes a framework upgrade.
+
 ## Accessibility Requirements
 
-- It MUST pass all AXE checks.
-- It MUST follow all WCAG AA minimums, including focus management, color contrast, and ARIA attributes.
+- Prefer semantic HTML before adding ARIA.
+- Do not add ARIA attributes that duplicate or conflict with native semantics.
+- Ensure keyboard navigation works for interactive components.
+- Ensure focus is managed after dialogs, route changes, destructive actions, and upload flows.
+- Custom interactive components must support keyboard interaction, visible focus, and screen reader labels.
+
+## Modern Angular Runtime Guidelines
+
+- Prefer code compatible with Angular 20+ and Angular 21+.
+- Verify the installed Angular version before applying version-specific syntax or migrations.
+- Prefer zoneless-compatible patterns.
+- Do not rely on ZoneJS side effects for UI updates.
+- Prefer signals, computed state, async pipe, `toSignal()`, component inputs, and template/host events to notify Angular of state changes.
+- Use `effect()` only for side effects, not for propagating state.
+- Use `takeUntilDestroyed()` for manual RxJS subscriptions.
+- Do not use experimental Angular APIs in production unless explicitly requested.
+- Signal Forms, `resource`, `rxResource`, and Angular Aria should be treated as experimental or preview unless the project explicitly adopts them.
 
 ### Components
 
@@ -34,19 +57,30 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Do NOT use `ngStyle`, use `style` bindings instead
 - When using external templates/styles, use paths relative to the component TS file.
 
-## State Management
+### Component Class Members
 
-- Use signals for local component state
-- Use `computed()` for derived state
-- Keep state transformations pure and predictable
-- Do NOT use `mutate` on signals, use `update` or `set` instead
+- Mark `input()`, `output()`, `model()`, queries, and injected dependencies as `readonly` when they should not be reassigned.
+- Use `protected` for component members that are only accessed from the template.
+- Keep public members only for APIs intentionally consumed from outside the component.
+
+### Component and Template Style
+
+- Name event handlers for what they do, not for the triggering event.
+- Prefer names like `saveUserData()`, `submitUpload()`, or `confirmDelete()` instead of generic names like `handleClick()`.
+- Keep lifecycle hooks simple.
+- Move complex initialization or side-effect logic into well-named private or protected methods.
+- Implement lifecycle interfaces such as `OnInit`, `OnDestroy`, or `AfterViewInit` when lifecycle hooks are used.
 
 ## Templates
 
-- Keep templates simple and avoid complex logic
-- Use native control flow (`@if`, `@for`, `@switch`) instead of `*ngIf`, `*ngFor`, `*ngSwitch`
-- Use the async pipe to handle observables
-- Do not assume globals like (`new Date()`) are available.
+- Keep templates simple and avoid complex logic.
+- Use native control flow (`@if`, `@for`, `@switch`) instead of `*ngIf`, `*ngFor`, `*ngSwitch`.
+- Always provide a `track` expression when using `@for`.
+- Prefer stable unique identifiers for `@for` tracking, such as `item.id` or `item.uuid`.
+- Use `track $index` only for static collections that never reorder, add, or remove items.
+- Prefer `@empty` inside `@for` blocks for empty states when appropriate.
+- Use `@let` for readable local template values when it reduces repeated expressions.
+- Do not place complex business logic directly in templates; move it to TypeScript, preferably using `computed()` when it represents derived state. - Do not assume globals like (`new Date()`) are available.
 
 ## Services
 
@@ -153,7 +187,9 @@ feature-name/
 └── feature-name.routes.ts
 ```
 
-## Naming Conventions
+## Project Naming Conventions
+
+Although modern Angular no longer requires suffixes for every artifact, this project intentionally uses explicit suffixes for enterprise readability.
 
 Use business-oriented and readable names.
 
@@ -199,6 +235,10 @@ Route files should use the `*.routes.ts` suffix.
 - Keep the main `app.routes.ts` focused on top-level route composition.
 - Use route guards for authentication and role-based access control.
 - Do not put business logic directly inside guards.
+- Use `loadComponent` for lazy-loaded standalone pages.
+- Use `loadChildren` for lazy-loaded feature route trees.
+- Keep primary landing routes eager only when it improves initial UX.
+- Avoid excessive nested lazy loading when it adds unnecessary navigation latency.
 
 ## API and HTTP Guidelines
 
@@ -210,12 +250,16 @@ Route files should use the `*.routes.ts` suffix.
 - Handle loading, success, empty, and error states explicitly.
 - Do not swallow HTTP errors silently.
 - Map backend DTOs to UI models when the backend response shape is not ideal for the view.
+- Be careful with `withFetch()` in file upload flows. Angular's fetch-based HttpClient configuration does not produce upload progress events.
+- For upload flows that need progress reporting, use the default XHR-based HttpClient behavior for those requests.
 
 ## Forms Guidelines
 
-- Prefer typed Reactive Forms for production features.
+- Prefer strictly typed Reactive Forms for production enterprise flows.
 - Do not use Template-driven Forms for complex business flows.
-- Do not use experimental form APIs unless explicitly requested.
+- Do not use Signal Forms in production features unless explicitly requested and approved.
+- Signal Forms are experimental in Angular v21.
+- Avoid `UntypedFormGroup`, `UntypedFormControl`, and `UntypedFormArray` unless migrating legacy code.
 - Keep validation rules readable and close to the form model.
 - Show validation messages only after a field is touched, dirty, or after submit.
 - Disable submit buttons while a request is in progress.
@@ -238,14 +282,40 @@ Examples of local UI state:
 - Upload progress
 - Validation result summary
 
+### Signals Effects
+
+- Prefer `computed()` for derived state.
+- Do not use `effect()` to copy state from one signal to another.
+- Use `effect()` only for side effects such as logging, syncing to storage, analytics, or integrating with imperative third-party APIs.
+- Avoid async logic inside `effect()` unless signal reads are performed before the async boundary.
+
+## RxJS and Signals Interop
+
+- Use the async pipe for simple observable consumption in templates.
+- Use `toSignal()` when observable data needs to participate in signal-based derived state.
+- Do not call `toSignal()` repeatedly for the same Observable; reuse the returned signal.
+- Use `takeUntilDestroyed()` for manual subscriptions that cannot be handled by the async pipe or `toSignal()`.
+
+## Zoneless Compatibility
+
+- Prefer code that is compatible with zoneless Angular.
+- Do not rely on ZoneJS side effects to update the UI.
+- UI updates should be triggered through signals, async pipe, component inputs, template/host events, or explicit change detection APIs when needed.
+- For Angular v21+ projects, do not add `zone.js` unless explicitly required.
+- For existing apps, do not migrate to zoneless without checking current dependencies and behavior.
+
 ## Security Guidelines
 
 - Never store secrets, private keys, database passwords, or production tokens in the frontend.
 - Do not hardcode JWT tokens.
+- Do not log tokens, credentials, personal data, uploaded file contents, or regulatory data.
+- Do not expose backend validation details that could leak internals.
 - Do not bypass Angular sanitization unless explicitly justified.
+- Avoid `[innerHTML]` unless the content is trusted, sanitized, and explicitly justified.
+- Do not disable Angular sanitization.
 - Validate file type and size in the UI, but never assume frontend validation is enough.
 - Authorization decisions must be enforced by the backend.
-- Frontend guards are only for user experience, not real security.
+- Frontend guards and role checks are only for user experience, navigation, and conditional rendering.
 
 ## Excel Upload Guidelines
 
@@ -269,6 +339,16 @@ For file upload flows:
 - Avoid exposing raw technical errors directly in the UI.
 - Prefer clear enterprise-style screens over flashy visual effects.
 
+## Agent Workflow Guidelines
+
+- Before making Angular-specific changes, inspect `package.json`, `angular.json`, and the existing folder structure.
+- Prefer consistency with nearby files over introducing a new pattern.
+- Do not run framework migrations unless explicitly requested.
+- Do not add new dependencies unless they are clearly justified by the task.
+- Do not introduce global state management libraries unless the need is explicit.
+- Prefer small, incremental changes over large rewrites.
+- When modifying an existing feature, preserve its current public behavior unless the task explicitly requests a behavior change.
+
 ## Testing Guidelines
 
 - Add or update tests for meaningful logic.
@@ -277,15 +357,25 @@ For file upload flows:
 - Test components with important conditional rendering.
 - Prefer testing behavior over implementation details.
 - Do not add superficial tests that only check component creation unless no better test is meaningful yet.
+- Do not assume the project uses Karma, Jasmine, Jest, or Vitest. Check `package.json` and Angular workspace configuration first.
 
-Before considering frontend work complete, run:
+Before considering frontend work complete, inspect `package.json` and run the available quality gates.
+
+Common commands include: 
 
 ```bash
 npm run build
+npm run lint
 npm test
 ```
 
-If a command is missing, failing due to missing setup, or not configured yet, mention it clearly.
+For automated or agent-driven runs, prefer a non-watch test command when supported by the project, for example:
+
+```bash
+npm test -- --watch=false
+```
+
+If a command is missing, unsupported, failing due to missing setup, or not configured yet, mention it clearly.
 
 ## Code Review Checklist
 
