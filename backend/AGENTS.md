@@ -2,18 +2,15 @@
 
 ## Backend Context
 
-This backend is a Spring Boot REST API for a private enterprise regulatory reporting platform.
+This backend is a Spring Boot REST API for the Regulatory Reporting Platform.
 
-The API is responsible for:
+Primary responsibilities:
 
-- Receiving Excel file uploads
-- Validating file layouts
-- Applying financial and regulatory business rules
-- Persisting processing jobs
-- Storing validation errors
-- Generating downloadable reports
-- Exposing audit logs
-- Supporting role-based access control
+- Authentication and session lifecycle (JWT + refresh token)
+- Uploaded file management
+- File validation runs and findings
+- Processing job workflow and findings
+- Role-based authorization and audit-oriented status history
 
 ## Technology Stack
 
@@ -21,71 +18,34 @@ The API is responsible for:
 - Spring Boot
 - Maven Wrapper
 - Spring Web
-- Spring Validation
+- Spring Security
 - Spring Data JPA
 - PostgreSQL
 - Flyway
 - Lombok
-- Actuator
-- Testcontainers when integration tests are needed
+- springdoc-openapi
+- Testcontainers (when integration tests are needed)
 
-## Project Structure
+## Package Structure
 
-Use the following package structure under the base package:
+Base package:
 
 ```text
-com.mrcrafterman.regreporting
-├── config
-├── security
-├── shared
-├── auth
-├── users
-├── upload
-├── processing
-├── reports
-└── audit
+dev.lgbonillar.regreporting
 ```
 
-### `config`
+Top-level modules currently used:
 
-Use for framework and application configuration.
+```text
+config
+shared
+users
+upload
+processing
+modules
+```
 
-Examples:
-
-- CORS configuration
-- OpenAPI configuration
-- Jackson configuration
-- Storage configuration
-- Async configuration
-
-### `security`
-
-Use for authentication and authorization configuration.
-
-Examples:
-
-- Security filter chain
-- JWT configuration
-- Role/authority mapping
-- Security utilities
-
-### `shared`
-
-Use for cross-cutting code.
-
-Examples:
-
-- Global exception handling
-- Common response models
-- Error codes
-- Shared validation utilities
-- Date/time utilities
-
-Do not place feature-specific business logic in `shared`.
-
-### Feature Packages
-
-Each feature package should be organized by responsibility when needed:
+Feature packages should follow this structure when justified:
 
 ```text
 feature/
@@ -96,133 +56,87 @@ feature/
 └── dto
 ```
 
-Use this structure when the feature grows enough to justify it. Do not create empty folders without a reason.
+Do not create empty folders only for style.
+
+## Current Domain Boundaries
+
+- `users`: auth, sessions, roles, identity context.
+- `upload`: uploaded file lifecycle, file validation runs, upload findings, upload status history.
+- `processing`: processing job lifecycle, processing findings, processing status history.
+- `modules`: module-specific validation/processing assets (for example `modules/demo/validation`) intended for reuse across upload and processing flows.
+- `shared`: cross-cutting API response envelope, exception hierarchy, global exception handler.
+- `config`: security config, JWT properties, OpenAPI config, CORS, and related wiring.
+
+Do not move logic from one bounded area to another unless the change explicitly requires it.
 
 ## Architecture Guidelines
 
-- Keep controllers thin.
-- Put business use cases in application services.
-- Keep persistence details in infrastructure/repositories.
-- Keep domain rules close to the domain model or use case that owns them.
-- Do not place business logic directly in controllers.
-- Do not expose JPA entities directly through REST APIs.
-- Use DTOs for API requests and responses.
-- Validate input using Bean Validation annotations where applicable.
+- Keep controllers thin; orchestrate use cases in `application`.
+- Keep domain invariants in `domain` entities/services.
+- Keep persistence concerns in `infrastructure`.
+- Do not expose entities directly in REST responses.
+- Use DTOs for request/response boundaries.
 - Prefer constructor injection.
 - Avoid field injection.
+- Avoid introducing abstractions without repeated use or clear complexity reduction.
 
-## REST API Guidelines
+## API Guidelines
 
-- Use clear, resource-oriented endpoints.
-- Use plural resource names.
-- Return meaningful HTTP status codes.
-- Use typed request and response DTOs.
-- Keep error responses consistent.
-- Do not expose stack traces or internal exception details in API responses.
+- Keep API responses consistent with `ApiResponse` and `ApiErrorResponse`.
+- Use meaningful HTTP status codes and business-safe error messages.
+- Do not leak stack traces or internal implementation details.
+- Keep endpoint naming resource-oriented and plural when possible.
 
-Example endpoint style:
+Current core endpoint groups:
 
-```text
-POST   /api/report-files
-GET    /api/processing-jobs
-GET    /api/processing-jobs/{id}
-GET    /api/processing-jobs/{id}/validation-errors
-GET    /api/reports
-GET    /api/reports/{id}/download
-GET    /api/audit-logs
-```
+- `/api/auth/*`
+- `/api/report-files/*` including validation runs and findings endpoints
+- `/api/processing-jobs/*`
+
+## Validation and Processing Rules
+
+- Uploaded files must be validated during upload/replacement flow.
+- Persist validation runs and findings for traceability.
+- Processing must only start for processable file states.
+- Keep generic Excel rule helpers reusable; keep module-specific business rules under `modules/<module>`.
 
 ## Database Guidelines
 
-- Use Flyway migrations for schema changes.
-- Do not rely on Hibernate auto-DDL for production-like schema creation.
-- Keep migration names clear and sequential.
-
-Example:
-
-```text
-V1__create_initial_schema.sql
-V2__create_processing_jobs.sql
-V3__create_validation_errors.sql
-```
-
-- Prefer explicit column names.
-- Use indexes for frequently searched fields.
-- Use audit fields where useful, such as `created_at`, `created_by`, `updated_at`, and `updated_by`.
-
-## JPA Guidelines
-
-- Do not expose entities as API responses.
-- Prefer `Long` or `UUID` identifiers depending on the entity.
-- Keep relationships simple.
-- Avoid unnecessary bidirectional relationships.
-- Be careful with lazy loading in API responses.
-- Use repositories only for persistence access, not business orchestration.
-
-## Excel Processing Guidelines
-
-- Validate file extension and content type, but do not trust them as the only validation.
-- Validate layout before processing business rows.
-- Return clear validation errors with row, column, field, message, and severity when possible.
-- Keep parsing, layout validation, business validation, and persistence separated.
-- Do not process large files directly inside controllers.
-- Avoid loading unnecessary data into memory when a streaming approach is reasonable.
-
-## Error Handling
-
-Use a global exception handler for API errors.
-
-Prefer consistent responses with fields like:
-
-```json
-{
-  "timestamp": "2026-01-01T12:00:00Z",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "Invalid report layout",
-  "path": "/api/report-files"
-}
-```
-
-Do not return raw Java exception messages to the frontend if they expose internal details.
+- All schema changes must go through Flyway migrations.
+- Migration files must stay sequential and descriptive.
+- Do not use ad hoc schema changes outside migrations.
+- Keep seed scripts aligned with current domain states and workflow rules.
 
 ## Testing Guidelines
 
-- Add unit tests for business rules.
-- Add tests for validation services.
-- Add controller tests for important API flows.
-- Use integration tests when database behavior matters.
-- Use Testcontainers for PostgreSQL integration tests when applicable.
-- Prefer meaningful tests over superficial coverage.
+- Add or update unit tests for domain/application rule changes.
+- Add controller tests when API behavior or auth rules change.
+- Add integration tests when persistence behavior is material.
+- Prefer targeted suites during active iteration; run full suite before finalizing.
 
-Before considering backend work complete, run:
+Baseline command:
 
 ```bash
 ./mvnw test
 ```
 
-If modifying application startup, configuration, migrations, or dependencies, also verify the application starts:
+For startup/config/migration/security changes, also verify boot:
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
-## Code Style
-
-- Use clear class and method names.
-- Avoid overly generic names like `Manager`, `Helper`, or `Util` unless truly justified.
-- Keep methods small and readable.
-- Avoid duplicated validation logic.
-- Prefer immutable DTOs when practical.
-- Avoid `null` when an empty collection or `Optional` is clearer.
-- Do not add comments that only repeat what the code says.
-- Add comments only for non-obvious business rules or technical decisions.
-
 ## Security Guidelines
 
-- Never hardcode secrets.
-- Never commit real credentials.
-- Do not disable security globally unless explicitly requested for local development.
-- Backend authorization is mandatory; frontend guards are only UX.
-- Validate all uploaded files server-side.
-- Do not trust client-provided roles, user IDs, or permissions.
+- Never commit secrets, private keys, or production credentials.
+- Do not disable backend authorization to bypass role checks.
+- Do not trust client-provided role or user identifiers.
+- Keep JWT and session checks enforced at endpoint/security layer.
+
+## Documentation Discipline
+
+When behavior changes, align docs in the same change when practical:
+
+- Root `README.md` for high-level context/run instructions.
+- `docs/` for architecture, API, and business-rule updates.
+- Postman collection and seeds when API or flow behavior changes.
