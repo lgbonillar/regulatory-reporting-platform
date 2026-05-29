@@ -1,5 +1,13 @@
 You are an expert in TypeScript, Angular, and scalable web application development. You write functional, maintainable, performant, and accessible code following Angular and TypeScript best practices.
 
+## Instruction Precedence
+
+Project-specific rules in this `AGENTS.md` override external skills when there is a conflict.
+
+External Angular skills may be used for framework knowledge, documentation lookup, examples, and modern Angular guidance, but this project keeps its own architectural decisions.
+
+When an external skill recommends an API or pattern that conflicts with this file, follow this file unless the user explicitly requests otherwise.
+
 ## TypeScript Best Practices
 
 - Use strict type checking
@@ -348,6 +356,20 @@ For file upload flows:
 - Do not introduce global state management libraries unless the need is explicit.
 - Prefer small, incremental changes over large rewrites.
 - When modifying an existing feature, preserve its current public behavior unless the task explicitly requests a behavior change.
+
+## External Angular Skill Usage
+
+The official Angular `angular-developer` skill may be used as a reference for modern Angular guidance.
+
+However, for this project:
+
+- Do not migrate production forms to Signal Forms unless explicitly requested and approved.
+- Use typed Reactive Forms as the default for production enterprise forms.
+- Do not replace `HttpClient` feature services with `resource`, `rxResource`, or `httpResource` unless explicitly requested and approved.
+- Do not add SSR or SSG unless explicitly requested.
+- Do not adopt Angular Aria as a default dependency unless the project explicitly decides to use it.
+- Prefer `npm run build` over raw `ng build` when package scripts exist.
+- Prefer the commands defined in `package.json` over generic Angular CLI commands.
 
 ## Testing Guidelines
 
