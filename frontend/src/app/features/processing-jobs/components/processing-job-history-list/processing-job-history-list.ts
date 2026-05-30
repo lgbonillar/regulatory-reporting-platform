@@ -10,11 +10,6 @@ import { ProcessingJobStatusHistoryResponse } from '../../models/processing-job.
   imports: [ DatePipe, PageState, StatusBadge ],
   template: `
     <section class="flex h-full min-h-0 flex-col">
-      <div class="shrink-0 border-b border-slate-200 bg-white p-4 sm:p-6">
-        <h3 class="text-sm font-semibold text-slate-950">History</h3>
-        <p class="mt-1 text-sm text-slate-500">Status transitions for this processing job.</p>
-      </div>
-
       <div class="min-h-0 flex-1 overflow-auto p-4 sm:p-6">
         @if (isLoading()) {
 

@@ -4,7 +4,7 @@ import { Observable } from 'rxjs'
 
 import { environment } from '../../../../environments/environments.dev'
 import { ApiResponse, unwrapApiResponse } from '../../../shared/utils/api-response'
-import { ReportFileUploadResponse, UploadedFileResponse } from '../models/report-file-upload.model'
+import { ReportFileUploadResponse, UploadedFileFindingResponse, UploadedFileResponse, UploadedFileValidationRunResponse } from '../models/report-file-upload.model'
 
 @Injectable({
   providedIn: 'root'
@@ -41,6 +41,22 @@ export class ReportFileUploadService {
 
   deleteReportFile (fileId: string): Observable<void> {
     return this.httpClient.delete<void>(`${this.endpointUrl}/${fileId}`)
+  }
+
+  listValidationRuns (fileId: string): Observable<UploadedFileValidationRunResponse[]> {
+    return this.httpClient
+      .get<ApiResponse<UploadedFileValidationRunResponse[]>>(
+        `${this.endpointUrl}/${fileId}/validation-runs`
+      )
+      .pipe(unwrapApiResponse())
+  }
+
+  listFindings (fileId: string): Observable<UploadedFileFindingResponse[]> {
+    return this.httpClient
+      .get<ApiResponse<UploadedFileFindingResponse[]>>(
+        `${this.endpointUrl}/${fileId}/findings`
+      )
+      .pipe(unwrapApiResponse())
   }
 
 }

@@ -4,7 +4,7 @@ import { Observable } from 'rxjs'
 
 import { environment } from '../../../../environments/environments.dev'
 import { ApiResponse, unwrapApiResponse } from '../../../shared/utils/api-response'
-import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../models/processing-job.model'
+import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse, ProcessingJobFindingResponse } from '../models/processing-job.model'
 
 @Injectable({
   providedIn: 'root'
@@ -37,6 +37,14 @@ export class ProcessingJobService {
     return this.httpClient
       .get<ApiResponse<ProcessingJobStatusHistoryResponse[]>>(
         `${this.endpointUrl}/${jobId}/history`
+      )
+      .pipe(unwrapApiResponse())
+  }
+
+  getProcessingJobFindings (jobId: string): Observable<ProcessingJobFindingResponse[]> {
+    return this.httpClient
+      .get<ApiResponse<ProcessingJobFindingResponse[]>>(
+        `${this.endpointUrl}/${jobId}/findings`
       )
       .pipe(unwrapApiResponse())
   }

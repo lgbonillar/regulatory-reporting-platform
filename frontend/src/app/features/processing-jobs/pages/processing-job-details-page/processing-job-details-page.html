@@ -1,15 +1,6 @@
 <section class="flex h-full min-h-0 w-full flex-col gap-4">
   <app-breadcrumb [items]="breadcrumbItems()" />
 
-  <app-page-header eyebrow="Processing job" title="Job details">
-    <a
-      routerLink="/processing-jobs"
-      class="inline-flex items-center text-sm font-medium text-slate-600 underline decoration-slate-300 underline-offset-4 transition hover:text-slate-950 hover:decoration-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-    >
-      ← Back to processes
-    </a>
-  </app-page-header>
-
   @if (store.errorMessage()) {
     <app-alert type="error" [message]="store.errorMessage()!" />
   }
@@ -20,31 +11,184 @@
       title="Loading job"
       message="Please wait while the processing job is loaded."
     />
-  } @else {
-    <section class="grid min-h-0 flex-1 gap-6 overflow-hidden xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <div class="min-h-0">
-        <app-processing-job-details-panel
-          [job]="store.job()"
-          [isActionRunning]="store.isActionRunning()"
-          [canStartProcessing]="store.canStartProcessing()"
-          [canApprove]="store.canApprove()"
-          [canReject]="store.canReject()"
-          [canRevoke]="store.canRevoke()"
-          (startRequested)="store.startSelectedJob()"
-          (approveRequested)="store.approveSelectedJob()"
-          (rejectRequested)="requestReject()"
-          (revokeRequested)="requestRevoke()"
-        />
+  } @else if (store.job(); as job) {
+    <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div class="shrink-0 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-2">
+          @if (store.canStartProcessing()) {
+            <p-button
+              styleClass="cursor-pointer bg-slate-950! border-slate-950! text-white! hover:bg-slate-800! hover:border-slate-800!"
+              icon="fa-solid fa-play"
+              [disabled]="store.isActionRunning()"
+              [loading]="store.isActionRunning()"
+              pTooltip="Start processing"
+              tooltipPosition="bottom"
+              showDelay="500"
+              hideDelay="100"
+              ariaLabel="Start processing"
+              (click)="store.startSelectedJob()"
+            />
+          }
+
+          @if (store.canApprove()) {
+            <p-button
+              styleClass="cursor-pointer"
+              icon="fa-solid fa-check"
+              severity="success"
+              [outlined]="true"
+              [disabled]="store.isActionRunning()"
+              [loading]="store.isActionRunning()"
+              pTooltip="Approve process"
+              tooltipPosition="bottom"
+              showDelay="500"
+              hideDelay="100"
+              ariaLabel="Approve process"
+              (click)="store.approveSelectedJob()"
+            />
+          }
+
+          @if (store.canReject()) {
+            <p-button
+              styleClass="cursor-pointer"
+              icon="fa-solid fa-ban"
+              severity="warn"
+              [outlined]="true"
+              [disabled]="store.isActionRunning()"
+              [loading]="store.isActionRunning()"
+              pTooltip="Reject process"
+              tooltipPosition="bottom"
+              showDelay="500"
+              hideDelay="100"
+              ariaLabel="Reject process"
+              (click)="requestReject()"
+            />
+          }
+
+          @if (store.canRevoke()) {
+            <p-button
+              styleClass="cursor-pointer"
+              icon="fa-solid fa-rotate-left"
+              severity="secondary"
+              [outlined]="true"
+              [disabled]="store.isActionRunning()"
+              [loading]="store.isActionRunning()"
+              pTooltip="Revoke approval"
+              tooltipPosition="bottom"
+              showDelay="500"
+              hideDelay="100"
+              ariaLabel="Revoke approval"
+              (click)="requestRevoke()"
+            />
+          }
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <app-file-download-link
+            [fileId]="job.fileId"
+            [filename]="job.originalFilename"
+            [fileStatus]="job.fileStatus"
+          />
+
+          <app-status-badge [status]="job.jobStatus" />
+          <app-status-badge [status]="job.fileStatus" />
+
+          <button
+            class="cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+            pTooltip="Nerd info"
+            tooltipPosition="bottom"
+            showDelay="500"
+            hideDelay="100"
+            (click)="openNerdInfo($event, nerdInfoPopover)"
+          >
+            <i class="fa-solid fa-info-circle" aria-hidden="true"></i>
+          </button>
+
+          <p-popover
+            #nerdInfoPopover
+            styleClass="w-[28rem] max-w-[calc(100vw-2rem)]"
+          >
+            <div class="flex flex-col gap-3 p-1">
+              <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                <h3 class="text-sm font-semibold text-slate-950">Nerd info</h3>
+                <button
+                  class="shrink-0 rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                  aria-label="Close"
+                  (click)="closeNerdInfo()"
+                >
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+                <dt class="font-medium text-slate-500">Job ID</dt>
+                <dd class="text-slate-900">
+                  <app-copyable-code [value]="job.jobId" [ariaLabel]="'Copy job ID'" />
+                </dd>
+
+                <dt class="font-medium text-slate-500">File ID</dt>
+                <dd class="text-slate-900">
+                  <app-copyable-code [value]="job.fileId" [ariaLabel]="'Copy file ID'" />
+                </dd>
+
+                <dt class="font-medium text-slate-500">Message</dt>
+                <dd class="text-slate-900">{{ job.message ?? 'No message' }}</dd>
+
+                <dt class="font-medium text-slate-500">Uploaded by</dt>
+                <dd class="text-slate-900">{{ job.uploadedBy }}</dd>
+
+                @if (job.triggeredBy) {
+                  <dt class="font-medium text-slate-500">Triggered by</dt>
+                  <dd class="text-slate-900">{{ job.triggeredBy }}</dd>
+                }
+
+                @if (job.triggeredAt) {
+                  <dt class="font-medium text-slate-500">Triggered at</dt>
+                  <dd class="text-slate-900">{{ job.triggeredAt | date: 'medium' }}</dd>
+                }
+
+                <dt class="font-medium text-slate-500">Created</dt>
+                <dd class="text-slate-900">{{ job.createdAt | date: 'medium' }}</dd>
+
+                @if (job.updatedAt) {
+                  <dt class="font-medium text-slate-500">Updated</dt>
+                  <dd class="text-slate-900">{{ job.updatedAt | date: 'medium' }}</dd>
+                }
+              </dl>
+            </div>
+          </p-popover>
+        </div>
       </div>
 
-      <div class="min-h-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-        <app-processing-job-history-list
-          [history]="store.history()"
-          [isLoading]="store.isHistoryLoading()"
-          [errorMessage]="store.historyErrorMessage()"
-        />
+      <div class="grid min-h-0 flex-1 grid-cols-2 gap-6">
+        <div class="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div class="shrink-0 border-b border-slate-200 bg-white p-4 sm:p-6">
+            <h3 class="text-sm font-semibold text-slate-950">History</h3>
+          </div>
+          <div class="min-h-0 flex-1 overflow-auto">
+            <app-processing-job-history-list
+              [history]="store.history()"
+              [isLoading]="store.isHistoryLoading()"
+              [errorMessage]="store.historyErrorMessage()"
+            />
+          </div>
+        </div>
+
+        <div class="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div class="shrink-0 border-b border-slate-200 bg-white p-4 sm:p-6">
+            <h3 class="text-sm font-semibold text-slate-950">Findings</h3>
+          </div>
+          <div class="min-h-0 flex-1 overflow-auto">
+            <app-processing-job-findings-list
+              [findings]="store.findings()"
+              [isLoading]="store.isFindingsLoading()"
+              [errorMessage]="store.findingsErrorMessage()"
+            />
+          </div>
+        </div>
       </div>
-    </section>
+    </div>
   }
 
   <app-confirmation-dialog

@@ -1,12 +1,13 @@
 import { DatePipe } from '@angular/common'
-import { Component, computed, input, output } from '@angular/core'
+import { Component, computed, input } from '@angular/core'
 import { FormsModule } from '@angular/forms'
 import { RouterLink } from '@angular/router'
+import { ButtonModule } from 'primeng/button'
 import { DatePickerModule } from 'primeng/datepicker'
 import { MultiSelectModule } from 'primeng/multiselect'
 import { TableModule } from 'primeng/table'
+import { TooltipModule } from 'primeng/tooltip'
 
-import { AppButton } from '../../../../shared/components/app-button/app-button'
 import { CopyableCode } from '../../../../shared/components/copyable-code/copyable-code'
 import { FileDownloadLink } from '../../../../shared/components/file-download-link/file-download-link'
 import { StatusBadge } from '../../../../shared/components/status-badge/status-badge'
@@ -17,7 +18,7 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
   host: {
     class: 'block h-full min-h-0'
   },
-  imports: [ AppButton, CopyableCode, DatePipe, DatePickerModule, FileDownloadLink, FormsModule, MultiSelectModule, RouterLink, StatusBadge, TableModule ],
+  imports: [ ButtonModule, CopyableCode, DatePipe, DatePickerModule, FileDownloadLink, FormsModule, MultiSelectModule, RouterLink, StatusBadge, TableModule, TooltipModule ],
   template: `
     <div class="hidden h-full min-h-0 lg:block">
       <p-table
@@ -180,13 +181,18 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
             </td>
 
             <td class="text-right">
-              <a
+              <p-button
+                styleClass="cursor-pointer"
+                icon="fa-solid fa-list-check"
+                severity="info"
+                [outlined]="true"
                 [routerLink]="['/processing-jobs', job.jobId]"
-                class="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-slate-700 underline decoration-slate-300 underline-offset-4 hover:text-slate-950 hover:decoration-slate-500"
-              >
-                Details
-                <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-              </a>
+                pTooltip="View findings"
+                tooltipPosition="top"
+                showDelay="500"
+                hideDelay="100"
+                ariaLabel="View findings"
+              />
             </td>
           </tr>
         </ng-template>
@@ -215,9 +221,18 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
           <div class="flex items-center justify-between gap-3">
             <p class="text-sm text-slate-500">{{ job.createdAt | date: 'mediumDate' }}</p>
 
-            <app-button variant="secondary" (click)="jobSelected.emit(job)">
-              Details
-            </app-button>
+            <p-button
+              styleClass="cursor-pointer"
+              icon="fa-solid fa-list-check"
+              severity="info"
+              [outlined]="true"
+              [routerLink]="['/processing-jobs', job.jobId]"
+              pTooltip="View findings"
+              tooltipPosition="top"
+              showDelay="500"
+              hideDelay="100"
+              ariaLabel="View findings"
+            />
           </div>
         </article>
       }
@@ -226,7 +241,6 @@ import { ProcessingJobResponse } from '../../models/processing-job.model'
 })
 export class ProcessingJobsList {
   readonly jobs = input.required<ProcessingJobResponse[]>()
-  readonly jobSelected = output<ProcessingJobResponse>()
 
   protected readonly userOptions = computed(() =>
     Array.from(new Set(this.jobs().map((job) => job.uploadedBy)))

@@ -152,14 +152,23 @@ public class ProcessingJob {
 
     public void revoke(User administrator, String reason) {
         requireUser(administrator, "Administrator is required");
-        requireStatus(ProcessingJobStatus.APPROVED, "revoke");
         requireReason(reason, "Revocation reason is required");
+
+        ProcessingJobStatus currentStatus = this.status;
+        if (currentStatus != ProcessingJobStatus.APPROVED
+ && currentStatus != ProcessingJobStatus.PENDING_EXECUTION) {
+            throw new BusinessConflictException(
+                    "Cannot revoke processing job in state " + currentStatus
+            );
+        }
 
         this.status = ProcessingJobStatus.REVOKED;
         this.revokedBy = administrator;
         this.revokedAt = LocalDateTime.now();
         this.revocationReason = reason.trim();
-        this.message = "Previously approved submission revoked";
+        this.message = currentStatus == ProcessingJobStatus.PENDING_EXECUTION
+                ? "Processing job revoked before execution"
+                : "Previously approved submission revoked";
         this.updatedAt = LocalDateTime.now();
     }
 

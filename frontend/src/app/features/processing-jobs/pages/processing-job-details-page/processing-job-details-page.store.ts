@@ -5,7 +5,7 @@ import { Observable } from 'rxjs'
 import { SessionService } from '../../../../core/auth/session.service'
 import { AppToastService } from '../../../../shared/services/app-toast.service'
 import { resolveHttpErrorMessage } from '../../../../shared/utils/http-error-message'
-import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse } from '../../models/processing-job.model'
+import { ProcessingJobResponse, ProcessingJobStatusHistoryResponse, ProcessingJobFindingResponse } from '../../models/processing-job.model'
 import { ProcessingJobService } from '../../services/processing-job.service'
 
 @Injectable()
@@ -18,10 +18,13 @@ export class ProcessingJobDetailsPageStore {
 
   readonly job = signal<ProcessingJobResponse | null>(null)
   readonly history = signal<ProcessingJobStatusHistoryResponse[]>([])
+  readonly findings = signal<ProcessingJobFindingResponse[]>([])
   readonly errorMessage = signal<string | null>(null)
   readonly historyErrorMessage = signal<string | null>(null)
+  readonly findingsErrorMessage = signal<string | null>(null)
   readonly isLoading = signal(false)
   readonly isHistoryLoading = signal(false)
+  readonly isFindingsLoading = signal(false)
   readonly isActionRunning = signal(false)
 
   readonly jobId = computed(() => this.route.snapshot.paramMap.get('jobId'))
@@ -42,7 +45,7 @@ export class ProcessingJobDetailsPageStore {
   readonly canReject = computed(() => this.canApprove())
   readonly canRevoke = computed(() =>
     this.currentUser()?.role === 'ADMINISTRATOR' &&
-    this.job()?.jobStatus === 'APPROVED'
+    (this.job()?.jobStatus === 'APPROVED' || this.job()?.jobStatus === 'PENDING_EXECUTION')
   )
 
   loadJob (): void {
@@ -61,12 +64,14 @@ export class ProcessingJobDetailsPageStore {
         if (!this.canViewJob(job)) {
           this.job.set(null)
           this.history.set([])
+          this.findings.set([])
           this.errorMessage.set('You can only view processing jobs assigned to your user.')
           return
         }
 
         this.job.set(job)
         this.loadHistory(job.jobId)
+        this.loadFindings(job.jobId)
       },
       error: (error: unknown) => {
         this.errorMessage.set(resolveHttpErrorMessage(error))
@@ -146,6 +151,7 @@ export class ProcessingJobDetailsPageStore {
         this.job.set(updatedJob)
         this.toast.success(successSummary)
         this.loadHistory(updatedJob.jobId)
+        this.loadFindings(updatedJob.jobId)
       },
       error: (error: unknown) => {
         const message = resolveHttpErrorMessage(error)
@@ -174,6 +180,24 @@ export class ProcessingJobDetailsPageStore {
       },
       complete: () => {
         this.isHistoryLoading.set(false)
+      }
+    })
+  }
+
+  private loadFindings (jobId: string): void {
+    this.isFindingsLoading.set(true)
+    this.findingsErrorMessage.set(null)
+
+    this.processingJobService.getProcessingJobFindings(jobId).subscribe({
+      next: (findings) => {
+        this.findings.set(findings)
+      },
+      error: (error: unknown) => {
+        this.findings.set([])
+        this.findingsErrorMessage.set(resolveHttpErrorMessage(error))
+      },
+      complete: () => {
+        this.isFindingsLoading.set(false)
       }
     })
   }

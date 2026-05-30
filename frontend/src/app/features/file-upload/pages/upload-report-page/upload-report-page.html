@@ -1,7 +1,7 @@
 <section class="flex h-full min-h-0 w-full flex-col gap-4">
   <app-breadcrumb [items]="[{ label: 'report-files', route: '/report-files/upload' }]" />
 
-  <app-page-header eyebrow="Report files" title="Uploaded Excel files" />
+  <app-page-header title="Uploaded Excel files" />
 
   @if (store.errorMessage()) {
     <app-alert type="error" [message]="store.errorMessage()!" />

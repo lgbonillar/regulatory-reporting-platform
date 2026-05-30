@@ -1,7 +1,7 @@
 <section class="flex h-full min-h-0 w-full flex-col gap-4">
   <app-breadcrumb [items]="[{ label: 'processing-jobs', route: '/processing-jobs' }]" />
 
-  <app-page-header eyebrow="Processing jobs" title="Job monitor" />
+  <app-page-header title="Job monitor" />
 
   @if (store.errorMessage()) {
     <app-alert type="error" [message]="store.errorMessage()!" />
@@ -40,7 +40,6 @@
 
             <app-processing-jobs-list
               [jobs]="store.jobs()"
-              (jobSelected)="openJobDetails($event)"
             />
 
           } @else {

@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common'
-import { Component, computed, input, output } from '@angular/core'
+import { Component, computed, inject, input, output } from '@angular/core'
 import { FormsModule } from '@angular/forms'
+import { Router } from '@angular/router'
 import { ButtonModule } from 'primeng/button'
 import { DatePickerModule } from 'primeng/datepicker'
 import { MultiSelectModule } from 'primeng/multiselect'
@@ -162,6 +163,20 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
 
             <td>
               <div class="flex items-center justify-end gap-2">
+                <p-button
+                  styleClass="cursor-pointer"
+                  icon="fa-solid fa-list-check"
+                  severity="info"
+                  [outlined]="true"
+                  [loading]="isActionRunning(file.fileId)"
+                  pTooltip="View findings"
+                  tooltipPosition="top"
+                  showDelay="500"
+                  hideDelay="100"
+                  ariaLabel="View findings"
+                  (click)="navigateToFileDetails(file.fileId)"
+                />
+
                 <app-file-picker-button
                   accept=".xlsx"
                   tooltip="Update file"
@@ -214,7 +229,21 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
             </span>
           </div>
 
-          <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div class="grid grid-cols-3 gap-2">
+            <p-button
+              styleClass="cursor-pointer w-full"
+              icon="fa-solid fa-list-check"
+              severity="info"
+              [outlined]="true"
+              [loading]="isActionRunning(file.fileId)"
+              pTooltip="View findings"
+              tooltipPosition="top"
+              showDelay="500"
+              hideDelay="100"
+              ariaLabel="View findings"
+                  (click)="navigateToFileDetails(file.fileId)"
+            />
+
             <app-file-picker-button
               accept=".xlsx"
               tooltip="Update file"
@@ -225,7 +254,7 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
             />
 
             <p-button
-              styleClass="cursor-pointer"
+              styleClass="cursor-pointer w-full"
               icon="fa-regular fa-trash-can"
               severity="danger"
               [outlined]="true"
@@ -244,6 +273,8 @@ import { UploadedFileResponse } from '../../models/report-file-upload.model'
   `
 })
 export class UploadedFilesList {
+  private readonly router = inject(Router)
+
   readonly files = input.required<UploadedFileResponse[]>()
   readonly actionFileId = input<string | null>(null)
   readonly replacementSelected = output<{ file: File, fileId: string }>()
@@ -251,6 +282,10 @@ export class UploadedFilesList {
 
   protected isActionRunning (fileId: string): boolean {
     return this.actionFileId() === fileId
+  }
+
+  protected navigateToFileDetails (fileId: string): void {
+    this.router.navigate(['/report-files/upload', fileId])
   }
 
   protected readonly fileStatusOptions = computed(() =>

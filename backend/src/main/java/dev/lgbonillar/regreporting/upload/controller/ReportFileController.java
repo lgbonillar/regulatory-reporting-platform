@@ -52,8 +52,7 @@ public class ReportFileController {
             summary = "List report files",
             description = """
                     Returns uploaded report files for a username. Analysts can only access
-                    files allowed by application rules; administrators can inspect files
-                    across analysts.
+                    own files and allowed by application rules; administrators can inspect all analysts files.
                     """,
             responses = {
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -120,8 +119,8 @@ public class ReportFileController {
     @Operation(
             summary = "Upload report file",
             description = """
-                    Stores a regulatory report file and creates a processing job in
-                    PENDING_EXECUTION state.
+                    Stores and validates a regulatory report file.
+                    If validation succeeds, creates a processing job in PENDING_EXECUTION state; otherwise, changes the file status to PENDING_CORRECTION.
                     """,
             responses = {
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(

@@ -1,19 +1,20 @@
 import { computed, inject, Injectable, signal } from '@angular/core'
 
+import { SessionService } from '../../../../core/auth/session.service'
 import { AppToastService } from '../../../../shared/services/app-toast.service'
 import { resolveHttpErrorMessage } from '../../../../shared/utils/http-error-message'
 import { ReportFileUploadResponse, UploadedFileResponse } from '../../models/report-file-upload.model'
 import { ReportFileUploadService } from '../../services/report-file-upload.service'
 
-const CURRENT_USERNAME = 'analyst01'
 const MINIMUM_FILES_SIZE = 0
 
 @Injectable()
 export class UploadReportPageStore {
   private readonly reportFileUploadService = inject(ReportFileUploadService)
+  private readonly sessionService = inject(SessionService)
   private readonly toast = inject(AppToastService)
 
-  readonly username = signal(CURRENT_USERNAME)
+  readonly username = computed(() => this.sessionService.currentUser()?.username ?? null)
   readonly files = signal<UploadedFileResponse[]>([])
   readonly selectedFile = signal<File | null>(null)
   readonly uploadResult = signal<ReportFileUploadResponse | null>(null)
@@ -75,9 +76,17 @@ export class UploadReportPageStore {
   }
 
   loadReportFiles (): void {
+    const username = this.username()
+
+    if (!username) {
+      this.errorMessage.set('User session not found. Please log in again.')
+      this.isLoadingFiles.set(false)
+      return
+    }
+
     this.isLoadingFiles.set(true)
 
-    this.reportFileUploadService.listReportFiles(this.username()).subscribe({
+    this.reportFileUploadService.listReportFiles(username).subscribe({
       next: (files) => {
         this.files.set(files)
       },

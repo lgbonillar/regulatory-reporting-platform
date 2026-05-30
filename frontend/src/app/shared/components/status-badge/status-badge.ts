@@ -26,6 +26,7 @@ export class StatusBadge {
 
     const labelsByStatus: Record<StatusBadgeValue, string> = {
       STORED: 'Stored',
+      PENDING_CORRECTION: 'Pending correction',
       MISSING: 'Missing',
       FAILED: 'Failed',
       DELETED: 'Deleted',
@@ -46,6 +47,7 @@ export class StatusBadge {
 
     const severityByStatus: Record<StatusBadgeValue, TagSeverity> = {
       STORED: 'success',
+      PENDING_CORRECTION: 'warn',
       MISSING: 'warn',
       FAILED: 'danger',
       DELETED: 'secondary',

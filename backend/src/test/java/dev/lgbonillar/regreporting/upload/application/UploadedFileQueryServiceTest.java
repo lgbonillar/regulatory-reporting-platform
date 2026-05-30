@@ -165,10 +165,24 @@ class UploadedFileQueryServiceTest {
     }
 
     @Test
-    void getViewableUploadedFileThrowsNotFoundForOwnerAnalystOnNonStoredFile() {
+    void getViewableUploadedFileReturnsFileForOwnerAnalystOnPendingCorrection() {
         UUID fileId = UUID.randomUUID();
         User analyst = analyst();
         UploadedFile file = uploadedFile(UploadedFileStatus.PENDING_CORRECTION, analyst);
+
+        when(uploadedFileRepository.findById(fileId)).thenReturn(Optional.of(file));
+        when(currentUserProvider.getCurrentUser()).thenReturn(analyst);
+
+        UploadedFile result = uploadedFileQueryService.getViewableUploadedFile(fileId);
+
+        assertThat(result).isSameAs(file);
+    }
+
+    @Test
+    void getViewableUploadedFileThrowsNotFoundForOwnerAnalystOnFailedFile() {
+        UUID fileId = UUID.randomUUID();
+        User analyst = analyst();
+        UploadedFile file = uploadedFile(UploadedFileStatus.FAILED, analyst);
 
         when(uploadedFileRepository.findById(fileId)).thenReturn(Optional.of(file));
         when(currentUserProvider.getCurrentUser()).thenReturn(analyst);

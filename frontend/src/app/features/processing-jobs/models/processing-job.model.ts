@@ -33,3 +33,19 @@ export interface ProcessingJobStatusHistoryResponse {
   reason: string | null
   createdAt: string
 }
+
+export interface ProcessingJobFindingResponse {
+  id: string
+  severity: string
+  scope: string
+  code: string
+  message: string
+  sheetName: string | null
+  rowNumber: number | null
+  columnName: string | null
+  fieldName: string | null
+  rejectedValue: string | null
+  expectedValue: string | null
+  actualValue: string | null
+  createdAt: string
+}

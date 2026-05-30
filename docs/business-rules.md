@@ -130,6 +130,7 @@ Allowed transitions are enforced by domain/service logic. Core expected transiti
 - `AWAITING_APPROVAL` -> `APPROVED`
 - `AWAITING_APPROVAL` -> `REJECTED`
 - `APPROVED` -> `REVOKED`
+- `PENDING_EXECUTION` -> `REVOKED`
 
 Status histories are persisted for uploaded files and processing jobs.
 

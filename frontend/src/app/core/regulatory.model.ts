@@ -7,4 +7,4 @@ export type ProcessingJobStatus =
     | 'REJECTED'
     | 'REVOKED'
 
-export type FileStatus = 'STORED' | 'MISSING' | 'FAILED' | 'DELETED'
+export type FileStatus = 'STORED' | 'PENDING_CORRECTION' | 'MISSING' | 'FAILED' | 'DELETED'

@@ -105,7 +105,7 @@ public class UploadedFileQueryService {
             );
         }
 
-        if (!isPrivileged && uploadedFile.getStatus() != UploadedFileStatus.STORED) {
+        if (!isPrivileged && !isViewableStatus(uploadedFile.getStatus())) {
             throw new ResourceNotFoundException("Uploaded file not found");
         }
 
@@ -130,5 +130,12 @@ public class UploadedFileQueryService {
         throw new ForbiddenOperationException(
                 "You are not allowed to view this uploaded file"
         );
+    }
+
+    private boolean isViewableStatus(UploadedFileStatus status) {
+        return switch (status) {
+            case STORED, PENDING_CORRECTION -> true;
+            case MISSING, FAILED, DELETED -> false;
+        };
     }
 }
