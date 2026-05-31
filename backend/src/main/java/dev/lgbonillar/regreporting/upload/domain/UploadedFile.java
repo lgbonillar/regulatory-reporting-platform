@@ -113,6 +113,11 @@ public class UploadedFile {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public void markPendingValidation() {
+        this.status = UploadedFileStatus.PENDING_VALIDATION;
+        this.updatedAt = LocalDateTime.now();
+    }
+
     public void markStored() {
         this.status = UploadedFileStatus.STORED;
         this.updatedAt = LocalDateTime.now();

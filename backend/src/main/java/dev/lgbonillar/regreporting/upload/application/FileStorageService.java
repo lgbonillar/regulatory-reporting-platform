@@ -1,7 +1,10 @@
 package dev.lgbonillar.regreporting.upload.application;
 
 import dev.lgbonillar.regreporting.shared.ResourceNotFoundException;
+import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
 import dev.lgbonillar.regreporting.upload.dto.StoredFile;
+import dev.lgbonillar.regreporting.upload.infrastructure.UploadedFileRepository;
+import dev.lgbonillar.regreporting.users.domain.User;
 
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -20,41 +23,53 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 public class FileStorageService {
 
     private final Path uploadRoot;
     private final long maxFileSizeBytes;
+    private final UploadedFileRepository uploadedFileRepository;
 
     public FileStorageService(
             @Value("${app.storage.upload-dir}") String uploadDir,
-            @Value("${app.storage.max-file-size-bytes}") long maxFileSizeBytes
+            @Value("${app.storage.max-file-size-bytes}") long maxFileSizeBytes,
+            UploadedFileRepository uploadedFileRepository
     ) {
         this.uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
         this.maxFileSizeBytes = maxFileSizeBytes;
+        this.uploadedFileRepository = uploadedFileRepository;
     }
 
-    public StoredFile store(MultipartFile file, String username) {
+    public StoredFile store(MultipartFile file, User currentUser) {
         validate(file);
 
+        String requestedFilename = Objects.requireNonNull(file.getOriginalFilename());
+        String resolvedFilename = resolveUniqueOriginalFilename(currentUser.getId(), requestedFilename);
+
+        String safeUsername = sanitizePathPart(currentUser.getUsername());
+        String storedFilename = sanitizeFilename(resolvedFilename);
+
+        Path userDirectory = uploadRoot.resolve(safeUsername).normalize();
+
         try {
-            String safeUsername = sanitizePathPart(username);
-            String originalFilename = Objects.requireNonNull(file.getOriginalFilename());
-            String storedFilename = sanitizeFilename(originalFilename);
-
-            Path userDirectory = uploadRoot.resolve(safeUsername).normalize();
             Files.createDirectories(userDirectory);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Could not create user directory", exception);
+        }
 
-            Path targetPath = userDirectory.resolve(storedFilename).normalize();
+        Path targetPath = userDirectory.resolve(storedFilename).normalize();
 
-            if (!targetPath.startsWith(uploadRoot)) {
-                throw new IllegalArgumentException("Invalid storage path");
-            }
+        if (!targetPath.startsWith(uploadRoot)) {
+            throw new IllegalArgumentException("Invalid storage path");
+        }
 
+        try {
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
             return new StoredFile(
+                    resolvedFilename,
                     storedFilename,
                     uploadRoot.relativize(targetPath).toString().replace("\\", "/"),
                     sha256(targetPath)
@@ -64,10 +79,56 @@ public class FileStorageService {
         }
     }
 
+    public StoredFile replace(MultipartFile file, User currentUser, UploadedFile existingFile) {
+        validate(file);
+
+        String requestedFilename = Objects.requireNonNull(file.getOriginalFilename());
+        String resolvedFilename = resolveUniqueOriginalFilenameExcluding(
+                currentUser.getId(),
+                requestedFilename,
+                existingFile.getId()
+        );
+
+        String safeUsername = sanitizePathPart(currentUser.getUsername());
+        String storedFilename = sanitizeFilename(resolvedFilename);
+
+        Path userDirectory = uploadRoot.resolve(safeUsername).normalize();
+
+        try {
+            Files.createDirectories(userDirectory);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Could not create user directory", exception);
+        }
+
+        Path targetPath = userDirectory.resolve(storedFilename).normalize();
+
+        if (!targetPath.startsWith(uploadRoot)) {
+            throw new IllegalArgumentException("Invalid storage path");
+        }
+
+        String previousStoragePath = existingFile.getStoragePath();
+        boolean storagePathChanged = !uploadRoot.resolve(previousStoragePath).normalize().equals(targetPath);
+
+        if (storagePathChanged) {
+            deleteQuietly(previousStoragePath);
+        }
+
+        try {
+            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            return new StoredFile(
+                    resolvedFilename,
+                    storedFilename,
+                    uploadRoot.relativize(targetPath).toString().replace("\\", "/"),
+                    sha256(targetPath)
+            );
+        } catch (IOException exception) {
+            throw new IllegalStateException("Could not store replaced file", exception);
+        }
+    }
+
     public void delete(String relativeStoragePath) {
-        Path filePath = uploadRoot
-                .resolve(relativeStoragePath)
-                .normalize();
+        Path filePath = uploadRoot.resolve(relativeStoragePath).normalize();
 
         if (!filePath.startsWith(uploadRoot)) {
             throw new IllegalArgumentException("Invalid storage path");
@@ -78,6 +139,61 @@ public class FileStorageService {
         } catch (IOException exception) {
             throw new IllegalStateException("Could not delete uploaded file", exception);
         }
+    }
+
+    private void deleteQuietly(String relativeStoragePath) {
+        try {
+            delete(relativeStoragePath);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private String resolveUniqueOriginalFilename(UUID uploadedById, String requested) {
+        String base;
+        String extension;
+
+        int dotIndex = requested.lastIndexOf('.');
+        if (dotIndex > 0 && dotIndex < requested.length() - 1) {
+            base = requested.substring(0, dotIndex);
+            extension = requested.substring(dotIndex);
+        } else {
+            base = requested;
+            extension = "";
+        }
+
+        String candidate = requested;
+        int counter = 2;
+
+        while (uploadedFileRepository.existsByUploadedByIdAndOriginalFilename(uploadedById, candidate)) {
+            candidate = base + "(" + counter + ")" + extension;
+            counter++;
+        }
+
+        return candidate;
+    }
+
+    private String resolveUniqueOriginalFilenameExcluding(UUID uploadedById, String requested, UUID excludedFileId) {
+        String base;
+        String extension;
+
+        int dotIndex = requested.lastIndexOf('.');
+        if (dotIndex > 0 && dotIndex < requested.length() - 1) {
+            base = requested.substring(0, dotIndex);
+            extension = requested.substring(dotIndex);
+        } else {
+            base = requested;
+            extension = "";
+        }
+
+        String candidate = requested;
+        int counter = 2;
+
+        while (uploadedFileRepository.existsByUploadedByIdAndOriginalFilenameAndIdNot(uploadedById, candidate, excludedFileId)) {
+            candidate = base + "(" + counter + ")" + extension;
+            counter++;
+        }
+
+        return candidate;
     }
 
     private void validate(MultipartFile file) {
@@ -124,9 +240,7 @@ public class FileStorageService {
     }
 
     public Resource loadAsResource(String relativeStoragePath) {
-        Path filePath = uploadRoot
-                .resolve(relativeStoragePath)
-                .normalize();
+        Path filePath = uploadRoot.resolve(relativeStoragePath).normalize();
 
         if (!filePath.startsWith(uploadRoot)) {
             throw new ResourceNotFoundException("Invalid storage path");
@@ -140,9 +254,7 @@ public class FileStorageService {
     }
 
     public Path resolvePath(String relativeStoragePath) {
-        Path filePath = uploadRoot
-                .resolve(relativeStoragePath)
-                .normalize();
+        Path filePath = uploadRoot.resolve(relativeStoragePath).normalize();
 
         if (!filePath.startsWith(uploadRoot)) {
             throw new ResourceNotFoundException("Invalid storage path");

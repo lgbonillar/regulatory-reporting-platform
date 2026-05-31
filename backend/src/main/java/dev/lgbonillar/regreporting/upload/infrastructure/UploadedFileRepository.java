@@ -26,4 +26,15 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, UUID
             List<UploadedFileStatus> statuses
     );
 
+    boolean existsByUploadedByIdAndOriginalFilename(
+            UUID uploadedById,
+            String originalFilename
+    );
+
+    boolean existsByUploadedByIdAndOriginalFilenameAndIdNot(
+            UUID uploadedById,
+            String originalFilename,
+            UUID excludedFileId
+    );
+
 }

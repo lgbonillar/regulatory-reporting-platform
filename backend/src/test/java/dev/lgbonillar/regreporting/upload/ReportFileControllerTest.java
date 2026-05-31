@@ -126,14 +126,14 @@ class ReportFileControllerTest {
         UploadedFile uploadedFile = uploadedFile();
         ByteArrayResource resource = new ByteArrayResource("content".getBytes());
 
-        when(reportFileService.getStoredUploadedFile(fileId)).thenReturn(uploadedFile);
+        when(reportFileService.getDownloadableUploadedFile(fileId)).thenReturn(uploadedFile);
         when(fileStorageService.loadAsResource(uploadedFile.getStoragePath())).thenReturn(resource);
 
         mockMvc.perform(get("/api/report-files/{fileId}/download", fileId))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Disposition", containsString("report.xlsx")));
 
-        verify(reportFileService).getStoredUploadedFile(fileId);
+        verify(reportFileService).getDownloadableUploadedFile(fileId);
         verify(fileStorageService).loadAsResource(uploadedFile.getStoragePath());
     }
 
@@ -142,7 +142,7 @@ class ReportFileControllerTest {
         UUID fileId = UUID.randomUUID();
         UploadedFile uploadedFile = uploadedFile();
 
-        when(reportFileService.getStoredUploadedFile(fileId)).thenReturn(uploadedFile);
+        when(reportFileService.getDownloadableUploadedFile(fileId)).thenReturn(uploadedFile);
         when(fileStorageService.loadAsResource(uploadedFile.getStoragePath()))
                 .thenThrow(new ResourceNotFoundException("File not found"));
 

@@ -55,7 +55,9 @@ export class FileDownloadLink {
   readonly filename = input.required<string>()
   readonly fileStatus = input<FileStatus>('STORED')
 
-  protected readonly isDownloadable = computed(() => this.fileStatus() === 'STORED')
+  protected readonly isDownloadable = computed(() =>
+    this.fileStatus() === 'STORED' || this.fileStatus() === 'PENDING_CORRECTION'
+  )
   protected readonly isDownloading = signal(false)
 
   protected downloadFile (): void {

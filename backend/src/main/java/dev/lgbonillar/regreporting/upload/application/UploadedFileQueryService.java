@@ -37,15 +37,22 @@ public class UploadedFileQueryService {
     }
 
     @Transactional(readOnly = true)
-    public UploadedFile getStoredUploadedFile(UUID fileId) {
+    public UploadedFile getDownloadableUploadedFile(UUID fileId) {
         UploadedFile uploadedFile = uploadedFileRepository.findById(fileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Uploaded file not found"));
 
-        if (uploadedFile.getStatus() != UploadedFileStatus.STORED) {
+        if (!isDownloadableStatus(uploadedFile.getStatus())) {
             throw new ResourceNotFoundException("Uploaded file not found");
         }
 
         return uploadedFile;
+    }
+
+    private boolean isDownloadableStatus(UploadedFileStatus status) {
+        return switch (status) {
+            case STORED, PENDING_CORRECTION -> true;
+            case MISSING, FAILED, DELETED, PENDING_VALIDATION -> false;
+        };
     }
 
     @Transactional(readOnly = true)
@@ -135,7 +142,7 @@ public class UploadedFileQueryService {
     private boolean isViewableStatus(UploadedFileStatus status) {
         return switch (status) {
             case STORED, PENDING_CORRECTION -> true;
-            case MISSING, FAILED, DELETED -> false;
+            case MISSING, FAILED, DELETED, PENDING_VALIDATION -> false;
         };
     }
 }

@@ -168,7 +168,7 @@ public class ReportFileController {
             }
     )
     public ResponseEntity<Resource> downloadReportFile(@PathVariable UUID fileId) {
-        UploadedFile uploadedFile = reportFileService.getStoredUploadedFile(fileId);
+        UploadedFile uploadedFile = reportFileService.getDownloadableUploadedFile(fileId);
 
         Resource resource;
 

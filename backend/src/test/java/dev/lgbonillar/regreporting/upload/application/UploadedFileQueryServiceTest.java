@@ -46,36 +46,48 @@ class UploadedFileQueryServiceTest {
     private UploadedFileQueryService uploadedFileQueryService;
 
     @Test
-    void getStoredUploadedFileReturnsStoredFile() {
+    void getDownloadableUploadedFileReturnsStoredFile() {
         UUID fileId = UUID.randomUUID();
         UploadedFile file = uploadedFile(UploadedFileStatus.STORED);
 
         when(uploadedFileRepository.findById(fileId)).thenReturn(Optional.of(file));
 
-        UploadedFile result = uploadedFileQueryService.getStoredUploadedFile(fileId);
+        UploadedFile result = uploadedFileQueryService.getDownloadableUploadedFile(fileId);
 
         assertThat(result).isSameAs(file);
     }
 
     @Test
-    void getStoredUploadedFileThrowsResourceNotFoundWhenFileDoesNotExist() {
+    void getDownloadableUploadedFileThrowsResourceNotFoundWhenFileDoesNotExist() {
         UUID fileId = UUID.randomUUID();
 
         when(uploadedFileRepository.findById(fileId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> uploadedFileQueryService.getStoredUploadedFile(fileId))
+        assertThatThrownBy(() -> uploadedFileQueryService.getDownloadableUploadedFile(fileId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Uploaded file not found");
     }
 
     @Test
-    void getStoredUploadedFileThrowsResourceNotFoundWhenFileIsNotStored() {
+    void getDownloadableUploadedFileReturnsPendingCorrectionFile() {
+        UUID fileId = UUID.randomUUID();
+        UploadedFile file = uploadedFile(UploadedFileStatus.PENDING_CORRECTION);
+
+        when(uploadedFileRepository.findById(fileId)).thenReturn(Optional.of(file));
+
+        UploadedFile result = uploadedFileQueryService.getDownloadableUploadedFile(fileId);
+
+        assertThat(result).isSameAs(file);
+    }
+
+    @Test
+    void getDownloadableUploadedFileThrowsResourceNotFoundWhenFileIsNotDownloadable() {
         UUID fileId = UUID.randomUUID();
         UploadedFile file = uploadedFile(UploadedFileStatus.MISSING);
 
         when(uploadedFileRepository.findById(fileId)).thenReturn(Optional.of(file));
 
-        assertThatThrownBy(() -> uploadedFileQueryService.getStoredUploadedFile(fileId))
+        assertThatThrownBy(() -> uploadedFileQueryService.getDownloadableUploadedFile(fileId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Uploaded file not found");
     }

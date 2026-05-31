@@ -16,17 +16,23 @@ import java.util.UUID;
 @Service
 public class ReportFileService {
 
+    private final UploadFileService uploadFileService;
+    private final UpdateFileService updateFileService;
     private final UploadedFileCommandService uploadedFileCommandService;
     private final UploadedFileQueryService uploadedFileQueryService;
     private final UploadedFileValidationRunService validationRunService;
     private final UploadedFileFindingService findingService;
 
     public ReportFileService(
+            UploadFileService uploadFileService,
+            UpdateFileService updateFileService,
             UploadedFileCommandService uploadedFileCommandService,
             UploadedFileQueryService uploadedFileQueryService,
             UploadedFileValidationRunService validationRunService,
             UploadedFileFindingService findingService
     ) {
+        this.uploadFileService = uploadFileService;
+        this.updateFileService = updateFileService;
         this.uploadedFileCommandService = uploadedFileCommandService;
         this.uploadedFileQueryService = uploadedFileQueryService;
         this.validationRunService = validationRunService;
@@ -34,15 +40,15 @@ public class ReportFileService {
     }
 
     public ReportFileUploadResponse uploadReportFile(MultipartFile file) {
-        return uploadedFileCommandService.uploadReportFile(file);
+        return uploadFileService.uploadFile(file);
     }
 
-    public UploadedFile getStoredUploadedFile(UUID fileId) {
-        return uploadedFileQueryService.getStoredUploadedFile(fileId);
+    public UploadedFile getDownloadableUploadedFile(UUID fileId) {
+        return uploadedFileQueryService.getDownloadableUploadedFile(fileId);
     }
 
     public ReportFileUploadResponse updateReportFile(UUID fileId, MultipartFile file) {
-        return uploadedFileCommandService.updateReportFile(fileId, file);
+        return updateFileService.updateFile(fileId, file);
     }
 
     public void deleteUploadedFile(UUID fileId) {
