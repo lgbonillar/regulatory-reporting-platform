@@ -2,6 +2,7 @@ package dev.lgbonillar.regreporting.upload.application;
 
 import dev.lgbonillar.regreporting.shared.ResourceNotFoundException;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
+import dev.lgbonillar.regreporting.upload.domain.UploadedFileStatus;
 import dev.lgbonillar.regreporting.upload.dto.StoredFile;
 import dev.lgbonillar.regreporting.upload.infrastructure.UploadedFileRepository;
 import dev.lgbonillar.regreporting.users.domain.User;
@@ -164,7 +165,7 @@ public class FileStorageService {
         String candidate = requested;
         int counter = 2;
 
-        while (uploadedFileRepository.existsByUploadedByIdAndOriginalFilename(uploadedById, candidate)) {
+        while (uploadedFileRepository.existsByUploadedByIdAndOriginalFilenameAndStatusNot(uploadedById, candidate, UploadedFileStatus.DELETED)) {
             candidate = base + "(" + counter + ")" + extension;
             counter++;
         }
@@ -188,7 +189,7 @@ public class FileStorageService {
         String candidate = requested;
         int counter = 2;
 
-        while (uploadedFileRepository.existsByUploadedByIdAndOriginalFilenameAndIdNot(uploadedById, candidate, excludedFileId)) {
+        while (uploadedFileRepository.existsByUploadedByIdAndOriginalFilenameAndIdNotAndStatusNot(uploadedById, candidate, excludedFileId, UploadedFileStatus.DELETED)) {
             candidate = base + "(" + counter + ")" + extension;
             counter++;
         }

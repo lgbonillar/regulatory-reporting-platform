@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-public class UploadedFileCommandService {
+public class DeleteFileService {
 
     private final CurrentUserProvider currentUserProvider;
     private final FileStorageService fileStorageService;
@@ -24,7 +24,7 @@ public class UploadedFileCommandService {
     private final ProcessingJobCreationService processingJobCreationService;
     private final UploadedFileStatusHistoryService uploadedFileStatusHistoryService;
 
-    public UploadedFileCommandService(
+    public DeleteFileService(
             CurrentUserProvider currentUserProvider,
             FileStorageService fileStorageService,
             UploadedFileRepository uploadedFileRepository,
@@ -39,7 +39,7 @@ public class UploadedFileCommandService {
     }
 
     @Transactional
-    public void deleteUploadedFile(UUID fileId) {
+    public void deleteFile(UUID fileId) {
         User currentUser = currentUserProvider.getCurrentUser();
 
         UploadedFile uploadedFile = uploadedFileRepository
@@ -75,25 +75,6 @@ public class UploadedFileCommandService {
                 UploadedFileTransitionSource.USER,
                 currentUser,
                 "File deleted"
-        );
-    }
-
-    @Transactional
-    public void markUploadedFileAsMissing(UUID fileId) {
-        UploadedFile uploadedFile = uploadedFileRepository.findById(fileId)
-                .orElseThrow(() -> new ResourceNotFoundException("Uploaded file not found"));
-
-        UploadedFileStatus previousStatus = uploadedFile.getStatus();
-
-        uploadedFile.markMissing();
-
-        uploadedFileStatusHistoryService.recordTransition(
-                uploadedFile,
-                previousStatus,
-                UploadedFileStatus.MISSING,
-                UploadedFileTransitionSource.SYSTEM,
-                null,
-                "Stored file was not found"
         );
     }
 }

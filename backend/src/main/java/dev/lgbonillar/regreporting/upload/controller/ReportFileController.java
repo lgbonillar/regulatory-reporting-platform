@@ -2,9 +2,17 @@ package dev.lgbonillar.regreporting.upload.controller;
 
 import dev.lgbonillar.regreporting.shared.ApiResponse;
 import dev.lgbonillar.regreporting.shared.ResourceNotFoundException;
+import dev.lgbonillar.regreporting.upload.application.DeleteFileService;
 import dev.lgbonillar.regreporting.upload.application.FileStorageService;
-import dev.lgbonillar.regreporting.upload.application.ReportFileService;
+import dev.lgbonillar.regreporting.upload.application.MarkFileMissingService;
+import dev.lgbonillar.regreporting.upload.application.UpdateFileService;
+import dev.lgbonillar.regreporting.upload.application.UploadFileService;
+import dev.lgbonillar.regreporting.upload.application.UploadedFileFindingService;
+import dev.lgbonillar.regreporting.upload.application.UploadedFileQueryService;
+import dev.lgbonillar.regreporting.upload.application.UploadedFileValidationRunService;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
+import dev.lgbonillar.regreporting.upload.domain.UploadedFileFinding;
+import dev.lgbonillar.regreporting.upload.domain.UploadedFileValidationRun;
 import dev.lgbonillar.regreporting.upload.dto.ReportFileUploadResponse;
 import dev.lgbonillar.regreporting.upload.dto.UploadedFileFindingResponse;
 import dev.lgbonillar.regreporting.upload.dto.UploadedFileResponse;
@@ -35,14 +43,32 @@ import java.util.UUID;
 )
 public class ReportFileController {
 
-    private final ReportFileService reportFileService;
+    private final UploadFileService uploadFileService;
+    private final UpdateFileService updateFileService;
+    private final DeleteFileService deleteFileService;
+    private final UploadedFileQueryService uploadedFileQueryService;
+    private final UploadedFileValidationRunService validationRunService;
+    private final UploadedFileFindingService findingService;
+    private final MarkFileMissingService markFileMissingService;
     private final FileStorageService fileStorageService;
 
     public ReportFileController(
-            ReportFileService reportFileService,
+            UploadFileService uploadFileService,
+            UpdateFileService updateFileService,
+            DeleteFileService deleteFileService,
+            UploadedFileQueryService uploadedFileQueryService,
+            UploadedFileValidationRunService validationRunService,
+            UploadedFileFindingService findingService,
+            MarkFileMissingService markFileMissingService,
             FileStorageService fileStorageService
     ) {
-        this.reportFileService = reportFileService;
+        this.uploadFileService = uploadFileService;
+        this.updateFileService = updateFileService;
+        this.deleteFileService = deleteFileService;
+        this.uploadedFileQueryService = uploadedFileQueryService;
+        this.validationRunService = validationRunService;
+        this.findingService = findingService;
+        this.markFileMissingService = markFileMissingService;
         this.fileStorageService = fileStorageService;
     }
 
@@ -70,7 +96,7 @@ public class ReportFileController {
             @Parameter(description = "Username that owns the uploaded files", example = "analyst01")
             @RequestParam String username
     ) {
-        List<UploadedFileResponse> response = reportFileService.listUploadedFiles(username);
+        List<UploadedFileResponse> response = uploadedFileQueryService.listUploadedFiles(username);
 
         return ResponseEntity.ok(ApiResponse.successList(
                 "Report files retrieved successfully",
@@ -108,11 +134,10 @@ public class ReportFileController {
             @Parameter(description = "Excel file to store and process")
             @RequestParam("file") MultipartFile file
     ) {
-        ReportFileUploadResponse response = reportFileService.updateReportFile(fileId, file);
+        ReportFileUploadResponse response = updateFileService.updateFile(fileId, file);
 
         return ResponseEntity.ok(ApiResponse.success("Report file updated successfully", response));
     }
-
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ANALYST')")
@@ -142,7 +167,7 @@ public class ReportFileController {
             @Parameter(description = "Excel file to store and process")
             @RequestParam("file") MultipartFile file
     ) {
-        ReportFileUploadResponse response = reportFileService.uploadReportFile(file);
+        ReportFileUploadResponse response = uploadFileService.uploadFile(file);
 
         return ResponseEntity.ok(ApiResponse.success("Report file uploaded successfully", response));
     }
@@ -168,14 +193,14 @@ public class ReportFileController {
             }
     )
     public ResponseEntity<Resource> downloadReportFile(@PathVariable UUID fileId) {
-        UploadedFile uploadedFile = reportFileService.getDownloadableUploadedFile(fileId);
+        UploadedFile uploadedFile = uploadedFileQueryService.getDownloadableUploadedFile(fileId);
 
         Resource resource;
 
         try {
             resource = fileStorageService.loadAsResource(uploadedFile.getStoragePath());
         } catch (ResourceNotFoundException exception) {
-            reportFileService.markUploadedFileAsMissing(fileId);
+            markFileMissingService.markFileAsMissing(fileId);
             throw exception;
         }
 
@@ -225,8 +250,13 @@ public class ReportFileController {
             @Parameter(description = "Uploaded file identifier")
             @PathVariable UUID fileId
     ) {
+        UploadedFile uploadedFile = uploadedFileQueryService.getViewableUploadedFile(fileId);
+
         List<UploadedFileValidationRunResponse> response =
-                reportFileService.listValidationRuns(fileId);
+                validationRunService.listValidationRuns(uploadedFile.getId())
+                        .stream()
+                        .map(this::toValidationRunResponse)
+                        .toList();
 
         return ResponseEntity.ok(ApiResponse.successList(
                 "Validation runs retrieved successfully",
@@ -262,7 +292,13 @@ public class ReportFileController {
             @Parameter(description = "Uploaded file identifier")
             @PathVariable UUID fileId
     ) {
-        List<UploadedFileFindingResponse> response = reportFileService.listFindings(fileId);
+        UploadedFile uploadedFile = uploadedFileQueryService.getViewableUploadedFile(fileId);
+
+        List<UploadedFileFindingResponse> response =
+                findingService.listFindings(uploadedFile.getId())
+                        .stream()
+                        .map(this::toFindingResponse)
+                        .toList();
 
         return ResponseEntity.ok(ApiResponse.successList(
                 "Validation findings retrieved successfully",
@@ -300,8 +336,17 @@ public class ReportFileController {
             @Parameter(description = "Validation run identifier")
             @PathVariable UUID validationRunId
     ) {
+        UploadedFile uploadedFile = uploadedFileQueryService.getViewableUploadedFile(fileId);
+        UploadedFileValidationRun validationRun = validationRunService.getValidationRun(
+                uploadedFile.getId(),
+                validationRunId
+        );
+
         List<UploadedFileFindingResponse> response =
-                reportFileService.listFindingsByValidationRun(fileId, validationRunId);
+                findingService.listFindingsByValidationRun(validationRun.getId())
+                        .stream()
+                        .map(this::toFindingResponse)
+                        .toList();
 
         return ResponseEntity.ok(ApiResponse.successList(
                 "Validation run findings retrieved successfully",
@@ -333,9 +378,43 @@ public class ReportFileController {
             }
     )
     public ResponseEntity<Void> deleteReportFile(@PathVariable UUID fileId) {
-        reportFileService.deleteUploadedFile(fileId);
+        deleteFileService.deleteFile(fileId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    private UploadedFileValidationRunResponse toValidationRunResponse(
+            UploadedFileValidationRun validationRun
+    ) {
+        return new UploadedFileValidationRunResponse(
+                validationRun.getId(),
+                validationRun.getUploadedFile().getId(),
+                validationRun.getStatus().name(),
+                validationRun.getSource().name(),
+                validationRun.getSummaryMessage(),
+                validationRun.getCreatedBy(),
+                validationRun.getCreatedAt()
+        );
+    }
+
+    private UploadedFileFindingResponse toFindingResponse(UploadedFileFinding finding) {
+        return new UploadedFileFindingResponse(
+                finding.getId(),
+                finding.getValidationRun().getId(),
+                finding.getUploadedFile().getId(),
+                finding.getSeverity().name(),
+                finding.getScope().name(),
+                finding.getCode(),
+                finding.getMessage(),
+                finding.getSheetName(),
+                finding.getRowNumber(),
+                finding.getColumnName(),
+                finding.getFieldName(),
+                finding.getRejectedValue(),
+                finding.getExpectedValue(),
+                finding.getActualValue(),
+                finding.getCreatedAt()
+        );
     }
 
 }
