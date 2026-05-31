@@ -2,6 +2,7 @@ package dev.lgbonillar.regreporting.upload.application;
 
 import dev.lgbonillar.regreporting.shared.ForbiddenOperationException;
 import dev.lgbonillar.regreporting.shared.ResourceNotFoundException;
+import dev.lgbonillar.regreporting.upload.application.support.UploadedFileAccessRules;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileStatus;
 import dev.lgbonillar.regreporting.upload.dto.UploadedFileResponse;
@@ -37,31 +38,12 @@ public class UploadedFileQueryService {
     }
 
     @Transactional(readOnly = true)
-    public UploadedFile getDownloadableUploadedFile(UUID fileId) {
-        UploadedFile uploadedFile = uploadedFileRepository.findById(fileId)
-                .orElseThrow(() -> new ResourceNotFoundException("Uploaded file not found"));
-
-        if (!isDownloadableStatus(uploadedFile.getStatus())) {
-            throw new ResourceNotFoundException("Uploaded file not found");
-        }
-
-        return uploadedFile;
-    }
-
-    private boolean isDownloadableStatus(UploadedFileStatus status) {
-        return switch (status) {
-            case STORED, PENDING_CORRECTION -> true;
-            case MISSING, FAILED, DELETED, PENDING_VALIDATION -> false;
-        };
-    }
-
-    @Transactional(readOnly = true)
     public List<UploadedFileResponse> listUploadedFiles(String username) {
         User currentUser = currentUserProvider.getCurrentUser();
         User targetUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (!canListAs(currentUser, targetUser)) {
+        if (!UploadedFileAccessRules.canListAs(currentUser, targetUser)) {
             throw new ForbiddenOperationException(
                     "You are not allowed to list files for this user"
             );
@@ -82,67 +64,26 @@ public class UploadedFileQueryService {
                 .toList();
     }
 
-    private boolean canListAs(User currentUser, User targetUser) {
-        if (currentUser.hasRole(UserRole.ROOT) ||
-                currentUser.hasRole(UserRole.ADMINISTRATOR)) {
-            return true;
-        }
-        if (currentUser.hasRole(UserRole.ANALYST)) {
-            return currentUser.getId().equals(targetUser.getId());
-        }
-        return false;
-    }
-
     @Transactional(readOnly = true)
     public UploadedFile getViewableUploadedFile(UUID fileId) {
         UploadedFile uploadedFile = uploadedFileRepository.findById(fileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Uploaded file not found"));
 
         User currentUser = currentUserProvider.getCurrentUser();
-        boolean isPrivileged = currentUser.hasRole(UserRole.ROOT) ||
-                               currentUser.hasRole(UserRole.ADMINISTRATOR);
-        boolean isOwner = currentUser.hasRole(UserRole.ANALYST) &&
-                uploadedFile.getUploadedBy()
-                        .getUsername()
-                        .equals(currentUser.getUsername());
 
-        if (!isPrivileged && !isOwner) {
+        if (!UploadedFileAccessRules.canView(currentUser, uploadedFile)) {
             throw new ForbiddenOperationException(
                     "You are not allowed to view this uploaded file"
             );
         }
 
-        if (!isPrivileged && !isViewableStatus(uploadedFile.getStatus())) {
+        boolean isPrivileged = currentUser.hasRole(UserRole.ROOT) ||
+                               currentUser.hasRole(UserRole.ADMINISTRATOR);
+
+        if (!isPrivileged && !UploadedFileAccessRules.isViewableStatus(uploadedFile.getStatus())) {
             throw new ResourceNotFoundException("Uploaded file not found");
         }
 
         return uploadedFile;
-    }
-
-    private void requireCanView(UploadedFile uploadedFile) {
-        User currentUser = currentUserProvider.getCurrentUser();
-
-        if (currentUser.hasRole(UserRole.ROOT) ||
-                currentUser.hasRole(UserRole.ADMINISTRATOR)) {
-            return;
-        }
-
-        if (currentUser.hasRole(UserRole.ANALYST) &&
-                uploadedFile.getUploadedBy()
-                        .getUsername()
-                        .equals(currentUser.getUsername())) {
-            return;
-        }
-
-        throw new ForbiddenOperationException(
-                "You are not allowed to view this uploaded file"
-        );
-    }
-
-    private boolean isViewableStatus(UploadedFileStatus status) {
-        return switch (status) {
-            case STORED, PENDING_CORRECTION -> true;
-            case MISSING, FAILED, DELETED, PENDING_VALIDATION -> false;
-        };
     }
 }
