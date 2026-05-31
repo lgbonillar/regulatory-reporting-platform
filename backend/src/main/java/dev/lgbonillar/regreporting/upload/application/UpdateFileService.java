@@ -3,6 +3,8 @@ package dev.lgbonillar.regreporting.upload.application;
 import dev.lgbonillar.regreporting.processing.application.ProcessingJobCreationService;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingJob;
 import dev.lgbonillar.regreporting.shared.ResourceNotFoundException;
+import dev.lgbonillar.regreporting.upload.application.support.UploadedFileStatusMessages;
+import dev.lgbonillar.regreporting.upload.application.support.UploadedFileStatusTransitions;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileStatus;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileTransitionSource;
@@ -88,7 +90,7 @@ public class UpdateFileService {
                 currentUser.getUsername()
         );
 
-        UploadedFileStatusApplier.applyStatus(uploadedFile, validationStatus);
+        UploadedFileStatusTransitions.applyValidationStatus(uploadedFile, validationStatus);
 
         uploadedFileStatusHistoryService.recordTransition(
                 uploadedFile,
@@ -96,7 +98,7 @@ public class UpdateFileService {
                 validationStatus,
                 UploadedFileTransitionSource.USER,
                 currentUser,
-                StatusMessageHelper.historyMessage(validationStatus, "updated")
+                UploadedFileStatusMessages.updateHistoryMessage(validationStatus)
         );
 
         ProcessingJob savedJob = updateProcessingJobAfterValidation(
@@ -136,12 +138,8 @@ public class UpdateFileService {
                 status.name(),
                 processingJob == null ? null : processingJob.getStatus().name(),
                 processingJob == null
-                        ? uploadMessage(status)
+                        ? UploadedFileStatusMessages.updateResponseMessage(status)
                         : processingJob.getMessage()
         );
-    }
-
-    private String uploadMessage(UploadedFileStatus status) {
-        return StatusMessageHelper.statusMessage(status, "updated");
     }
 }

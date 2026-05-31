@@ -2,6 +2,8 @@ package dev.lgbonillar.regreporting.upload.application;
 
 import dev.lgbonillar.regreporting.processing.application.ProcessingJobCreationService;
 import dev.lgbonillar.regreporting.processing.domain.ProcessingJob;
+import dev.lgbonillar.regreporting.upload.application.support.UploadedFileStatusMessages;
+import dev.lgbonillar.regreporting.upload.application.support.UploadedFileStatusTransitions;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFile;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileStatus;
 import dev.lgbonillar.regreporting.upload.domain.UploadedFileTransitionSource;
@@ -16,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Objects;
-import java.util.UUID;
 
 @Service
 public class UploadFileService {
@@ -71,7 +72,7 @@ public class UploadFileService {
                 currentUser.getUsername()
         );
 
-        UploadedFileStatusApplier.applyStatus(savedFile, validationStatus);
+        UploadedFileStatusTransitions.applyValidationStatus(savedFile, validationStatus);
 
         uploadedFileStatusHistoryService.recordTransition(
                 savedFile,
@@ -79,7 +80,7 @@ public class UploadFileService {
                 validationStatus,
                 UploadedFileTransitionSource.USER,
                 currentUser,
-                StatusMessageHelper.historyMessage(validationStatus, "uploaded")
+                UploadedFileStatusMessages.uploadHistoryMessage(validationStatus)
         );
 
         ProcessingJob processingJob = null;
@@ -88,15 +89,6 @@ public class UploadFileService {
         }
 
         return toReportFileUploadResponse(savedFile, processingJob, validationStatus);
-    }
-
-    private String historyMessage(UploadedFileStatus status) {
-        return switch (status) {
-            case STORED -> "File uploaded successfully";
-            case PENDING_CORRECTION -> "File uploaded with validation issues";
-            case FAILED -> "File upload validation failed";
-            default -> "File uploaded";
-        };
     }
 
     private ReportFileUploadResponse toReportFileUploadResponse(
@@ -111,12 +103,8 @@ public class UploadFileService {
                 status.name(),
                 processingJob == null ? null : processingJob.getStatus().name(),
                 processingJob == null
-                        ? uploadMessage(status)
+                        ? UploadedFileStatusMessages.uploadResponseMessage(status)
                         : processingJob.getMessage()
         );
-    }
-
-    private String uploadMessage(UploadedFileStatus status) {
-        return StatusMessageHelper.statusMessage(status, "uploaded");
     }
 }
